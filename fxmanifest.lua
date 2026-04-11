@@ -5,7 +5,7 @@ game 'gta5'
 
 name 'mbt_emote_menu'
 author 'Malibù Tech Team'
-version '1.0.0'
+version      '1.0.0'
 description 'Premium NUI emote menu for rpemotes-reborn by Malibu Tech'
 
 dependencies {
