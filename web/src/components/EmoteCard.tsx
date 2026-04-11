@@ -1,0 +1,276 @@
+import { memo, useRef, useCallback, useState, useEffect } from 'react'
+import { ChevronDown, Check, Eye, EyeOff, FolderPlus, ListPlus, Lock } from 'lucide-react'
+import { EmoteSilhouette } from './EmoteSilhouette'
+import type { CustomList, Emote } from '../utils/types'
+
+interface EmoteCardProps {
+  emote: Emote
+  isFavorite: boolean
+  isFocused?: boolean
+  isPreviewActive?: boolean
+  cardIndex?: number
+  hidePropBadge?: boolean
+  hideSharedBadge?: boolean
+  isActiveStyle?: boolean
+  playCount?: number
+  locked?: boolean
+  onPlay: (emote: Emote) => void
+  onToggleFavorite: (emote: Emote) => void
+  onPreviewToggle?: (emote: Emote) => void
+  onAddToPlaylist?: (emote: Emote) => void
+  onBindClick?: (emote: Emote, slot: number, element: HTMLElement) => void
+  wheelSlots?: Record<string, Emote>
+  wheelMaxSlots?: number
+  onSetWheelSlot?: (slot: number, emote: Emote | null) => void
+  customLists?: CustomList[]
+  onAddToList?: (listId: string, emoteName: string) => void
+  onRemoveFromList?: (listId: string, emoteName: string) => void
+}
+
+export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused, isPreviewActive, cardIndex, hidePropBadge, hideSharedBadge, isActiveStyle, playCount, locked, onPlay, onToggleFavorite, onPreviewToggle, onAddToPlaylist, onBindClick, wheelSlots, wheelMaxSlots, onSetWheelSlot, customLists, onAddToList, onRemoveFromList }: EmoteCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [drawerType, setDrawerType] = useState<'none' | 'variants' | 'actions' | 'lists'>('none')
+  const rafRef = useRef<number>(0)
+
+  // Cancel pending RAF on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    const card = cardRef.current
+    if (!card) return
+    if (rafRef.current) return // Skip if a frame is already pending
+    const x = e.clientX
+    const y = e.clientY
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = 0
+      if (!card) return
+      const rect = card.getBoundingClientRect()
+      card.style.setProperty('--mouse-x', `${x - rect.left}px`)
+      card.style.setProperty('--mouse-y', `${y - rect.top}px`)
+    })
+  }, [])
+
+
+  const handleClick = () => {
+    if (locked) return
+    if (hasVariants) {
+      setDrawerType(drawerType === 'variants' ? 'none' : 'variants')
+    } else {
+      onPlay(emote)
+    }
+  }
+
+  const handleWheelSlotPick = (slot: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onSetWheelSlot) {
+      // If this emote is already in this slot, remove it; otherwise assign
+      const current = wheelSlots?.[String(slot)]
+      if (current && current.name === emote.name) {
+        onSetWheelSlot(slot, null)
+      } else {
+        onSetWheelSlot(slot, emote)
+      }
+    }
+    setDrawerType('none')
+  }
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (locked) return
+    setDrawerType(drawerType === 'actions' ? 'none' : 'actions')
+  }
+
+  const handleVariantPick = (value: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setDrawerType('none')
+    onPlay({ ...emote, variation: value })
+  }
+
+  const handleBindPick = (slot: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (onBindClick && cardRef.current) {
+      onBindClick(emote, slot, cardRef.current)
+    }
+    setDrawerType('none')
+  }
+
+  const handleListToggle = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (locked) return
+    setDrawerType(drawerType === 'lists' ? 'none' : 'lists')
+  }
+
+  const handleListPick = (listId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const list = customLists?.find((l) => l.id === listId)
+    const alreadyIn = list?.emotes.includes(emote.name)
+    if (alreadyIn && onRemoveFromList) {
+      onRemoveFromList(listId, emote.name)
+    } else if (!alreadyIn && onAddToList) {
+      onAddToList(listId, emote.name)
+    }
+    setDrawerType('none')
+  }
+
+  const categoryBadge = () => {
+    if (emote.isShared && !hideSharedBadge) return <span className="mbt-badge mbt-badge--shared">Sync</span>
+    if (emote.hasProp && !hidePropBadge) return <span className="mbt-badge mbt-badge--prop">Prop</span>
+    if (emote.category === 'Dances') return <span className="mbt-badge mbt-badge--dance">Dance</span>
+    return null
+  }
+
+  const hasVariants = emote.variations && emote.variations.length > 0
+  const canPreview = !!(emote.animDict || emote.scenario) && emote.category !== 'Walks'
+
+  return (
+    <div
+      ref={cardRef}
+      className={`mbt-card ${drawerType !== 'none' ? 'mbt-card--expanded' : ''} ${isFocused ? 'mbt-card--focused' : ''} ${isPreviewActive ? 'mbt-card--previewing' : ''} ${isActiveStyle ? 'mbt-card--active-style' : ''} ${locked ? 'mbt-card--locked' : ''}`}
+      data-card-index={cardIndex}
+      onClick={handleClick}
+      onContextMenu={handleContextMenu}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setDrawerType('none')}
+    >
+      <div className="mbt-card__row">
+        <div className="mbt-card__name">
+          {locked && <Lock size={14} className="mbt-card__lock-icon" />}
+          <EmoteSilhouette emote={emote} size={18} />
+          {emote.label}
+      </div>
+      <div className="mbt-card__actions">
+        {isActiveStyle && (
+          <span className="mbt-badge mbt-badge--active">Active</span>
+        )}
+        {playCount != null && playCount > 0 && (
+          <span className="mbt-badge mbt-badge--plays">{playCount}x</span>
+        )}
+        {categoryBadge()}
+        {hasVariants && (
+          <span className="mbt-badge mbt-badge--variant">
+            <ChevronDown size={14} />
+            {emote.variations!.length}
+          </span>
+        )}
+        {canPreview && onPreviewToggle && (
+          <button
+            className={`mbt-card__preview ${isPreviewActive ? 'mbt-card__preview--active' : ''}`}
+            onClick={(e) => { e.stopPropagation(); onPreviewToggle(emote) }}
+            title={isPreviewActive ? 'Stop preview' : 'Preview animazione (solo tu)'}
+          >
+            {isPreviewActive ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
+        )}
+        {onAddToPlaylist && (
+          <button
+            className="mbt-card__playlist-add"
+            onClick={(e) => { e.stopPropagation(); onAddToPlaylist(emote) }}
+            title="Aggiungi alla playlist"
+          >
+            <ListPlus size={14} />
+          </button>
+        )}
+        {customLists && customLists.length > 0 && onAddToList && (
+          <button
+            className={`mbt-card__list-add ${drawerType === 'lists' ? 'mbt-card__list-add--active' : ''}`}
+            onClick={handleListToggle}
+            title="Add to custom list"
+          >
+            <FolderPlus size={14} />
+          </button>
+        )}
+        <button
+          className={`mbt-card__fav ${isFavorite ? 'mbt-card__fav--active' : ''}`}
+          onClick={(e) => {
+            e.stopPropagation()
+            onToggleFavorite(emote)
+          }}
+        >
+          {isFavorite ? '★' : '☆'}
+        </button>
+      </div>
+      </div>
+
+      {/* Unified Action Drawer */}
+      {drawerType !== 'none' && (
+        <div className="mbt-card__variants">
+          {drawerType === 'variants' && emote.variations && (
+            <div className="mbt-drawer__section">
+              <div className="mbt-drawer__title">Textures</div>
+              <div className="mbt-drawer__grid">
+                {emote.variations.map((v) => (
+                  <button key={v.value} className="mbt-card__variant-btn" onClick={(e) => handleVariantPick(v.value, e)}>
+                    {v.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {drawerType === 'lists' && customLists && (
+            <div className="mbt-drawer__section">
+              <div className="mbt-drawer__title">Custom Lists</div>
+              <div className="mbt-drawer__list-grid">
+                {customLists.map((list) => {
+                  const alreadyIn = list.emotes.includes(emote.name)
+                  return (
+                    <button
+                      key={list.id}
+                      className={`mbt-drawer__list-btn ${alreadyIn ? 'mbt-drawer__list-btn--active' : ''}`}
+                      onClick={(e) => handleListPick(list.id, e)}
+                      title={alreadyIn ? `Remove from "${list.name}"` : `Add to "${list.name}"`}
+                      style={{ '--list-color': `#${list.color}` } as React.CSSProperties}
+                    >
+                      <span className="mbt-drawer__list-dot" />
+                      <span className="mbt-drawer__list-name">{list.name}</span>
+                      {alreadyIn && <Check size={12} className="mbt-drawer__list-check" />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+          {drawerType === 'actions' && (
+            <>
+              <div className="mbt-drawer__section">
+                <div className="mbt-drawer__title">Quick Bind</div>
+                <div className="mbt-drawer__bind-grid">
+                  {[1, 2, 3, 4, 5, 6].map((num) => (
+                    <button key={num} className="mbt-drawer__bind-btn" onClick={(e) => handleBindPick(num - 1, e)}>
+                      {num}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {onSetWheelSlot && wheelMaxSlots && wheelMaxSlots > 0 && (
+                <div className="mbt-drawer__section mbt-drawer__section--wheel">
+                  <div className="mbt-drawer__title">Wheel Slot</div>
+                  <div className="mbt-drawer__wheel-grid">
+                    {Array.from({ length: wheelMaxSlots }, (_, i) => i + 1).map((slot) => {
+                      const assigned = wheelSlots?.[String(slot)]
+                      const isThisEmote = assigned?.name === emote.name
+                      return (
+                        <button
+                          key={slot}
+                          className={`mbt-drawer__wheel-btn ${isThisEmote ? 'mbt-drawer__wheel-btn--active' : ''} ${assigned && !isThisEmote ? 'mbt-drawer__wheel-btn--occupied' : ''}`}
+                          onClick={(e) => handleWheelSlotPick(slot, e)}
+                          title={assigned ? (isThisEmote ? 'Click to remove' : `Occupied: ${assigned.label}`) : `Assign to slot ${slot}`}
+                        >
+                          <span className="mbt-drawer__wheel-num">{slot}</span>
+                          {assigned && !isThisEmote && <span className="mbt-drawer__wheel-dot" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+})

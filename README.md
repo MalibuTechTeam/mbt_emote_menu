@@ -1,0 +1,276 @@
+# MBT Emote Menu — Premium NUI for rpemotes-reborn
+
+<p align="center">
+  <img src="https://img.shields.io/badge/FiveM-Ready-00fb8a?style=for-the-badge&logo=fivem&logoColor=white" alt="FiveM Ready" />
+  <img src="https://img.shields.io/badge/Framework-ESX%20%7C%20QBox%20%7C%20QBCore%20%7C%20Standalone-blue?style=for-the-badge" alt="Framework" />
+  <img src="https://img.shields.io/badge/Version-1.0.0-informational?style=for-the-badge" alt="Version" />
+  <img src="https://img.shields.io/badge/Lua-5.4-purple?style=for-the-badge&logo=lua" alt="Lua 5.4" />
+  <img src="https://img.shields.io/badge/React-TypeScript-61DAFB?style=for-the-badge&logo=react" alt="React + TS" />
+  <img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue?style=for-the-badge" alt="PolyForm Noncommercial 1.0.0" />
+</p>
+
+<p align="center">
+  <img src="https://r2.fivemanage.com/dPa5OqQoEubnwFkRaIgUq/ScreenShot/thumb_mbt_rpemotes.png" alt="FiveM Ready" />
+</p>
+
+**mbt_emote_menu** is a premium NUI overlay that completely replaces the default rpemotes-reborn menu with a modern, responsive, and feature-rich interface built with React + TypeScript. Designed for serious RP servers that demand a polished player experience.
+
+---
+
+## Preview
+
+| Default Layout | Cinematic Layout |
+|:-:|:-:|
+| ![Default](https://r2.fivemanage.com/dPa5OqQoEubnwFkRaIgUq/ScreenShot/mbt_rpemotes2_water.jpg) | ![Cinematic](https://r2.fivemanage.com/dPa5OqQoEubnwFkRaIgUq/ScreenShot/mbt_rpemotes1_water.jpg) |
+
+---
+
+## Features
+
+### Core
+
+- **1800+ emotes** organized by category with **silhouette icons** (Emotes, Props, Dances, Shared, Expressions, Walk Styles, Animals, Emojis)
+- **Real-time search** with instant filtering across all emotes
+- **Two layout modes** — *Default* (classic panel) and *Cinematic* (transparent, immersive overlay)
+- **Left or right positioning** — configurable panel side
+- **Draggable menu** — click and drag the header to reposition (default layout)
+- **Fully responsive** — optimized breakpoints for 720p, 1080p, 1440p, 4K, and ultrawide monitors (21:9, 32:9)
+
+### Organization
+
+- **Favorites** system with import/export (JSON) and drag-to-reorder
+- **Recent emotes** — automatically tracks your last played emotes
+- **Top emotes** — ranked by play count
+- **Custom lists** — create personal collections with custom names and colors
+- **Category filters** — filter by Props, Shared, or browse All
+- **Sorting** — A-Z, Z-A, or by category
+
+### Quick Access
+
+- **Quick Bind** — assign emotes to NUM1-NUM6 keys via right-click drawer
+- **Emote Wheel** — hold-to-peek radial selector (up to 8 slots, no cursor needed)
+- **Keyboard navigation** — arrow keys + Enter to browse and play emotes
+- **Random emote** button for spontaneous fun
+
+### Playback
+
+- **Emote preview** — see the animation on your ped before committing (solo, invisible to others)
+- **Playlist system** — queue multiple emotes in sequence with play/stop/clear controls
+- **Shared emote popup** — inline accept/decline for sync emote invitations
+- **Partner finder** — locate nearby players for shared animations
+- **Remember State** — menu remembers your scroll position, tab, and filters after playing an emote (resets on ESC/X, configurable)
+
+### Reliability
+
+- **Auto-close on death** — the menu closes itself if the player ped dies while it is open, avoiding stuck UI during the respawn / death camera
+- **Version Check** — notifies server owners in console when a new release is available on GitHub
+- **Resource Name Guard** — prevents the resource from starting if the folder is renamed (avoids silent breakage)
+
+### Permissions & Security
+
+- **Job-locked emotes** — restrict specific emotes to certain jobs (police, mechanic, medic, etc.)
+- **Multi-framework support** — auto-detects ESX, QBox, QBCore, or standalone
+
+### Ecosystem
+
+- **MBT Meta Clothes** integration — detects and connects with `mbt_meta_clothes`
+- **MBT Wearable Props** integration — detects and connects with `mbt_wearable_props`
+
+### Localization
+
+Built-in translations for **6 languages**: English, Italian, Spanish, French, German, Portuguese. Add your own by creating a new file in the `locales/` folder.
+
+---
+
+## Requirements
+
+| Dependency | Version |
+|---|---|
+| [FiveM Server](https://fivem.net) | Build 6116+ |
+| OneSync | Enabled |
+| [rpemotes-reborn](https://github.com/rpemotes/rpemotes-reborn) | Latest |
+
+---
+
+## Installation
+
+1. Download or clone this repository into your server's `resources` folder.
+
+2. Add to your `server.cfg`:
+   ```cfg
+   ensure rpemotes-reborn
+   ensure mbt_emote_menu
+   ```
+   > **Important:** `mbt_emote_menu` must start **after** `rpemotes-reborn`.
+
+3. Configure `config.lua` to your liking (see Configuration below).
+
+4. Restart your server or run `ensure mbt_emote_menu` in the live console.
+
+---
+
+## Configuration
+
+All configuration is done in `config.lua`. Here's an overview of each section:
+
+### General
+
+```lua
+MBT.Language = 'en'           -- 'en', 'it', 'es', 'fr', 'de', 'pt'
+MBT.Debug = false             -- Enable debug logs
+MBT.RpemotesResource = nil    -- Auto-detect or force: 'rpemotes-reborn', 'rpemotes', 'rp-emotes'
+```
+
+### Menu
+
+```lua
+MBT.Menu = {
+    Keybind            = 'F4',
+    Command            = 'mbt_emotes',
+    Layout             = 'cinematic',    -- 'default' or 'cinematic'
+    Position           = 'right',        -- 'left' or 'right'
+    CloseOnPlay        = true,
+    RememberState      = true,           -- Remember scroll/tab/filters after playing (resets on ESC/X)
+    Watermark          = true,
+    OverrideNativeMenu = true,           -- Replaces rpemotes' NativeUI menu
+}
+```
+
+### Features
+
+```lua
+MBT.Features = {
+    Favorites    = true,
+    RecentEmotes = true,
+    MaxRecent    = 12,
+    QuickBind    = true,
+    SharedPopup  = true,
+    PreviewPed   = true,
+    EmoteWheel   = true,
+}
+```
+
+### Emote Wheel
+
+```lua
+MBT.EmoteWheel = {
+    Key       = 'H',   -- Hold to open
+    Slots     = 8,     -- Max 8 slots
+    RemoveKey = 'X',   -- Remove emote from current slot while wheel is open
+}
+```
+
+### Theme
+
+```lua
+MBT.Theme = {
+    Accent     = '00fb8a',   -- Primary accent color
+    Background = '0C0E14',
+    Card       = '141720',
+    Text       = 'E8E8EE',
+    SubText    = '6B7280',
+    Border     = '1A1D26',
+}
+```
+
+### Job Permissions
+
+```lua
+MBT.JobPermissions = {
+    Enabled   = true,
+    Framework = 'auto',    -- 'auto', 'esx', 'qbox', 'qbcore', 'standalone'
+    Emotes = {
+        ['handcuff'] = { 'police', 'sheriff' },
+        ['mechanic'] = { 'mechanic', 'bennys' },
+    },
+}
+```
+
+### Categories
+
+Toggle visibility or reorder categories in the menu:
+
+```lua
+MBT.Categories = {
+    { type = 'Emotes',       label = 'Emotes',      icon = 'smile',      visible = true },
+    { type = 'PropEmotes',   label = 'Props',        icon = 'package',    visible = true },
+    { type = 'Dances',       label = 'Dances',       icon = 'music',      visible = true },
+    { type = 'Shared',       label = 'Shared',       icon = 'users',      visible = true },
+    { type = 'Expressions',  label = 'Expressions',  icon = 'drama',      visible = true },
+    { type = 'Walks',        label = 'Walk Styles',  icon = 'footprints', visible = true },
+    { type = 'AnimalEmotes', label = 'Animals',      icon = 'dog',        visible = true },
+    { type = 'Emojis',       label = 'Emojis',       icon = 'message-circle', visible = true },
+}
+```
+
+### Debug
+
+When `MBT.Debug = true`, detailed logs are printed in both server console and client F8 console (including the NUI frontend via `[MBT NUI]` prefix). Useful for troubleshooting emote loading and KVP storage.
+
+### Notifications
+
+The notification function in `config.lua` supports presets for **ox_lib**, **ESX**, **QBCore**, **QBox**, and native GTA notifications. Uncomment the preset that matches your server setup.
+
+---
+
+## Keybinds Reference
+
+| Key | Action |
+|---|---|
+| `F4` | Open / close emote menu |
+| `H` (hold) | Open emote wheel |
+| `Mouse Wheel` | Scroll wheel slots (while holding H) |
+| `X` | Remove emote from wheel slot (while holding H) |
+| `NUM1` — `NUM6` | Play quick-bound emote |
+| `Right Click` | Open quick bind / wheel slot drawer on a card |
+| `Arrow Keys` | Navigate emote list |
+| `Enter` | Play focused emote |
+| `ESC` | Close menu |
+
+---
+
+## FAQ
+
+**Q: Can I use this without rpemotes-reborn?**
+No. This resource is a UI replacement that depends on rpemotes-reborn for all animation logic and emote data.
+
+**Q: Does it work with ESX, QBox, and QBCore?**
+Yes. The job permission system auto-detects your framework (ESX → QBox → QBCore → standalone). You can also force a specific one in config.
+
+**Q: How do I add a new language?**
+Create a new file in `locales/` (e.g., `locales/jp.lua`), copy the structure from `en.lua`, translate the strings, and set `MBT.Language = 'jp'` in config.
+
+**Q: My emotes don't show up.**
+Make sure `rpemotes-reborn` is started and running before `mbt_emote_menu`. Check the F8 console for errors.
+
+**Q: The menu looks wrong on my ultrawide monitor.**
+The UI includes responsive breakpoints for all common resolutions including 2560x1080, 3440x1440, and 5120x1440. If you still experience issues, please open an issue with your resolution.
+
+---
+
+## Acknowledgments
+
+This project would not exist without [**rpemotes-reborn**](https://github.com/rpemotes/rpemotes-reborn) and the incredible work of its maintainers and contributors. rpemotes-reborn provides the entire animation engine, emote library, and shared emote logic that powers every feature in this menu. We are deeply grateful to the rpemotes-reborn team for building and maintaining such a solid foundation for the FiveM roleplay community.
+
+**mbt_emote_menu** is a third-party UI overlay and is not affiliated with or endorsed by the rpemotes-reborn project. This resource is published with respect for the original project's license and guidelines. If you are part of the rpemotes-reborn team and have any concerns, please reach out to us directly.
+
+---
+
+## Credits
+
+Developed by **Malibu Tech Team**.
+
+Special thanks to:
+
+- **rpemotes-reborn** — for the emote engine and animation library that makes this all possible
+- **The FiveM community** — for continuous feedback, testing, and inspiration
+
+---
+
+## License
+
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md).
+
+You are free to use and modify this software for **noncommercial purposes only** — personal use, hobby servers, research, and education. Any commercial use, redistribution for profit, or inclusion in paid products is prohibited without written permission from Malibu Tech Team.
+
+This resource depends on [rpemotes-reborn](https://github.com/rpemotes/rpemotes-reborn) which is licensed under GPL-3.0. **mbt_emote_menu** does not include or redistribute any rpemotes-reborn source code — it communicates with rpemotes-reborn at runtime through FiveM exports and events.
