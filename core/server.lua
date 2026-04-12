@@ -168,6 +168,21 @@ local function LoadAnimationList()
                 local prop2, prop2Bone, prop2Place
 
                 if type(emoteData) == 'table' then
+                    -- Skip adult emotes when disabled
+                    if not MBT.Features.AdultEmotes and emoteData.AdultAnimation then
+                        goto continue
+                    end
+
+                    -- Skip abusable emotes when disabled
+                    if not MBT.Features.AbusableEmotes then
+                        local isAbusable = emoteData.abusable
+                        if not isAbusable and emoteData.AnimationOptions then
+                            isAbusable = emoteData.AnimationOptions.abusable
+                        end
+                        if isAbusable then
+                            goto continue
+                        end
+                    end
                     label = emoteData[3] or emoteData.label or nil
                     if label then
                         label = label:gsub('<[^>]+>', '')
@@ -241,6 +256,7 @@ local function LoadAnimationList()
                     prop2Bone  = prop2Bone,
                     prop2Place = prop2Place,
                 }
+                ::continue::
             end
         end
     end

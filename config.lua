@@ -43,6 +43,9 @@ MBT.Features = {
     SharedPopup  = true, -- Show inline popup for shared emote invitations
     PreviewPed   = true, -- Show animated ped preview when hovering emotes
     EmoteWheel   = true, -- Hold-to-peek emote wheel (hold key + scroll to pick, release to play)
+
+    AdultEmotes    = false, -- Include 18+ emotes (AdultAnimation) in catalog. Set true to show them.
+    AbusableEmotes = false, -- Include abusable emotes (movement-exploit walks). Set true to show them.
 }
 
 -- Emote Wheel: hold-to-peek quick access (8 slots, no cursor needed)
