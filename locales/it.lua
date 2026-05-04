@@ -1,6 +1,7 @@
 RegisterLocale('it', {
     -- Menu
     ['cannot_open_menu']    = 'Non puoi aprire il menu emote adesso',
+    ['loading_emotes']      = 'Caricamento emote, attendi...',
     ['menu_title']          = 'Menu Emote',
     ['search_placeholder']  = 'Cerca emote...',
 
@@ -71,4 +72,75 @@ RegisterLocale('it', {
     -- Ecosystem
     ['eco_meta_clothes']    = 'MBT Meta Clothes',
     ['eco_wearable_props']  = 'MBT Wearable Props',
+
+    -- Buttons
+    ['btn_new']                    = 'Nuovo',
+    ['btn_create']                 = 'Crea',
+    ['btn_cancel']                 = 'Annulla',
+    ['btn_done']                   = 'Fatto',
+    ['btn_import']                 = 'Importa',
+    ['btn_reset']                  = 'Reset',
+    ['btn_play']                   = 'Play',
+    ['btn_stop']                   = 'Stop',
+
+    -- Tabs (extra)
+    ['tab_top']                    = 'Top',
+
+    -- Tooltips
+    ['tooltip_new_list']           = 'Nuova lista custom',
+    ['tooltip_stop_animation']     = 'Ferma animazione',
+    ['tooltip_sort_change']        = 'Cambia ordinamento',
+    ['tooltip_random_emote']       = 'Emote casuale',
+    ['tooltip_export_favorites']   = 'Esporta preferiti',
+    ['tooltip_import_favorites']   = 'Importa preferiti',
+    ['tooltip_preview_start']      = 'Anteprima (solo per te)',
+    ['tooltip_preview_stop']       = 'Ferma anteprima',
+    ['tooltip_add_to_playlist']    = 'Aggiungi alla playlist',
+    ['tooltip_add_to_list']        = 'Aggiungi a lista custom',
+    ['tooltip_list_delete']        = 'Click destro per eliminare',
+    ['tooltip_wheel_remove']       = 'Click per rimuovere',
+    ['tooltip_wheel_occupied']     = 'Occupato: %s',
+    ['tooltip_wheel_assign']       = 'Assegna allo slot %s',
+    ['tooltip_remove_from_list']   = 'Rimuovi da "%s"',
+    ['tooltip_add_to_named_list']  = 'Aggiungi a "%s"',
+
+    -- Modals
+    ['modal_new_list']             = 'Nuova lista',
+    ['modal_list_name_placeholder']= 'Nome lista...',
+    ['modal_export_title']         = 'Esporta preferiti',
+    ['modal_import_title']         = 'Importa preferiti',
+    ['modal_export_desc']          = 'Copia il JSON qui sotto per salvare i tuoi preferiti.',
+    ['modal_import_desc']          = 'Incolla un JSON di preferiti esportato in precedenza.',
+    ['modal_import_placeholder']   = 'Incolla qui il JSON...',
+
+    -- Banners
+    ['banner_walk_active']         = 'Walk attivo:',
+    ['banner_expression_active']   = 'Expression attiva:',
+    ['banner_default']             = 'Default',
+
+    -- Drawers
+    ['drawer_textures']            = 'Texture',
+    ['drawer_custom_lists']        = 'Liste custom',
+    ['drawer_quick_bind']          = 'Quick Bind',
+    ['drawer_wheel_slot']          = 'Slot Wheel',
+
+    -- Misc labels
+    ['playlist_label']             = 'Playlist',
+    ['partner_title']              = 'Partner Finder',
+
+    -- Badges
+    ['badge_active']               = 'Attivo',
+    ['badge_sync']                 = 'Sync',
+    ['badge_prop']                 = 'Prop',
+    ['badge_dance']                = 'Dance',
+
+    -- Toasts
+    ['toast_walk_reset']           = 'Walk style resettato',
+    ['toast_expression_reset']     = 'Expression resettata',
+    ['toast_emote_restricted']     = 'Emote riservato a job specifici',
+    ['toast_wheel_assigned']       = 'Assegnato %s a NUM%s',
+    ['toast_list_created']         = 'Lista "%s" creata',
+    ['toast_list_deleted']         = 'Lista "%s" eliminata',
+    ['toast_list_already_in']      = 'Gia in "%s"',
+    ['toast_list_added']           = 'Aggiunto a "%s"',
 })

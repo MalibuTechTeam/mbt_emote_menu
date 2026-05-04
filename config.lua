@@ -62,15 +62,20 @@ MBT.EmoteWheel = {
 -- Customize category display order and visibility in the menu.
 -- 'icon' values are Lucide icon names (used by the React UI).
 -- Set 'visible' to false to hide a category from the menu.
+--
+-- NOTE: 'type' values must match rpemotes-reborn's internal categories — the
+-- catalog comes from rpemotes, so a 'type' that does not exist there will
+-- produce an empty pill. 'localeKey' (optional) is the translation key in
+-- locales/*.lua; falls back to 'label' if missing/unresolved.
 MBT.Categories = {
-    { type = 'Emotes',       label = 'Emotes',      icon = 'smile',          visible = true },
-    { type = 'PropEmotes',   label = 'Props',       icon = 'package',        visible = true },
-    { type = 'Dances',       label = 'Dances',      icon = 'music',          visible = true },
-    { type = 'Shared',       label = 'Shared',      icon = 'users',          visible = true },
-    { type = 'Expressions',  label = 'Expressions', icon = 'drama',          visible = true },
-    { type = 'Walks',        label = 'Walk Styles', icon = 'footprints',     visible = true },
-    { type = 'AnimalEmotes', label = 'Animals',     icon = 'dog',            visible = true },
-    { type = 'Emojis',       label = 'Emojis',      icon = 'message-circle', visible = true },
+    { type = 'Emotes',       label = 'Emotes',      icon = 'smile',          visible = true, localeKey = 'cat_emotes' },
+    { type = 'PropEmotes',   label = 'Props',       icon = 'package',        visible = true, localeKey = 'cat_props' },
+    { type = 'Dances',       label = 'Dances',      icon = 'music',          visible = true, localeKey = 'cat_dances' },
+    { type = 'Shared',       label = 'Shared',      icon = 'users',          visible = true, localeKey = 'cat_shared' },
+    { type = 'Expressions',  label = 'Expressions', icon = 'drama',          visible = true, localeKey = 'cat_expressions' },
+    { type = 'Walks',        label = 'Walk Styles', icon = 'footprints',     visible = true, localeKey = 'cat_walks' },
+    { type = 'AnimalEmotes', label = 'Animals',     icon = 'dog',            visible = true, localeKey = 'cat_animals' },
+    { type = 'Emojis',       label = 'Emojis',      icon = 'message-circle', visible = true, localeKey = 'cat_emojis' },
 }
 
 -------------------------------------------------------------------------------

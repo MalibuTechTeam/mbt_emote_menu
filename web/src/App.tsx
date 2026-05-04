@@ -69,6 +69,7 @@ function App() {
             setConfig(data.config)
             setDebugEnabled(!!data.config.debug)
           }
+          if (data.locale) setLocale(data.locale)
           mbtDebug('Catalog preloaded', { count: data.catalog?.length })
           break
 

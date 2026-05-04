@@ -1,6 +1,7 @@
 import { memo, useRef, useCallback, useState, useEffect } from 'react'
 import { ChevronDown, Check, Eye, EyeOff, FolderPlus, ListPlus, Lock } from 'lucide-react'
 import { EmoteSilhouette } from './EmoteSilhouette'
+import { useLocale, tFormat } from '../utils/locale'
 import type { CustomList, Emote } from '../utils/types'
 
 interface EmoteCardProps {
@@ -28,6 +29,7 @@ interface EmoteCardProps {
 }
 
 export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused, isPreviewActive, cardIndex, hidePropBadge, hideSharedBadge, isActiveStyle, playCount, locked, onPlay, onToggleFavorite, onPreviewToggle, onAddToPlaylist, onBindClick, wheelSlots, wheelMaxSlots, onSetWheelSlot, customLists, onAddToList, onRemoveFromList }: EmoteCardProps) {
+  const t = useLocale()
   const cardRef = useRef<HTMLDivElement>(null)
   const [drawerType, setDrawerType] = useState<'none' | 'variants' | 'actions' | 'lists'>('none')
   const rafRef = useRef<number>(0)
@@ -117,9 +119,9 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
   }
 
   const categoryBadge = () => {
-    if (emote.isShared && !hideSharedBadge) return <span className="mbt-badge mbt-badge--shared">Sync</span>
-    if (emote.hasProp && !hidePropBadge) return <span className="mbt-badge mbt-badge--prop">Prop</span>
-    if (emote.category === 'Dances') return <span className="mbt-badge mbt-badge--dance">Dance</span>
+    if (emote.isShared && !hideSharedBadge) return <span className="mbt-badge mbt-badge--shared">{t.badge_sync || 'Sync'}</span>
+    if (emote.hasProp && !hidePropBadge) return <span className="mbt-badge mbt-badge--prop">{t.badge_prop || 'Prop'}</span>
+    if (emote.category === 'Dances') return <span className="mbt-badge mbt-badge--dance">{t.badge_dance || 'Dance'}</span>
     return null
   }
 
@@ -144,7 +146,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
       </div>
       <div className="mbt-card__actions">
         {isActiveStyle && (
-          <span className="mbt-badge mbt-badge--active">Active</span>
+          <span className="mbt-badge mbt-badge--active">{t.badge_active || 'Active'}</span>
         )}
         {playCount != null && playCount > 0 && (
           <span className="mbt-badge mbt-badge--plays">{playCount}x</span>
@@ -160,7 +162,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
           <button
             className={`mbt-card__preview ${isPreviewActive ? 'mbt-card__preview--active' : ''}`}
             onClick={(e) => { e.stopPropagation(); onPreviewToggle(emote) }}
-            title={isPreviewActive ? 'Stop preview' : 'Preview animazione (solo tu)'}
+            title={isPreviewActive ? (t.tooltip_preview_stop || 'Stop preview') : (t.tooltip_preview_start || 'Preview animation (only you)')}
           >
             {isPreviewActive ? <EyeOff size={14} /> : <Eye size={14} />}
           </button>
@@ -169,7 +171,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
           <button
             className="mbt-card__playlist-add"
             onClick={(e) => { e.stopPropagation(); onAddToPlaylist(emote) }}
-            title="Aggiungi alla playlist"
+            title={t.tooltip_add_to_playlist || 'Add to playlist'}
           >
             <ListPlus size={14} />
           </button>
@@ -178,7 +180,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
           <button
             className={`mbt-card__list-add ${drawerType === 'lists' ? 'mbt-card__list-add--active' : ''}`}
             onClick={handleListToggle}
-            title="Add to custom list"
+            title={t.tooltip_add_to_list || 'Add to custom list'}
           >
             <FolderPlus size={14} />
           </button>
@@ -200,7 +202,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
         <div className="mbt-card__variants">
           {drawerType === 'variants' && emote.variations && (
             <div className="mbt-drawer__section">
-              <div className="mbt-drawer__title">Textures</div>
+              <div className="mbt-drawer__title">{t.drawer_textures || 'Textures'}</div>
               <div className="mbt-drawer__grid">
                 {emote.variations.map((v) => (
                   <button key={v.value} className="mbt-card__variant-btn" onClick={(e) => handleVariantPick(v.value, e)}>
@@ -212,7 +214,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
           )}
           {drawerType === 'lists' && customLists && (
             <div className="mbt-drawer__section">
-              <div className="mbt-drawer__title">Custom Lists</div>
+              <div className="mbt-drawer__title">{t.drawer_custom_lists || 'Custom Lists'}</div>
               <div className="mbt-drawer__list-grid">
                 {customLists.map((list) => {
                   const alreadyIn = list.emotes.includes(emote.name)
@@ -221,7 +223,9 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
                       key={list.id}
                       className={`mbt-drawer__list-btn ${alreadyIn ? 'mbt-drawer__list-btn--active' : ''}`}
                       onClick={(e) => handleListPick(list.id, e)}
-                      title={alreadyIn ? `Remove from "${list.name}"` : `Add to "${list.name}"`}
+                      title={alreadyIn
+                        ? tFormat(t.tooltip_remove_from_list || 'Remove from "%s"', list.name)
+                        : tFormat(t.tooltip_add_to_named_list || 'Add to "%s"', list.name)}
                       style={{ '--list-color': `#${list.color}` } as React.CSSProperties}
                     >
                       <span className="mbt-drawer__list-dot" />
@@ -236,7 +240,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
           {drawerType === 'actions' && (
             <>
               <div className="mbt-drawer__section">
-                <div className="mbt-drawer__title">Quick Bind</div>
+                <div className="mbt-drawer__title">{t.drawer_quick_bind || 'Quick Bind'}</div>
                 <div className="mbt-drawer__bind-grid">
                   {[1, 2, 3, 4, 5, 6].map((num) => (
                     <button key={num} className="mbt-drawer__bind-btn" onClick={(e) => handleBindPick(num - 1, e)}>
@@ -247,7 +251,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
               </div>
               {onSetWheelSlot && wheelMaxSlots && wheelMaxSlots > 0 && (
                 <div className="mbt-drawer__section mbt-drawer__section--wheel">
-                  <div className="mbt-drawer__title">Wheel Slot</div>
+                  <div className="mbt-drawer__title">{t.drawer_wheel_slot || 'Wheel Slot'}</div>
                   <div className="mbt-drawer__wheel-grid">
                     {Array.from({ length: wheelMaxSlots }, (_, i) => i + 1).map((slot) => {
                       const assigned = wheelSlots?.[String(slot)]
@@ -257,7 +261,11 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
                           key={slot}
                           className={`mbt-drawer__wheel-btn ${isThisEmote ? 'mbt-drawer__wheel-btn--active' : ''} ${assigned && !isThisEmote ? 'mbt-drawer__wheel-btn--occupied' : ''}`}
                           onClick={(e) => handleWheelSlotPick(slot, e)}
-                          title={assigned ? (isThisEmote ? 'Click to remove' : `Occupied: ${assigned.label}`) : `Assign to slot ${slot}`}
+                          title={assigned
+                            ? (isThisEmote
+                              ? (t.tooltip_wheel_remove || 'Click to remove')
+                              : tFormat(t.tooltip_wheel_occupied || 'Occupied: %s', assigned.label))
+                            : tFormat(t.tooltip_wheel_assign || 'Assign to slot %s', slot)}
                         >
                           <span className="mbt-drawer__wheel-num">{slot}</span>
                           {assigned && !isThisEmote && <span className="mbt-drawer__wheel-dot" />}

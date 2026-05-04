@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { PlaylistPanel } from "./PlaylistPanel";
 import { PartnerFinder } from "./PartnerFinder";
-import { useLocale } from "../utils/locale";
+import { useLocale, tFormat } from "../utils/locale";
 import { useNui } from "../utils/useNui";
 import { SearchBar } from "./SearchBar";
 import { EmoteCard } from "./EmoteCard";
@@ -585,7 +585,7 @@ export function EmoteMenu({
   const handleEmotePlay = useCallback(
     (emote: Emote, element?: HTMLElement) => {
       if (isEmoteLocked(emote.name)) {
-        onToast("Emote restricted to specific jobs", "error", 2000);
+        onToast(t.toast_emote_restricted || 'Emote restricted to specific jobs', "error", 2000);
         return;
       }
       if (emote.isShared && emote.category === "Shared" && element) {
@@ -728,7 +728,7 @@ export function EmoteMenu({
       await useNui("setKeybind", { slot: String(slot + 1), emote });
       const updated = { ...keybinds, [String(slot + 1)]: emote };
       onKeybindsUpdate(updated);
-      onToast(`Assigned ${emote.label} to NUM${slot + 1}`, "success");
+      onToast(tFormat(t.toast_wheel_assigned || 'Assigned %s to NUM%s', emote.label, slot + 1), "success");
 
       // 5. Cleanup particle after anim
       setTimeout(() => {
@@ -752,7 +752,7 @@ export function EmoteMenu({
     setShowListCreator(false);
     setActiveListId(list.id);
     setActiveTab("list");
-    onToast(`List "${list.name}" created`, "success");
+    onToast(tFormat(t.toast_list_created || 'List "%s" created', list.name), "success");
   }, [newListName, newListColor, customLists, onSaveCustomLists, onToast]);
 
   const handleDeleteList = useCallback(
@@ -763,7 +763,7 @@ export function EmoteMenu({
         setActiveListId(null);
         setActiveTab("all");
       }
-      if (list) onToast(`List "${list.name}" deleted`, "warning");
+      if (list) onToast(tFormat(t.toast_list_deleted || 'List "%s" deleted', list.name), "warning");
     },
     [customLists, activeListId, onSaveCustomLists, onToast],
   );
@@ -772,7 +772,7 @@ export function EmoteMenu({
     (listId: string, emoteName: string) => {
       const list = customLists.find((l) => l.id === listId);
       if (list && list.emotes.includes(emoteName)) {
-        onToast(`Already in "${list.name}"`, "warning", 1500);
+        onToast(tFormat(t.toast_list_already_in || 'Already in "%s"', list.name), "warning", 1500);
         return;
       }
       onSaveCustomLists(
@@ -781,7 +781,7 @@ export function EmoteMenu({
           return { ...l, emotes: [...l.emotes, emoteName] };
         }),
       );
-      if (list) onToast(`Added to "${list.name}"`, "success", 1500);
+      if (list) onToast(tFormat(t.toast_list_added || 'Added to "%s"', list.name), "success", 1500);
     },
     [customLists, onSaveCustomLists, onToast],
   );
@@ -880,7 +880,7 @@ export function EmoteMenu({
             onClick={() => handleTabChange("top")}
           >
             <Trophy size={13} />
-            <span>Top</span>
+            <span>{t.tab_top || 'Top'}</span>
             <span className="mbt-tab__count">
               {Object.keys(playCounts).length}
             </span>
@@ -900,7 +900,7 @@ export function EmoteMenu({
                 e.preventDefault();
                 handleDeleteList(list.id);
               }}
-              title="Right-click to delete"
+              title={t.tooltip_list_delete || 'Right-click to delete'}
             >
               <span
                 className="mbt-tab__dot"
@@ -962,14 +962,14 @@ export function EmoteMenu({
             <button
               className="mbt-sort-btn"
               onClick={() => setSortOrder(nextSort[sortOrder])}
-              title="Cambia ordinamento"
+              title={t.tooltip_sort_change || 'Change sort order'}
             >
               {sortLabels[sortOrder]}
             </button>
             <button
               className="mbt-random-btn"
               onClick={handleRandomPlay}
-              title="Emote casuale"
+              title={t.tooltip_random_emote || 'Random emote'}
               disabled={filteredEmotes.length === 0}
             >
               <Shuffle size={11} />
@@ -979,14 +979,14 @@ export function EmoteMenu({
                 <button
                   className="mbt-fav-io-btn"
                   onClick={handleExportOpen}
-                  title="Esporta preferiti"
+                  title={t.tooltip_export_favorites || 'Export favorites'}
                 >
                   ↑
                 </button>
                 <button
                   className="mbt-fav-io-btn"
                   onClick={handleImportOpen}
-                  title="Importa preferiti"
+                  title={t.tooltip_import_favorites || 'Import favorites'}
                 >
                   ↓
                 </button>
@@ -999,38 +999,38 @@ export function EmoteMenu({
         {/* Active Walk/Expression Banner */}
         {activeCategory === "Walks" && (
           <div className="mbt-active-banner">
-            <span className="mbt-active-banner__label">Walk attivo:</span>
+            <span className="mbt-active-banner__label">{t.banner_walk_active || 'Active walk:'}</span>
             <span className="mbt-active-banner__value">
-              {activeWalk || "Default"}
+              {activeWalk || (t.banner_default || 'Default')}
             </span>
             {activeWalk && (
               <button
                 className="mbt-active-banner__reset"
                 onClick={() => {
                   onResetWalkstyle();
-                  onToast("Walk style reset", "info");
+                  onToast(t.toast_walk_reset || 'Walk style reset', "info");
                 }}
               >
-                Reset
+                {t.btn_reset || 'Reset'}
               </button>
             )}
           </div>
         )}
         {activeCategory === "Expressions" && (
           <div className="mbt-active-banner">
-            <span className="mbt-active-banner__label">Expression attiva:</span>
+            <span className="mbt-active-banner__label">{t.banner_expression_active || 'Active expression:'}</span>
             <span className="mbt-active-banner__value">
-              {activeExpression || "Default"}
+              {activeExpression || (t.banner_default || 'Default')}
             </span>
             {activeExpression && (
               <button
                 className="mbt-active-banner__reset"
                 onClick={() => {
                   onResetExpression();
-                  onToast("Expression reset", "info");
+                  onToast(t.toast_expression_reset || 'Expression reset', "info");
                 }}
               >
-                Reset
+                {t.btn_reset || 'Reset'}
               </button>
             )}
           </div>
@@ -1190,13 +1190,13 @@ export function EmoteMenu({
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mbt-modal__header">
-                <span className="mbt-modal__title">New List</span>
+                <span className="mbt-modal__title">{t.modal_new_list || 'New List'}</span>
               </div>
               <div className="mbt-list-creator">
                 <input
                   className="mbt-list-creator__input"
                   type="text"
-                  placeholder="List name..."
+                  placeholder={t.modal_list_name_placeholder || 'List name...'}
                   value={newListName}
                   onChange={(e) => setNewListName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
@@ -1226,7 +1226,7 @@ export function EmoteMenu({
                   onClick={handleCreateList}
                   disabled={!newListName.trim()}
                 >
-                  Create
+                  {t.btn_create || 'Create'}
                 </button>
               </div>
             </div>
@@ -1252,8 +1252,8 @@ export function EmoteMenu({
               <div className="mbt-modal__header">
                 <span className="mbt-modal__title">
                   {importExportMode === "export"
-                    ? "↑ Esporta Preferiti"
-                    : "↓ Importa Preferiti"}
+                    ? `↑ ${t.modal_export_title || 'Export Favorites'}`
+                    : `↓ ${t.modal_import_title || 'Import Favorites'}`}
                 </span>
                 <button
                   className="mbt-header__close"
@@ -1264,8 +1264,8 @@ export function EmoteMenu({
               </div>
               <p className="mbt-modal__desc">
                 {importExportMode === "export"
-                  ? "Copia il JSON qui sotto per salvare i tuoi preferiti."
-                  : "Incolla un JSON di preferiti esportato in precedenza."}
+                  ? (t.modal_export_desc || 'Copy the JSON below to save your favorites.')
+                  : (t.modal_import_desc || 'Paste a previously exported favorites JSON.')}
               </p>
               <textarea
                 className="mbt-modal__textarea"
@@ -1276,7 +1276,9 @@ export function EmoteMenu({
                 }}
                 readOnly={importExportMode === "export"}
                 placeholder={
-                  importExportMode === "import" ? "Incolla qui il JSON..." : ""
+                  importExportMode === "import"
+                    ? (t.modal_import_placeholder || 'Paste JSON here...')
+                    : ""
                 }
                 spellCheck={false}
                 onClick={(e) =>
@@ -1292,21 +1294,21 @@ export function EmoteMenu({
                   className="mbt-modal__btn mbt-modal__btn--cancel"
                   onClick={() => setImportExportMode("hidden")}
                 >
-                  Annulla
+                  {t.btn_cancel || 'Cancel'}
                 </button>
                 {importExportMode === "import" ? (
                   <button
                     className="mbt-modal__btn mbt-modal__btn--confirm"
                     onClick={handleImportConfirm}
                   >
-                    Importa
+                    {t.btn_import || 'Import'}
                   </button>
                 ) : (
                   <button
                     className="mbt-modal__btn mbt-modal__btn--confirm"
                     onClick={() => setImportExportMode("hidden")}
                   >
-                    Fatto
+                    {t.btn_done || 'Done'}
                   </button>
                 )}
               </div>

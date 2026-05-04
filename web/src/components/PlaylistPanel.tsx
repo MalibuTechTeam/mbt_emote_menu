@@ -30,7 +30,7 @@ export const PlaylistPanel = memo(function PlaylistPanel({
       <div className="mbt-playlist">
         <div className="mbt-playlist__header">
           <ListMusic size={12} />
-          <span>Playlist</span>
+          <span>{t.playlist_label || 'Playlist'}</span>
         </div>
         <div className="mbt-playlist__empty">{t.playlist_empty || 'Drag or use + to add'}</div>
       </div>
@@ -54,7 +54,7 @@ export const PlaylistPanel = memo(function PlaylistPanel({
           <button
             className={`mbt-playlist__btn ${playing ? 'mbt-playlist__btn--stop' : 'mbt-playlist__btn--play'}`}
             onClick={handlePlay}
-            title={playing ? 'Stop' : 'Play'}
+            title={playing ? (t.btn_stop || 'Stop') : (t.btn_play || 'Play')}
           >
             {playing ? <Square size={11} /> : <Play size={11} />}
           </button>

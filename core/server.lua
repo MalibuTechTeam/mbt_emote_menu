@@ -314,6 +314,7 @@ RegisterNetEvent('mbt_emote_menu:requestEmoteCatalog', function()
     local src = source
     if not src or src <= 0 then return end
     if throttled(lastCatalogRequest, src) then return end
+    if #EmoteData == 0 then return end
     TriggerClientEvent('mbt_emote_menu:receiveEmoteCatalog', src, EmoteData, rpemotesResource)
 end)
 

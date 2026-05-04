@@ -33,14 +33,22 @@ export function SearchBar({ value, onChange, resultCount, totalCount, onCancel, 
       </div>
       
       <div className="mbt-search__actions">
-        <button className="mbt-search__btn mbt-search__btn--add" onClick={onAddList} title="Nuova lista custom">
+        <button
+          className="mbt-search__btn mbt-search__btn--add"
+          onClick={onAddList}
+          title={t.tooltip_new_list || 'New custom list'}
+        >
           <PlusSquare size={13} strokeWidth={2.5} />
-          <span>New</span>
+          <span>{t.btn_new || 'New'}</span>
         </button>
 
-        <button className="mbt-search__btn mbt-search__btn--stop" onClick={onCancel} title="Ferma animazione">
+        <button
+          className="mbt-search__btn mbt-search__btn--stop"
+          onClick={onCancel}
+          title={t.tooltip_stop_animation || 'Stop animation'}
+        >
           <Square size={12} fill="currentColor" />
-          <span>Stop</span>
+          <span>{t.btn_stop || 'Stop'}</span>
         </button>
       </div>
     </div>

@@ -12,8 +12,8 @@ function Utils.MbtResourceNameCheck(expectedName)
     local actual = GetCurrentResourceName()
     if actual == expectedName then return true end
 
-    print(('^1[%s] ERROR: This resource must be named "%s"!^0'):format(actual, expectedName))
-    print(('^1[%s] Current name: "%s" — please rename the folder and restart.^0'):format(actual, actual))
+    print(('^1[MalibuTech] ERROR: This resource must be named "%s"!^0'):format(expectedName))
+    print(('^1[MalibuTech] Current folder name: "%s" — please rename it and restart.^0'):format(actual))
     return false
 end
 
@@ -27,7 +27,7 @@ function Utils.MbtVersionCheck(repository)
     end
 
     if not currentVersion then
-        print(('^3[%s] Unable to determine current version for update check^0'):format(resource))
+        print(('^3[MalibuTech] Unable to determine current version for %s^0'):format(resource))
         return
     end
 
@@ -50,9 +50,9 @@ function Utils.MbtVersionCheck(repository)
 
                     if current ~= latest then
                         if current < latest then
-                            print(('^3[%s] An update is available! (current: %s → latest: %s)^0'):format(resource,
-                                currentVersion, latestVersion))
-                            print(('^3[%s] %s^0'):format(resource, response.html_url))
+                            print(('^3[MalibuTech] Update available for %s (current: %s, latest: %s)^0'):format(
+                                resource, currentVersion, latestVersion))
+                            print(('^5[MalibuTech] Download the latest release: %s^0'):format(response.html_url))
                         end
                         break
                     end

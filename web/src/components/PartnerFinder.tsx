@@ -53,7 +53,7 @@ export const PartnerFinder = memo(function PartnerFinder({
     <div className="mbt-partner" style={{ top: `${top}px` }}>
       <div className="mbt-partner__header">
         <Users size={12} />
-        <span className="mbt-partner__title">Partner Finder</span>
+        <span className="mbt-partner__title">{t.partner_title || 'Partner Finder'}</span>
         <span className="mbt-partner__emote">{emoteName}</span>
         <button className="mbt-partner__close" onClick={onClose}>
           <X size={12} />
