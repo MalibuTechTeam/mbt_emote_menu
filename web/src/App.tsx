@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { EmoteMenu } from './components/EmoteMenu'
 import { EmoteWheel } from './components/EmoteWheel'
+import { PlacementOverlay } from './components/PlacementOverlay'
 import { Toast, useToasts } from './components/Toast'
 import { LocaleProvider, type LocaleStrings } from './utils/locale'
 import { useNui } from './utils/useNui'
@@ -33,6 +34,7 @@ function App() {
   const [savedMenuState, setSavedMenuState] = useState<{
     search: string; tab: string; category: string | null; filter: string; sort: string; scrollTop: number
   } | null>(null)
+  const [placementActive, setPlacementActive] = useState(false)
   const { toasts, addToast, dismissToast } = useToasts()
 
   // Listen for NUI messages from client.lua
@@ -77,6 +79,14 @@ function App() {
           // CloseOnPlay or external close — hide without resetting state
           mbtDebug('Menu closed (CloseOnPlay/external)')
           setVisible(false)
+          break
+
+        case 'placementStarted':
+          setPlacementActive(true)
+          break
+
+        case 'placementEnded':
+          setPlacementActive(false)
           break
 
         case 'sharedEmoteRequest':
@@ -233,23 +243,31 @@ function App() {
     setSavedMenuState(null) // ESC → reset state on next open
   }, [])
 
-  // Wheel is independent from menu — render it even when menu is closed
+  // Wheel & placement overlay are independent from the menu — render them
+  // even when the menu is closed.
   if (!visible && !wheelVisible) {
-    return toasts.length > 0 ? <Toast toasts={toasts} onDismiss={dismissToast} /> : null
+    if (!placementActive && toasts.length === 0) return null
+    return (
+      <LocaleProvider strings={locale}>
+        <PlacementOverlay visible={placementActive} layout={config?.layout} />
+        {toasts.length > 0 && <Toast toasts={toasts} onDismiss={dismissToast} />}
+      </LocaleProvider>
+    )
   }
 
   // If only wheel is visible (menu closed)
   if (!visible && wheelVisible) {
     return (
-      <>
+      <LocaleProvider strings={locale}>
         <EmoteWheel
           visible={wheelVisible}
           slots={wheelSlots}
           activeIndex={wheelIndex}
           maxSlots={wheelMaxSlots}
         />
+        <PlacementOverlay visible={placementActive} layout={config?.layout} />
         <Toast toasts={toasts} onDismiss={dismissToast} />
-      </>
+      </LocaleProvider>
     )
   }
 
@@ -298,6 +316,7 @@ function App() {
         onClose={handleManualClose}
         onPlayClose={() => setVisible(false)}
       />
+      <PlacementOverlay visible={placementActive} />
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </LocaleProvider>
   )

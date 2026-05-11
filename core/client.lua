@@ -12,6 +12,7 @@ local playerJob = nil
 local jobPermissions = {}
 local activeWalkStyle = nil
 local activeExpression = nil
+local placementAvailable = false -- set by DetectPlacementSupport once rpemotes is known
 local RequestEmoteCatalog
 
 Core = Core or {}
@@ -83,6 +84,10 @@ local LOCALE_KEYS = {
     'tooltip_add_to_playlist', 'tooltip_add_to_list', 'tooltip_list_delete',
     'tooltip_wheel_remove', 'tooltip_wheel_occupied', 'tooltip_wheel_assign',
     'tooltip_remove_from_list', 'tooltip_add_to_named_list',
+    'tooltip_place_in_world',
+    -- Placement overlay
+    'placement_title', 'placement_position', 'placement_rotate', 'placement_height',
+    'placement_confirm', 'placement_cancel',
     -- Modals
     'modal_new_list', 'modal_list_name_placeholder',
     'modal_export_title', 'modal_import_title',
@@ -132,6 +137,12 @@ local function BuildLocalizedCategories()
 end
 
 local function BuildMenuConfig()
+    -- Shallow-copy MBT.Features so we can override EmotePlacement based on runtime
+    -- export detection without mutating the user's config.
+    local features = {}
+    for k, v in pairs(MBT.Features or {}) do features[k] = v end
+    features.EmotePlacement = (MBT.Features.EmotePlacement ~= false) and placementAvailable
+
     return {
         layout        = MBT.Menu.Layout or 'default',
         position      = MBT.Menu.Position,
@@ -140,7 +151,7 @@ local function BuildMenuConfig()
         debug         = MBT.Debug or false,
         theme         = MBT.Theme,
         categories    = BuildLocalizedCategories(),
-        features      = MBT.Features,
+        features      = features,
         ecosystem     = ecosystemStatus,
     }
 end
@@ -250,6 +261,35 @@ RegisterNUICallback('cancelEmote', function(_, cb)
     if rpemotesResource then
         Utils.SafeExportCall(rpemotesExportName, 'EmoteCancel')
     end
+    cb({ ok = true })
+end)
+
+-- "Place in world" — hands off to rpemotes-reborn's placement flow
+-- (preview ped + WASD positioning). Requires rpemotes >= the version
+-- that exposes StartNewPlacement as an export.
+RegisterNUICallback('placeEmote', function(data, cb)
+    if not rpemotesResource then
+        cb({ ok = false, error = 'rpemotes not detected' })
+        return
+    end
+    if not placementAvailable then
+        cb({ ok = false, error = 'placement export not available' })
+        return
+    end
+
+    local emoteName = SanitizeName(data.name)
+    if not emoteName or emoteName == '' then
+        cb({ ok = false, error = 'invalid input' })
+        return
+    end
+
+    -- Close our menu first so rpemotes can take NUI focus for the placement HUD.
+    -- suppressHelpText skips the default GTA help text — we draw our own NUI overlay.
+    Core.CloseMenu()
+    Utils.SafeExportCall(rpemotesExportName, 'StartNewPlacement', emoteName, {
+        suppressHelpText = true,
+    })
+
     cb({ ok = true })
 end)
 
@@ -479,6 +519,35 @@ CreateThread(function()
 end)
 
 -------------------------------------------------------------------------------
+-- [ PLACEMENT STATE WATCHER ]
+-- Polls rpemotes' GetPlacementState() and emits NUI events when it transitions
+-- in/out of an active state. The React side renders the placement overlay
+-- (controls hint) while the player is positioning the preview ped.
+-------------------------------------------------------------------------------
+
+CreateThread(function()
+    local lastActive = false
+    while true do
+        if placementAvailable then
+            local state = Utils.SafeExport(rpemotesExportName, 'GetPlacementState')
+            local active = (state ~= nil and state ~= 'None')
+
+            if active and not lastActive then
+                SendNUIMessage({ action = 'placementStarted' })
+                lastActive = true
+            elseif not active and lastActive then
+                SendNUIMessage({ action = 'placementEnded' })
+                lastActive = false
+            end
+
+            Wait(active and 100 or 500)
+        else
+            Wait(2000)
+        end
+    end
+end)
+
+-------------------------------------------------------------------------------
 -- [ INITIALIZATION ] --
 -------------------------------------------------------------------------------
 
@@ -502,6 +571,18 @@ RegisterNetEvent('mbt_emote_menu:receiveEmoteCatalog', function(catalog, resourc
     end
 
     Core._rpemotesExportName = rpemotesExportName
+
+    -- Detect whether rpemotes-reborn exposes the placement exports added in
+    -- the upstream PR. Read-only probe via GetPlacementState.
+    if MBT.Features.EmotePlacement ~= false then
+        local _, ok = Utils.SafeExport(rpemotesExportName, 'GetPlacementState')
+        placementAvailable = ok
+        if ok then
+            Utils.MbtDebugger('Placement export detected — "Place in world" available')
+        else
+            print('^3[mbt_emote_menu] rpemotes-reborn placement export not found — update rpemotes for "Place in world"^0')
+        end
+    end
 
     SendNUIMessage({
         action  = 'preloadCatalog',

@@ -1,8 +1,12 @@
 import { memo, useRef, useCallback, useState, useEffect } from 'react'
-import { ChevronDown, Check, Eye, EyeOff, FolderPlus, ListPlus, Lock } from 'lucide-react'
+import { ChevronDown, Check, Eye, EyeOff, FolderPlus, ListPlus, Lock, MapPin } from 'lucide-react'
 import { EmoteSilhouette } from './EmoteSilhouette'
 import { useLocale, tFormat } from '../utils/locale'
 import type { CustomList, Emote } from '../utils/types'
+
+// Categories where "Place in world" makes sense. Walks/Expressions are continuous
+// states; Shared requires nearby players; Emojis are chat-style.
+const PLACEABLE_CATEGORIES = new Set(['Emotes', 'PropEmotes', 'Dances', 'AnimalEmotes'])
 
 interface EmoteCardProps {
   emote: Emote
@@ -15,10 +19,12 @@ interface EmoteCardProps {
   isActiveStyle?: boolean
   playCount?: number
   locked?: boolean
+  placementEnabled?: boolean
   onPlay: (emote: Emote) => void
   onToggleFavorite: (emote: Emote) => void
   onPreviewToggle?: (emote: Emote) => void
   onAddToPlaylist?: (emote: Emote) => void
+  onPlace?: (emote: Emote) => void
   onBindClick?: (emote: Emote, slot: number, element: HTMLElement) => void
   wheelSlots?: Record<string, Emote>
   wheelMaxSlots?: number
@@ -28,7 +34,7 @@ interface EmoteCardProps {
   onRemoveFromList?: (listId: string, emoteName: string) => void
 }
 
-export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused, isPreviewActive, cardIndex, hidePropBadge, hideSharedBadge, isActiveStyle, playCount, locked, onPlay, onToggleFavorite, onPreviewToggle, onAddToPlaylist, onBindClick, wheelSlots, wheelMaxSlots, onSetWheelSlot, customLists, onAddToList, onRemoveFromList }: EmoteCardProps) {
+export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused, isPreviewActive, cardIndex, hidePropBadge, hideSharedBadge, isActiveStyle, playCount, locked, placementEnabled, onPlay, onToggleFavorite, onPreviewToggle, onAddToPlaylist, onPlace, onBindClick, wheelSlots, wheelMaxSlots, onSetWheelSlot, customLists, onAddToList, onRemoveFromList }: EmoteCardProps) {
   const t = useLocale()
   const cardRef = useRef<HTMLDivElement>(null)
   const [drawerType, setDrawerType] = useState<'none' | 'variants' | 'actions' | 'lists'>('none')
@@ -165,6 +171,15 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
             title={isPreviewActive ? (t.tooltip_preview_stop || 'Stop preview') : (t.tooltip_preview_start || 'Preview animation (only you)')}
           >
             {isPreviewActive ? <EyeOff size={14} /> : <Eye size={14} />}
+          </button>
+        )}
+        {placementEnabled && onPlace && PLACEABLE_CATEGORIES.has(emote.category) && !locked && (
+          <button
+            className="mbt-card__place"
+            onClick={(e) => { e.stopPropagation(); onPlace(emote) }}
+            title={t.tooltip_place_in_world || 'Place in world'}
+          >
+            <MapPin size={14} />
           </button>
         )}
         {onAddToPlaylist && (

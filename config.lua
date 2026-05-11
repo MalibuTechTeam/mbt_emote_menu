@@ -44,6 +44,12 @@ MBT.Features = {
     PreviewPed   = true, -- Show animated ped preview when hovering emotes
     EmoteWheel   = true, -- Hold-to-peek emote wheel (hold key + scroll to pick, release to play)
 
+    -- "Place in world" button on emote cards. Triggers rpemotes-reborn's placement
+    -- flow (preview ped + WASD positioning) for the selected emote. Auto-detects
+    -- the export at boot — silently disabled if rpemotes-reborn is older than the
+    -- version that exposes StartNewPlacement / GetPlacementState.
+    EmotePlacement = true,
+
     AdultEmotes    = false, -- Include 18+ emotes (AdultAnimation) in catalog. Set true to show them.
     AbusableEmotes = false, -- Include abusable emotes (movement-exploit walks). Set true to show them.
 }

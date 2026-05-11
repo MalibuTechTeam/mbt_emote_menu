@@ -103,6 +103,15 @@ RegisterLocale('de', {
     ['tooltip_wheel_assign']       = 'Zu Slot %s zuweisen',
     ['tooltip_remove_from_list']   = 'Aus "%s" entfernen',
     ['tooltip_add_to_named_list']  = 'Zu "%s" hinzufuegen',
+    ['tooltip_place_in_world']     = 'In der Welt platzieren',
+
+    -- Placement overlay
+    ['placement_title']            = 'Emote platzieren',
+    ['placement_position']         = 'Position',
+    ['placement_rotate']           = 'Drehen',
+    ['placement_height']           = 'Hoehe',
+    ['placement_confirm']          = 'Bestaetigen',
+    ['placement_cancel']           = 'Abbrechen',
 
     -- Modals
     ['modal_new_list']             = 'Neue Liste',

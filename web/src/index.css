@@ -1608,6 +1608,32 @@ body {
   background: var(--mbt-accent-soft);
 }
 
+/* ── Place in world button ── */
+.mbt-card__place {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 4px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--mbt-subtext);
+  cursor: pointer;
+  opacity: 0;
+  transition: all var(--mbt-transition);
+  line-height: 1;
+}
+
+.mbt-card:hover .mbt-card__place {
+  opacity: 1;
+}
+
+.mbt-card__place:hover {
+  color: var(--mbt-accent);
+  border-color: var(--mbt-accent);
+  background: var(--mbt-accent-soft);
+}
+
 /* ── Add to Custom List button ── */
 .mbt-card__list-add {
   display: inline-flex;
@@ -2208,7 +2234,8 @@ body {
 .mbt-card--locked .mbt-card__fav,
 .mbt-card--locked .mbt-card__preview,
 .mbt-card--locked .mbt-card__playlist-add,
-.mbt-card--locked .mbt-card__list-add {
+.mbt-card--locked .mbt-card__list-add,
+.mbt-card--locked .mbt-card__place {
   display: none;
 }
 
@@ -3075,4 +3102,131 @@ body {
     transform: translate(-50%, -50%) scale(0.3) rotate(-15deg);
     opacity: 0;
   }
+}
+
+/* ── Placement Overlay ──────────────────────────────────────
+ * Shown while rpemotes-reborn placement is active. Sits at bottom-center
+ * with backdrop blur, accent green highlights. Replaces the GTA help text
+ * suppressed via { suppressHelpText = true } on the rpemotes side.
+ */
+.mbt-placement {
+  position: fixed;
+  top: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 22px;
+  color: var(--mbt-text);
+  font-family: inherit;
+  pointer-events: none;
+  animation: mbt-placement-in 180ms ease-out;
+}
+
+/* Default layout — match .mbt-menu radial gradient and card chrome. */
+.mbt-placement.layout-default {
+  background: radial-gradient(
+    circle at center center,
+    rgba(15, 30, 55, 0.8) 0%,
+    rgba(5, 12, 25, 0.95) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--mbt-radius);
+  box-shadow: var(--mbt-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* Cinematic layout — match the dark blue-black gradient of
+   .layout-cinematic.mbt-overlay--right / mbt-overlay--left. */
+.mbt-placement.layout-cinematic {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 4, 10, 0.98) 0%,
+    rgba(5, 11, 20, 0.92) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes mbt-placement-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.mbt-placement__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mbt-accent);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--mbt-border);
+}
+
+.mbt-placement__keys {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.mbt-placement__hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mbt-placement__keys-group {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.mbt-placement__kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--mbt-text);
+  background: var(--mbt-card);
+  border: 1px solid var(--mbt-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.mbt-placement__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--mbt-subtext);
+}
+
+.mbt-placement__hint--confirm .mbt-placement__kbd {
+  color: var(--mbt-accent);
+  border-color: var(--mbt-accent);
+  box-shadow: 0 0 8px rgba(0, 251, 138, 0.2);
+}
+
+.mbt-placement__hint--confirm .mbt-placement__label {
+  color: var(--mbt-accent);
+}
+
+.mbt-placement__hint--cancel .mbt-placement__kbd {
+  color: #ff5a6e;
+  border-color: rgba(255, 90, 110, 0.4);
+}
+
+.mbt-placement__hint--cancel .mbt-placement__label {
+  color: #ff8a98;
 }

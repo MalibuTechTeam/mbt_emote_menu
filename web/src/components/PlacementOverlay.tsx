@@ -1,0 +1,58 @@
+import { MapPin, Move, RotateCw, ArrowUpDown, CornerDownLeft, X } from 'lucide-react'
+import { useLocale } from '../utils/locale'
+
+interface PlacementOverlayProps {
+  visible: boolean
+  layout?: 'default' | 'cinematic'
+}
+
+// Top-bar overlay shown while rpemotes-reborn placement is active.
+// Mirrors the control hints rpemotes would otherwise draw via SimpleHelpText —
+// suppressed on the rpemotes side via { suppressHelpText: true } so we can
+// render them with our own branding instead.
+//
+// The layout prop drives a variant class so the background matches the active
+// menu style (radial gradient for default, glass-card for cinematic).
+export function PlacementOverlay({ visible, layout = 'default' }: PlacementOverlayProps) {
+  const t = useLocale()
+  if (!visible) return null
+
+  return (
+    <div className={`mbt-placement layout-${layout}`}>
+      <div className="mbt-placement__title">
+        <MapPin size={14} />
+        <span>{t.placement_title || 'Place emote'}</span>
+      </div>
+      <div className="mbt-placement__keys">
+        <KeyHint keys={['W', 'A', 'S', 'D']} label={t.placement_position || 'Position'} icon={<Move size={12} />} />
+        <KeyHint keys={['Q', 'E']} label={t.placement_rotate || 'Rotate'} icon={<RotateCw size={12} />} />
+        <KeyHint keys={['R', 'G']} label={t.placement_height || 'Height'} icon={<ArrowUpDown size={12} />} />
+        <KeyHint keys={['Enter']} label={t.placement_confirm || 'Confirm'} icon={<CornerDownLeft size={12} />} variant="confirm" />
+        <KeyHint keys={['Backspace']} label={t.placement_cancel || 'Cancel'} icon={<X size={12} />} variant="cancel" />
+      </div>
+    </div>
+  )
+}
+
+interface KeyHintProps {
+  keys: string[]
+  label: string
+  icon: React.ReactNode
+  variant?: 'confirm' | 'cancel'
+}
+
+function KeyHint({ keys, label, icon, variant }: KeyHintProps) {
+  return (
+    <div className={`mbt-placement__hint ${variant ? `mbt-placement__hint--${variant}` : ''}`}>
+      <div className="mbt-placement__keys-group">
+        {keys.map((k, i) => (
+          <kbd key={i} className="mbt-placement__kbd">{k}</kbd>
+        ))}
+      </div>
+      <div className="mbt-placement__label">
+        {icon}
+        <span>{label}</span>
+      </div>
+    </div>
+  )
+}

@@ -43,6 +43,10 @@ export interface FeaturesConfig {
   QuickBind: boolean
   SharedPopup: boolean
   PreviewPed: boolean
+  EmoteWheel?: boolean
+  EmotePlacement?: boolean
+  AdultEmotes?: boolean
+  AbusableEmotes?: boolean
 }
 
 export interface EcosystemStatus {

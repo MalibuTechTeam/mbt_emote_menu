@@ -308,6 +308,14 @@ export function EmoteMenu({
     [previewingEmote],
   );
 
+  // ── Place in world ──
+  // Hands off to rpemotes-reborn's placement flow (preview ped + WASD positioning).
+  // The Lua callback closes our menu before triggering placement so rpemotes can
+  // own NUI focus while the player positions the ped.
+  const handlePlace = useCallback(async (emote: Emote) => {
+    await useNui("placeEmote", { name: emote.name });
+  }, []);
+
   const { theme, categories, features } = config;
   const visibleCategories = categories.filter((c) => c.visible);
   const favCount = Object.keys(favorites).length;
@@ -1115,6 +1123,8 @@ export function EmoteMenu({
                         features.PreviewPed ? handlePreviewToggle : undefined
                       }
                       onAddToPlaylist={onAddToPlaylist}
+                      placementEnabled={!!features.EmotePlacement}
+                      onPlace={handlePlace}
                       onBindClick={handleBindClick}
                       wheelSlots={wheelSlots}
                       wheelMaxSlots={wheelMaxSlots}
