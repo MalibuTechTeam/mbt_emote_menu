@@ -1,12 +1,30 @@
 Core = Core or {}
 
-local previewPed = nil
-local previewCam = nil
+local previewPed   = nil
+local previewCam   = nil
 local previewProps = {}
+local timecycleActive = false
+local playerHidden = false
+local CAM_DISTANCE       = 2.4
+local CAM_HEIGHT_OFFSET  = 0.35
+local CAM_LOOK_OFFSET_Z  = 0.30
+local CAM_FOV_START      = 55.0
+local CAM_FOV_END         = 40.0
+local CAM_FOV_ANIM_MS    = 600
+local TRANSITION_IN_MS   = 700
+local TRANSITION_OUT_MS  = 500
+local TIMECYCLE_NAME     = 'cinema'
+local TIMECYCLE_STRENGTH = 0.40
 
 -------------------------------------------------------------------------------
 -- [ INTERNAL HELPERS ] --
 -------------------------------------------------------------------------------
+
+local function easeInOutCubic(t)
+    if t < 0.5 then return 4 * t * t * t end
+    local v = -2 * t + 2
+    return 1 - (v * v * v) / 2
+end
 
 local function ClearPreviewProps()
     for _, propEnt in ipairs(previewProps) do
@@ -62,15 +80,63 @@ local function PlayAnimOnPed(ped, data)
 end
 
 local function CreatePreviewCamera(ped)
+    local pedPos  = GetEntityCoords(ped)
+    local heading = GetEntityHeading(ped)
+    local rad     = math.rad(heading)
+    local camX    = pedPos.x - math.sin(rad) * CAM_DISTANCE
+    local camY    = pedPos.y + math.cos(rad) * CAM_DISTANCE
+    local camZ    = pedPos.z + CAM_HEIGHT_OFFSET
+
     previewCam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
-    local camPos = GetOffsetFromEntityInWorldCoords(ped, 0.0, 2.5, 0.35)
-    SetCamCoord(previewCam, camPos.x, camPos.y, camPos.z)
-    local pedPos = GetEntityCoords(ped)
-    PointCamAtCoord(previewCam, pedPos.x, pedPos.y, pedPos.z + 0.3)
-    SetCamFov(previewCam, 40.0)
-    SetCamActiveWithInterp(previewCam, GetRenderingCam(), 700, 1, 1)
+    SetCamCoord(previewCam, camX, camY, camZ)
+    PointCamAtCoord(previewCam, pedPos.x, pedPos.y, pedPos.z + CAM_LOOK_OFFSET_Z)
+    SetCamFov(previewCam, CAM_FOV_START)
+    SetCamActiveWithInterp(previewCam, GetRenderingCam(), TRANSITION_IN_MS, 1, 1)
     SetCamActive(previewCam, true)
-    RenderScriptCams(true, true, 700, true, true)
+    RenderScriptCams(true, true, TRANSITION_IN_MS, true, true)
+
+    CreateThread(function()
+        local started = GetGameTimer()
+        local camRef  = previewCam
+        while previewCam == camRef and DoesCamExist(camRef) do
+            local elapsed = GetGameTimer() - started
+            if elapsed >= CAM_FOV_ANIM_MS then
+                SetCamFov(camRef, CAM_FOV_END)
+                return
+            end
+            local t = elapsed / CAM_FOV_ANIM_MS
+            local eased = easeInOutCubic(t)
+            SetCamFov(camRef, CAM_FOV_START + (CAM_FOV_END - CAM_FOV_START) * eased)
+            Wait(0)
+        end
+    end)
+end
+
+local function DestroyPreviewCamera()
+    if not previewCam then return end
+    local camRef = previewCam
+    previewCam = nil
+    RenderScriptCams(false, true, TRANSITION_OUT_MS, true, true)
+    CreateThread(function()
+        Wait(TRANSITION_OUT_MS + 50)
+        if DoesCamExist(camRef) then
+            SetCamActive(camRef, false)
+            DestroyCam(camRef, false)
+        end
+    end)
+end
+
+local function ApplyTimecycle()
+    if timecycleActive then return end
+    SetTimecycleModifier(TIMECYCLE_NAME)
+    SetTimecycleModifierStrength(TIMECYCLE_STRENGTH)
+    timecycleActive = true
+end
+
+local function ClearTimecycle()
+    if not timecycleActive then return end
+    ClearTimecycleModifier()
+    timecycleActive = false
 end
 
 -------------------------------------------------------------------------------
@@ -78,28 +144,18 @@ end
 -------------------------------------------------------------------------------
 
 function Core.StopPreview()
-    if previewCam then
-        RenderScriptCams(false, true, 600, true, true)
-        local camRef = previewCam
-        previewCam = nil
-        CreateThread(function()
-            Wait(650)
-            SetCamActive(camRef, false)
-            DestroyCam(camRef, false)
-        end)
-    end
-
+    SendNUIMessage({ action = 'previewVignette', visible = false })
+    DestroyPreviewCamera()
+    ClearTimecycle()
     ClearPreviewProps()
 
     if previewPed and DoesEntityExist(previewPed) then
         DeleteEntity(previewPed)
-        previewPed = nil
     end
+    previewPed = nil
 
-    local pp = PlayerPedId()
-    if pp and pp ~= 0 then
-        SetEntityVisible(pp, true, false)
-        SetEntityAlpha(pp, 255, false)
+    if playerHidden then
+        playerHidden = false
     end
 end
 
@@ -112,7 +168,6 @@ RegisterNUICallback('startPreview', function(data, cb)
         cb({}); return
     end
 
-    -- If preview ped already exists and is valid, reuse it (just swap anim + props)
     if previewPed and DoesEntityExist(previewPed) then
         ClearPreviewProps()
         AttachPreviewProp(previewPed, data.prop, data.propBone, data.propPlace)
@@ -127,24 +182,30 @@ RegisterNUICallback('startPreview', function(data, cb)
     local coords    = GetEntityCoords(playerPed)
     local heading   = GetEntityHeading(playerPed)
 
-    previewPed      = ClonePed(playerPed, false, false, false)
-
+    previewPed = ClonePed(playerPed, false, false, false)
     SetEntityCoordsNoOffset(previewPed, coords.x, coords.y, coords.z, false, false, false)
     SetEntityHeading(previewPed, heading)
     SetEntityCollision(previewPed, false, false)
     SetEntityInvincible(previewPed, true)
     FreezeEntityPosition(previewPed, true)
     SetBlockingOfNonTemporaryEvents(previewPed, true)
-
-    SetEntityVisible(playerPed, false, false)
-    SetEntityAlpha(playerPed, 0, false)
+    NetworkSetEntityInvisibleToNetwork(previewPed, true)
+    SetEntityLocallyVisible(previewPed)
+    playerHidden = true
+    CreateThread(function()
+        while playerHidden do
+            SetEntityLocallyInvisible(PlayerPedId())
+            Wait(0)
+        end
+    end)
 
     PlayAnimOnPed(previewPed, data)
-
     AttachPreviewProp(previewPed, data.prop, data.propBone, data.propPlace)
     AttachPreviewProp(previewPed, data.prop2, data.prop2Bone, data.prop2Place)
 
     CreatePreviewCamera(previewPed)
+    ApplyTimecycle()
+    SendNUIMessage({ action = 'previewVignette', visible = true })
 
     Utils.MbtDebugger('Preview started: ' .. tostring(data.name))
     cb({ ok = true })

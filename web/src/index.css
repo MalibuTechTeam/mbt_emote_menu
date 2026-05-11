@@ -3104,6 +3104,83 @@ body {
   }
 }
 
+/* ── Preview Vignette ──────────────────────────────────────
+ * Fullscreen radial vignette overlay shown while the emote preview camera is
+ * active. Pointer-events disabled — purely visual. Edges darken to focus on
+ * the previewed ped sitting at the sky stage.
+ */
+.mbt-preview-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 8500;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 35%,
+    rgba(0, 0, 0, 0.55) 90%,
+    rgba(0, 0, 0, 0.85) 100%
+  );
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+
+.mbt-preview-vignette--on {
+  opacity: 1;
+}
+
+/* ── Preview Mode badge ─────────────────────────────────────
+ * Top-center pill that signals the player they are inside the preview
+ * scripted camera (camera will return to gameplay on stopPreview).
+ */
+.mbt-preview-badge {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translate(-50%, -16px);
+  z-index: 9100;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--mbt-accent);
+  box-shadow: 0 0 18px rgba(0, 251, 138, 0.18),
+              0 6px 20px rgba(0, 0, 0, 0.45);
+  color: var(--mbt-accent);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 400ms ease, transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Default layout — match .mbt-menu radial gradient palette. */
+.mbt-preview-badge.layout-default {
+  background: radial-gradient(
+    circle at center center,
+    rgba(15, 30, 55, 0.85) 0%,
+    rgba(5, 12, 25, 0.95) 100%
+  );
+}
+
+/* Cinematic layout — match the dark blue-black gradient of the overlay. */
+.mbt-preview-badge.layout-cinematic {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 4, 10, 0.98) 0%,
+    rgba(5, 11, 20, 0.92) 100%
+  );
+}
+
+.mbt-preview-badge--on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 /* ── Placement Overlay ──────────────────────────────────────
  * Shown while rpemotes-reborn placement is active. Sits at bottom-center
  * with backdrop blur, accent green highlights. Replaces the GTA help text

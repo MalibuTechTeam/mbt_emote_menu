@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { EmoteMenu } from './components/EmoteMenu'
 import { EmoteWheel } from './components/EmoteWheel'
 import { PlacementOverlay } from './components/PlacementOverlay'
+import { PreviewVignette } from './components/PreviewVignette'
 import { Toast, useToasts } from './components/Toast'
 import { LocaleProvider, type LocaleStrings } from './utils/locale'
 import { useNui } from './utils/useNui'
@@ -35,6 +36,7 @@ function App() {
     search: string; tab: string; category: string | null; filter: string; sort: string; scrollTop: number
   } | null>(null)
   const [placementActive, setPlacementActive] = useState(false)
+  const [previewVignette, setPreviewVignette] = useState(false)
   const { toasts, addToast, dismissToast } = useToasts()
 
   // Listen for NUI messages from client.lua
@@ -87,6 +89,10 @@ function App() {
 
         case 'placementEnded':
           setPlacementActive(false)
+          break
+
+        case 'previewVignette':
+          setPreviewVignette(!!data.visible)
           break
 
         case 'sharedEmoteRequest':
@@ -243,12 +249,14 @@ function App() {
     setSavedMenuState(null) // ESC → reset state on next open
   }, [])
 
-  // Wheel & placement overlay are independent from the menu — render them
-  // even when the menu is closed.
+  // Wheel, placement overlay and preview vignette are independent from the
+  // menu — render them even when the menu is closed (so the vignette can
+  // gracefully fade out on close, for example).
   if (!visible && !wheelVisible) {
-    if (!placementActive && toasts.length === 0) return null
+    if (!placementActive && !previewVignette && toasts.length === 0) return null
     return (
       <LocaleProvider strings={locale}>
+        <PreviewVignette visible={previewVignette} layout={config?.layout} />
         <PlacementOverlay visible={placementActive} layout={config?.layout} />
         {toasts.length > 0 && <Toast toasts={toasts} onDismiss={dismissToast} />}
       </LocaleProvider>
@@ -265,6 +273,7 @@ function App() {
           activeIndex={wheelIndex}
           maxSlots={wheelMaxSlots}
         />
+        <PreviewVignette visible={previewVignette} layout={config?.layout} />
         <PlacementOverlay visible={placementActive} layout={config?.layout} />
         <Toast toasts={toasts} onDismiss={dismissToast} />
       </LocaleProvider>
@@ -316,7 +325,8 @@ function App() {
         onClose={handleManualClose}
         onPlayClose={() => setVisible(false)}
       />
-      <PlacementOverlay visible={placementActive} />
+      <PreviewVignette visible={previewVignette} layout={config?.layout} />
+      <PlacementOverlay visible={placementActive} layout={config?.layout} />
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </LocaleProvider>
   )

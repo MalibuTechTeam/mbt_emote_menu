@@ -88,6 +88,8 @@ local LOCALE_KEYS = {
     -- Placement overlay
     'placement_title', 'placement_position', 'placement_rotate', 'placement_height',
     'placement_confirm', 'placement_cancel',
+    -- Preview indicator
+    'preview_mode',
     -- Modals
     'modal_new_list', 'modal_list_name_placeholder',
     'modal_export_title', 'modal_import_title',

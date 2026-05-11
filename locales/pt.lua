@@ -113,6 +113,9 @@ RegisterLocale('pt', {
     ['placement_confirm']          = 'Confirmar',
     ['placement_cancel']           = 'Cancelar',
 
+    -- Preview mode indicator
+    ['preview_mode']               = 'Modo Previa',
+
     -- Modals
     ['modal_new_list']             = 'Nova lista',
     ['modal_list_name_placeholder']= 'Nome da lista...',
