@@ -109,6 +109,20 @@ MBT.Categories = {
     { type = 'Emojis',       label = 'Emojis',      icon = 'message-circle', visible = true, localeKey = 'cat_emojis' },
 }
 
+-- Banned emotes: list rpemotes-reborn emote names (case-insensitive) that
+-- should never appear in the menu nor be broadcast via Open Join.
+--
+-- Note: this only filters our menu and our OpenJoin broadcast. It does NOT
+-- block rpemotes' own `/e <name>` chat command — a player can still type the
+-- banned emote name directly. For full enforcement you'd also need to
+-- restrict the rpemotes ACE permission or block the command server-side.
+MBT.BannedEmotes = {
+    -- 'twerk',
+    -- 'wank',
+    -- 'finger',
+    -- 'fuckyou',
+}
+
 -------------------------------------------------------------------------------
 -- [ SECTION 5: THEME ] --
 -------------------------------------------------------------------------------

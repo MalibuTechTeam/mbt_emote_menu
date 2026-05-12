@@ -22,7 +22,16 @@ local function getCategorySet()
     return set
 end
 
+local function getBannedSet()
+    local set = {}
+    for _, name in ipairs(MBT.BannedEmotes or {}) do
+        if type(name) == 'string' then set[name:lower()] = true end
+    end
+    return set
+end
+
 local categorySet = getCategorySet()
+local bannedSet = getBannedSet()
 
 local function findPlayersInRange(originSrc, radius)
     local origin = GetEntityCoords(GetPlayerPed(originSrc))
@@ -48,6 +57,11 @@ RegisterNetEvent('mbt_emote_menu:server:announceOpenJoin', function(emoteName, e
 
     if type(emoteName) ~= 'string' or type(emoteCategory) ~= 'string' then return end
     if not categorySet[emoteCategory] then return end
+
+    -- Banned emote: don't propagate the invitation. The initiator can still
+    -- play it via rpemotes if they have the command, but their announce
+    -- never reaches anyone else.
+    if bannedSet[emoteName:lower()] then return end
 
     local cooldown = (MBT.OpenJoin and MBT.OpenJoin.AnnounceCooldownMs) or 5000
     local now = GetGameTimer()

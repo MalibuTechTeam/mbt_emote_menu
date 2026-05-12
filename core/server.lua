@@ -142,6 +142,13 @@ local function LoadAnimationList()
 
     local catalog = {}
 
+    -- Server-wide banned emote names (case-insensitive). Built once per
+    -- LoadAnimationList so the loop below stays a single hash lookup.
+    local bannedSet = {}
+    for _, name in ipairs(MBT.BannedEmotes or {}) do
+        if type(name) == 'string' then bannedSet[name:lower()] = true end
+    end
+
     local categoryMap = {
         Emotes       = 'Emotes',
         PropEmotes   = 'PropEmotes',
@@ -153,9 +160,17 @@ local function LoadAnimationList()
         Emojis       = 'Emojis',
     }
 
+    local bannedCount = 0
+
     for rpKey, category in pairs(categoryMap) do
         if RP[rpKey] then
             for emoteName, emoteData in pairs(RP[rpKey]) do
+                -- Drop banned emotes before any further processing.
+                if bannedSet[emoteName:lower()] then
+                    bannedCount = bannedCount + 1
+                    goto continue
+                end
+
                 local label = emoteName
                 local hasProp = false
                 local isShared = (category == 'Shared')
@@ -266,7 +281,11 @@ local function LoadAnimationList()
     end)
 
     EmoteData = catalog
-    Utils.MbtDebugger(string.format('Loaded %d emotes from %s', #catalog, rpemotesResource))
+    if bannedCount > 0 then
+        Utils.MbtDebugger(string.format('Loaded %d emotes from %s (filtered %d banned)', #catalog, rpemotesResource, bannedCount))
+    else
+        Utils.MbtDebugger(string.format('Loaded %d emotes from %s', #catalog, rpemotesResource))
+    end
     return true
 end
 
