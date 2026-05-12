@@ -50,6 +50,11 @@ MBT.Features = {
     -- version that exposes StartNewPlacement / GetPlacementState.
     EmotePlacement = true,
 
+    -- Group Sync "Open Join": when a player plays an emote, others in radius
+    -- see a small pill prompting them to press a key and join in. See the
+    -- MBT.OpenJoin block below for tuning.
+    OpenJoin = true,
+
     AdultEmotes    = false, -- Include 18+ emotes (AdultAnimation) in catalog. Set true to show them.
     AbusableEmotes = false, -- Include abusable emotes (movement-exploit walks). Set true to show them.
 }
@@ -59,6 +64,26 @@ MBT.EmoteWheel = {
     Key       = 'K', -- Hold this key to open the peek indicator
     Slots     = 8,   -- Number of wheel slots (max 8)
     RemoveKey = 'X', -- Press this key while wheel is open to remove emote from current slot
+}
+
+-- Open Join: anonymous proximity-based invitation. When a player plays an
+-- emote in one of the broadcast categories, every player within Radius sees
+-- a small pill ("Join: <emote> [F]") and can press the key to play the same
+-- emote. The player who started the emote is never named in the prompt.
+--
+-- Individual players can opt out with /mbt_openjoin off (persisted via KVP).
+MBT.OpenJoin = {
+    Radius   = 8.0,                         -- meters around the initiator
+    JoinKey  = 'Y',                         -- default keybind, rebindable via FiveM Settings → Key Bindings → search "Join nearby emote (MBT)"
+    Position = 'bottom-center',             -- 'top-left' | 'top-center' | 'top-right' | 'bottom-left' | 'bottom-center' | 'bottom-right'
+    BroadcastCategories = { 'Emotes', 'Dances', 'PropEmotes' },
+
+    -- Heartbeat: the initiator's client re-announces while the emote is still
+    -- playing so late-arriving players in radius can also join, and the pill
+    -- doesn't permanently disappear after the first fade-out.
+    HeartbeatMs        = 4000,              -- re-announce interval (set < PopupTimeoutMs for continuous visibility)
+    AnnounceCooldownMs = 3000,              -- server-side throttle per initiator (must be < HeartbeatMs)
+    PopupTimeoutMs     = 6000,              -- auto-dismiss after this many ms (set > HeartbeatMs for overlap)
 }
 
 -------------------------------------------------------------------------------

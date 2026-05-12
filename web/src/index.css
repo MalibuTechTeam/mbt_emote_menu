@@ -3181,6 +3181,100 @@ body {
   transform: translate(-50%, 0);
 }
 
+/* ── Open Join pill ──────────────────────────────────────────
+ * Anonymous proximity invitation. Shows "Join: <emote> [F]" when a nearby
+ * player starts a broadcastable emote. Position is configurable, style
+ * follows the active menu layout (default radial / cinematic blue-black).
+ */
+.mbt-openjoin {
+  position: fixed;
+  z-index: 9100;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px 7px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--mbt-accent);
+  box-shadow: 0 0 14px rgba(0, 251, 138, 0.12),
+              0 4px 14px rgba(0, 0, 0, 0.4);
+  color: var(--mbt-text);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms ease, transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Layout variants — match the menu's chrome. */
+.mbt-openjoin.layout-default {
+  background: radial-gradient(
+    circle at center center,
+    rgba(15, 30, 55, 0.88) 0%,
+    rgba(5, 12, 25, 0.95) 100%
+  );
+}
+.mbt-openjoin.layout-cinematic {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 4, 10, 0.96) 0%,
+    rgba(5, 11, 20, 0.92) 100%
+  );
+}
+
+/* Positions: enter slides from the closest edge for an unintrusive feel. */
+.mbt-openjoin.pos-top-left     { top: 24px; left: 24px;  transform: translate(0, -8px); }
+.mbt-openjoin.pos-top-center   { top: 24px; left: 50%;   transform: translate(-50%, -8px); }
+.mbt-openjoin.pos-top-right    { top: 24px; right: 24px; transform: translate(0, -8px); }
+.mbt-openjoin.pos-bottom-left  { bottom: 110px; left: 24px;  transform: translate(0, 8px); }
+.mbt-openjoin.pos-bottom-center{ bottom: 110px; left: 50%;   transform: translate(-50%, 8px); }
+.mbt-openjoin.pos-bottom-right { bottom: 110px; right: 24px; transform: translate(0, 8px); }
+
+.mbt-openjoin.mbt-openjoin--on {
+  opacity: 1;
+}
+.mbt-openjoin.pos-top-left.mbt-openjoin--on,
+.mbt-openjoin.pos-top-right.mbt-openjoin--on,
+.mbt-openjoin.pos-bottom-left.mbt-openjoin--on,
+.mbt-openjoin.pos-bottom-right.mbt-openjoin--on {
+  transform: translate(0, 0);
+}
+.mbt-openjoin.pos-top-center.mbt-openjoin--on,
+.mbt-openjoin.pos-bottom-center.mbt-openjoin--on {
+  transform: translate(-50%, 0);
+}
+
+.mbt-openjoin__icon {
+  color: var(--mbt-accent);
+  flex-shrink: 0;
+}
+
+.mbt-openjoin__text {
+  white-space: nowrap;
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mbt-openjoin__key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 2px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--mbt-accent);
+  background: rgba(0, 251, 138, 0.08);
+  border: 1px solid var(--mbt-accent);
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+}
+
 /* ── Placement Overlay ──────────────────────────────────────
  * Shown while rpemotes-reborn placement is active. Sits at bottom-center
  * with backdrop blur, accent green highlights. Replaces the GTA help text

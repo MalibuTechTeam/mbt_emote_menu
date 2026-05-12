@@ -26,6 +26,7 @@ server_scripts {
     'modules/bridges/esx.lua',
     'modules/bridges/qbcore.lua',
     'modules/bridges/qbox.lua',
+    'modules/openjoin/server.lua',
 }
 
 client_scripts {
@@ -34,6 +35,7 @@ client_scripts {
     'modules/preview/client.lua',
     'modules/playlist/client.lua',
     'modules/partner/client.lua',
+    'modules/openjoin/client.lua',
     'core/client.lua',
 }
 

@@ -116,6 +116,9 @@ RegisterLocale('it', {
     -- Preview mode indicator
     ['preview_mode']               = 'Modalita Anteprima',
 
+    -- Open Join pill
+    ['openjoin_label']             = 'Unisciti',
+
     -- Modals
     ['modal_new_list']             = 'Nuova lista',
     ['modal_list_name_placeholder']= 'Nome lista...',

@@ -3,6 +3,7 @@ import { EmoteMenu } from './components/EmoteMenu'
 import { EmoteWheel } from './components/EmoteWheel'
 import { PlacementOverlay } from './components/PlacementOverlay'
 import { PreviewVignette } from './components/PreviewVignette'
+import { OpenJoinPill, type OpenJoinPosition } from './components/OpenJoinPill'
 import { Toast, useToasts } from './components/Toast'
 import { LocaleProvider, type LocaleStrings } from './utils/locale'
 import { useNui } from './utils/useNui'
@@ -37,6 +38,12 @@ function App() {
   } | null>(null)
   const [placementActive, setPlacementActive] = useState(false)
   const [previewVignette, setPreviewVignette] = useState(false)
+  const [openJoin, setOpenJoin] = useState<{
+    visible: boolean
+    label: string
+    joinKey: string
+    position: OpenJoinPosition
+  }>({ visible: false, label: '', joinKey: 'F', position: 'bottom-center' })
   const { toasts, addToast, dismissToast } = useToasts()
 
   // Listen for NUI messages from client.lua
@@ -93,6 +100,19 @@ function App() {
 
         case 'previewVignette':
           setPreviewVignette(!!data.visible)
+          break
+
+        case 'openJoinShow':
+          setOpenJoin({
+            visible: true,
+            label: data.label || '',
+            joinKey: data.joinKey || 'F',
+            position: (data.position as OpenJoinPosition) || 'bottom-center',
+          })
+          break
+
+        case 'openJoinHide':
+          setOpenJoin((s) => ({ ...s, visible: false }))
           break
 
         case 'sharedEmoteRequest':
@@ -253,11 +273,18 @@ function App() {
   // menu — render them even when the menu is closed (so the vignette can
   // gracefully fade out on close, for example).
   if (!visible && !wheelVisible) {
-    if (!placementActive && !previewVignette && toasts.length === 0) return null
+    if (!placementActive && !previewVignette && !openJoin.visible && toasts.length === 0) return null
     return (
       <LocaleProvider strings={locale}>
         <PreviewVignette visible={previewVignette} layout={config?.layout} />
         <PlacementOverlay visible={placementActive} layout={config?.layout} />
+        <OpenJoinPill
+          visible={openJoin.visible}
+          emoteLabel={openJoin.label}
+          joinKey={openJoin.joinKey}
+          position={openJoin.position}
+          layout={config?.layout}
+        />
         {toasts.length > 0 && <Toast toasts={toasts} onDismiss={dismissToast} />}
       </LocaleProvider>
     )
@@ -275,6 +302,13 @@ function App() {
         />
         <PreviewVignette visible={previewVignette} layout={config?.layout} />
         <PlacementOverlay visible={placementActive} layout={config?.layout} />
+        <OpenJoinPill
+          visible={openJoin.visible}
+          emoteLabel={openJoin.label}
+          joinKey={openJoin.joinKey}
+          position={openJoin.position}
+          layout={config?.layout}
+        />
         <Toast toasts={toasts} onDismiss={dismissToast} />
       </LocaleProvider>
     )
@@ -327,6 +361,13 @@ function App() {
       />
       <PreviewVignette visible={previewVignette} layout={config?.layout} />
       <PlacementOverlay visible={placementActive} layout={config?.layout} />
+      <OpenJoinPill
+        visible={openJoin.visible}
+        emoteLabel={openJoin.label}
+        joinKey={openJoin.joinKey}
+        position={openJoin.position}
+        layout={config?.layout}
+      />
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </LocaleProvider>
   )

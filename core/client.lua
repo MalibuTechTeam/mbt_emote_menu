@@ -12,8 +12,9 @@ local playerJob = nil
 local jobPermissions = {}
 local activeWalkStyle = nil
 local activeExpression = nil
-local placementAvailable = false -- set by DetectPlacementSupport once rpemotes is known
+local placementAvailable = false
 local RequestEmoteCatalog
+local emoteLabelByName = {}
 
 Core = Core or {}
 
@@ -50,6 +51,10 @@ function Core.PlayEmoteRaw(emoteName, emoteType, variation)
     end
 
     Core.IncrementPlayCount(safeName)
+
+    if OpenJoin and OpenJoin.MaybeAnnounce then
+        OpenJoin.MaybeAnnounce(safeName, emoteLabelByName[safeName] or safeName, safeType)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -90,6 +95,8 @@ local LOCALE_KEYS = {
     'placement_confirm', 'placement_cancel',
     -- Preview indicator
     'preview_mode',
+    -- Open Join pill
+    'openjoin_label',
     -- Modals
     'modal_new_list', 'modal_list_name_placeholder',
     'modal_export_title', 'modal_import_title',
@@ -562,6 +569,10 @@ RegisterNetEvent('mbt_emote_menu:receiveEmoteCatalog', function(catalog, resourc
     emoteCatalog = catalog
     rpemotesResource = resourceName
     catalogSentToNui = false
+    emoteLabelByName = {}
+    for _, e in ipairs(emoteCatalog) do
+        if e.name then emoteLabelByName[e.name] = e.label or e.name end
+    end
 
     if rpemotesResource then
         local provided = GetResourceMetadata(rpemotesResource, 'provide', 0)

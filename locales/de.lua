@@ -116,6 +116,9 @@ RegisterLocale('de', {
     -- Preview mode indicator
     ['preview_mode']               = 'Vorschau-Modus',
 
+    -- Open Join pill
+    ['openjoin_label']             = 'Mitmachen',
+
     -- Modals
     ['modal_new_list']             = 'Neue Liste',
     ['modal_list_name_placeholder']= 'Listenname...',
