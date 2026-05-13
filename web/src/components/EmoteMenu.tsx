@@ -11,6 +11,7 @@ import {
 import { PlaylistPanel } from "./PlaylistPanel";
 import { PartnerFinder } from "./PartnerFinder";
 import { useLocale, tFormat } from "../utils/locale";
+import { NearbySection } from "./NearbySection";
 import { useNui } from "../utils/useNui";
 import { SearchBar } from "./SearchBar";
 import { EmoteCard } from "./EmoteCard";
@@ -36,6 +37,7 @@ interface EmoteMenuProps {
   recent: Emote[];
   keybinds: Record<string, Emote>;
   sharedRequest: SharedRequest | null;
+  nearbyCount: number;
   onPlay: (emote: Emote) => void;
   onCancel: () => void;
   onToggleFavorite: (emote: Emote) => void;
@@ -102,6 +104,7 @@ export function EmoteMenu({
   recent,
   keybinds,
   sharedRequest,
+  nearbyCount,
   onPlay,
   onCancel,
   onToggleFavorite,
@@ -924,6 +927,17 @@ export function EmoteMenu({
             </button>
           ))}
         </div>
+
+        {/* ── Nearby section (only while browsing All tab) ── */}
+        {activeTab === "all" && nearbyCount > 0 && (
+          <NearbySection
+            nearbyCount={nearbyCount}
+            catalog={catalog}
+            playCounts={playCounts}
+            onPlay={handleEmotePlay}
+            onShowMore={() => setActiveCategory("Shared")}
+          />
+        )}
 
         {/* ── Category Pills ── */}
         {activeTab === "all" && (

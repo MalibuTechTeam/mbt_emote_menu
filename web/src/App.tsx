@@ -4,6 +4,7 @@ import { EmoteWheel } from './components/EmoteWheel'
 import { PlacementOverlay } from './components/PlacementOverlay'
 import { PreviewVignette } from './components/PreviewVignette'
 import { OpenJoinPill, type OpenJoinPosition } from './components/OpenJoinPill'
+import { WhatsThatBubble } from './components/WhatsThatBubble'
 import { Toast, useToasts } from './components/Toast'
 import { LocaleProvider, type LocaleStrings } from './utils/locale'
 import { useNui } from './utils/useNui'
@@ -44,6 +45,14 @@ function App() {
     joinKey: string
     position: OpenJoinPosition
   }>({ visible: false, label: '', joinKey: 'F', position: 'bottom-center' })
+  const [whatsThat, setWhatsThat] = useState<{
+    visible: boolean
+    label: string
+    hotKey: string
+    x: number
+    y: number
+  }>({ visible: false, label: '', hotKey: 'G', x: 0.5, y: 0.5 })
+  const [nearbyCount, setNearbyCount] = useState(0)
   const { toasts, addToast, dismissToast } = useToasts()
 
   // Listen for NUI messages from client.lua
@@ -113,6 +122,32 @@ function App() {
 
         case 'openJoinHide':
           setOpenJoin((s) => ({ ...s, visible: false }))
+          break
+
+        case 'whatsthatShow':
+          setWhatsThat({
+            visible: true,
+            label: data.label || '',
+            hotKey: data.hotKey || 'G',
+            x: typeof data.x === 'number' ? data.x : 0.5,
+            y: typeof data.y === 'number' ? data.y : 0.5,
+          })
+          break
+
+        case 'whatsthatMove':
+          setWhatsThat((s) => ({
+            ...s,
+            x: typeof data.x === 'number' ? data.x : s.x,
+            y: typeof data.y === 'number' ? data.y : s.y,
+          }))
+          break
+
+        case 'whatsthatHide':
+          setWhatsThat((s) => ({ ...s, visible: false }))
+          break
+
+        case 'nearbyCountUpdate':
+          setNearbyCount(typeof data.count === 'number' ? data.count : 0)
           break
 
         case 'sharedEmoteRequest':
@@ -269,11 +304,17 @@ function App() {
     setSavedMenuState(null) // ESC → reset state on next open
   }, [])
 
+  // OpenJoin + WhatsThat both lead to "play the same emote nearby". When both
+  // are active and addressing the same emote, only show the OpenJoin pill so
+  // the player gets a single prompt rather than two competing affordances.
+  const whatsThatVisible =
+    whatsThat.visible && !(openJoin.visible && openJoin.label === whatsThat.label)
+
   // Wheel, placement overlay and preview vignette are independent from the
   // menu — render them even when the menu is closed (so the vignette can
   // gracefully fade out on close, for example).
   if (!visible && !wheelVisible) {
-    if (!placementActive && !previewVignette && !openJoin.visible && toasts.length === 0) return null
+    if (!placementActive && !previewVignette && !openJoin.visible && !whatsThatVisible && toasts.length === 0) return null
     return (
       <LocaleProvider strings={locale}>
         <PreviewVignette visible={previewVignette} layout={config?.layout} />
@@ -283,6 +324,14 @@ function App() {
           emoteLabel={openJoin.label}
           joinKey={openJoin.joinKey}
           position={openJoin.position}
+          layout={config?.layout}
+        />
+        <WhatsThatBubble
+          visible={whatsThatVisible}
+          label={whatsThat.label}
+          hotKey={whatsThat.hotKey}
+          x={whatsThat.x}
+          y={whatsThat.y}
           layout={config?.layout}
         />
         {toasts.length > 0 && <Toast toasts={toasts} onDismiss={dismissToast} />}
@@ -309,6 +358,14 @@ function App() {
           position={openJoin.position}
           layout={config?.layout}
         />
+        <WhatsThatBubble
+          visible={whatsThatVisible}
+          label={whatsThat.label}
+          hotKey={whatsThat.hotKey}
+          x={whatsThat.x}
+          y={whatsThat.y}
+          layout={config?.layout}
+        />
         <Toast toasts={toasts} onDismiss={dismissToast} />
       </LocaleProvider>
     )
@@ -329,6 +386,7 @@ function App() {
         recent={recent}
         keybinds={keybinds}
         sharedRequest={sharedRequest}
+        nearbyCount={nearbyCount}
         onPlay={handlePlayEmote}
         onCancel={handleCancelEmote}
         onToggleFavorite={handleToggleFavorite}
@@ -366,6 +424,14 @@ function App() {
         emoteLabel={openJoin.label}
         joinKey={openJoin.joinKey}
         position={openJoin.position}
+        layout={config?.layout}
+      />
+      <WhatsThatBubble
+        visible={whatsThatVisible}
+        label={whatsThat.label}
+        hotKey={whatsThat.hotKey}
+        x={whatsThat.x}
+        y={whatsThat.y}
         layout={config?.layout}
       />
       <Toast toasts={toasts} onDismiss={dismissToast} />

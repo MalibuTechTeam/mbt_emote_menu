@@ -3275,6 +3275,281 @@ body {
   letter-spacing: 0.04em;
 }
 
+/* ── What's That Emote? floating bubble ──────────────────────
+ * Tracks a nearby emoting player in world space. Position is the screen
+ * projection computed in Lua (left/top as % of viewport). The bubble is
+ * anchored bottom-center on its position (player's head), then translated
+ * up so it floats just above their head.
+ */
+.mbt-whatsthat {
+  position: fixed;
+  z-index: 9000;
+  transform: translate(-50%, calc(-100% - 12px));
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--mbt-accent);
+  box-shadow: 0 0 12px rgba(0, 251, 138, 0.14),
+              0 3px 10px rgba(0, 0, 0, 0.35);
+  color: var(--mbt-text);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  pointer-events: none;
+  opacity: 0;
+  /* left/top interpolate at ~60Hz so the bubble follows the player's head
+     fluidly even if NUI updates arrive a few ms apart. opacity fade is
+     longer for a soft appear/disappear. */
+  transition: left 60ms linear, top 60ms linear, opacity 200ms ease;
+  white-space: nowrap;
+}
+
+.mbt-whatsthat.layout-default {
+  background: radial-gradient(
+    circle at center center,
+    rgba(15, 30, 55, 0.92) 0%,
+    rgba(5, 12, 25, 0.96) 100%
+  );
+}
+.mbt-whatsthat.layout-cinematic {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 4, 10, 0.96) 0%,
+    rgba(5, 11, 20, 0.92) 100%
+  );
+}
+
+.mbt-whatsthat--on {
+  opacity: 1;
+}
+
+.mbt-whatsthat__icon {
+  color: var(--mbt-accent);
+  flex-shrink: 0;
+}
+
+.mbt-whatsthat__label {
+  color: var(--mbt-text);
+}
+
+.mbt-whatsthat__key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 16px;
+  padding: 0 4px;
+  margin-left: 2px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--mbt-accent);
+  background: rgba(0, 251, 138, 0.08);
+  border: 1px solid var(--mbt-accent);
+  border-radius: 3px;
+}
+
+.mbt-whatsthat__try {
+  color: var(--mbt-subtext);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ── Nearby Section ──────────────────────────────────────────
+ * Card-style ribbon above the category pills that surfaces shared/duet
+ * emotes whenever at least one other player is within proximity. Premium
+ * styling with strong accent border, glow, and elevated header.
+ * Driven by `nearbyCountUpdate` NUI events from modules/nearby/client.lua.
+ */
+.mbt-nearby {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 12px 10px;
+  padding: 11px 13px 12px;
+  border-radius: var(--mbt-radius);
+  border: 1px solid var(--mbt-accent);
+  background: linear-gradient(
+    180deg,
+    rgba(0, 251, 138, 0.12) 0%,
+    rgba(0, 251, 138, 0.04) 35%,
+    rgba(8, 18, 36, 0.55) 100%
+  );
+  box-shadow:
+    0 0 18px rgba(0, 251, 138, 0.18),
+    0 4px 14px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(0, 251, 138, 0.18);
+  animation: mbt-nearby-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+/* Subtle accent glow strip along the top edge — feels "alive". */
+.mbt-nearby::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 251, 138, 0.6) 50%,
+    transparent 100%
+  );
+}
+
+@keyframes mbt-nearby-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mbt-nearby__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.mbt-nearby__header-icon {
+  color: var(--mbt-accent);
+  filter: drop-shadow(0 0 6px rgba(0, 251, 138, 0.55));
+}
+
+.mbt-nearby__title {
+  color: var(--mbt-accent);
+  text-shadow: 0 0 8px rgba(0, 251, 138, 0.25);
+}
+
+.mbt-nearby__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--mbt-background);
+  background: var(--mbt-accent);
+  border-radius: 999px;
+  letter-spacing: 0;
+  box-shadow: 0 0 10px rgba(0, 251, 138, 0.45);
+}
+
+.mbt-nearby__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--mbt-subtext);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: none;
+  opacity: 0.85;
+}
+
+.mbt-nearby__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mbt-nearby__chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 251, 138, 0.18);
+  background: rgba(8, 18, 36, 0.55);
+  color: var(--mbt-text);
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--mbt-transition),
+              border-color var(--mbt-transition),
+              color var(--mbt-transition),
+              box-shadow var(--mbt-transition),
+              transform var(--mbt-transition);
+  /* Stagger fade-in driven by the React index — chips cascade in for a
+     more "alive" entry instead of all popping in at once. */
+  animation: mbt-chip-in 280ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 30ms + 80ms);
+}
+
+@keyframes mbt-chip-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mbt-nearby__chip:hover {
+  border-color: var(--mbt-accent);
+  background: var(--mbt-accent);
+  color: var(--mbt-background);
+  box-shadow: 0 0 12px rgba(0, 251, 138, 0.35);
+  transform: translateY(-1px);
+}
+
+.mbt-nearby__chip:active {
+  transform: translateY(0);
+  box-shadow: 0 0 6px rgba(0, 251, 138, 0.5);
+}
+
+/* "Featured" chip — the player's most-played shared emote leads the row.
+   Filled with accent so the eye lands on it immediately, suggesting "this
+   is the obvious one to try". */
+.mbt-nearby__chip--featured {
+  background: var(--mbt-accent);
+  border-color: var(--mbt-accent);
+  color: var(--mbt-background);
+  font-weight: 600;
+  box-shadow: 0 0 14px rgba(0, 251, 138, 0.38),
+              0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.mbt-nearby__chip--featured:hover {
+  background: #00e07d; /* darken slightly on hover so the affordance still reads */
+  transform: translateY(-1px);
+  box-shadow: 0 0 16px rgba(0, 251, 138, 0.5),
+              0 3px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* "+N more" overflow chip — subtle dashed style. Escape hatch to the full
+   Shared category in the main grid. */
+.mbt-nearby__more {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px dashed rgba(0, 251, 138, 0.4);
+  background: transparent;
+  color: var(--mbt-accent);
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--mbt-transition);
+  animation: mbt-chip-in 280ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 30ms + 80ms);
+}
+
+.mbt-nearby__more:hover {
+  border-style: solid;
+  background: rgba(0, 251, 138, 0.1);
+  transform: translateY(-1px);
+}
+
 /* ── Placement Overlay ──────────────────────────────────────
  * Shown while rpemotes-reborn placement is active. Sits at bottom-center
  * with backdrop blur, accent green highlights. Replaces the GTA help text

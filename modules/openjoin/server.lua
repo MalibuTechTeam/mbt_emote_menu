@@ -33,21 +33,32 @@ end
 local categorySet = getCategorySet()
 local bannedSet = getBannedSet()
 
-local function findPlayersInRange(originSrc, radius)
+local function findPlayersInRange(originSrc, radius, maxRecipients)
     local origin = GetEntityCoords(GetPlayerPed(originSrc))
-    local out = {}
+    local candidates = {}
     for _, playerId in ipairs(GetPlayers()) do
         local pid = tonumber(playerId)
         if pid and pid ~= originSrc then
             local ped = GetPlayerPed(pid)
             if ped and ped ~= 0 then
                 local coords = GetEntityCoords(ped)
-                if #(origin - coords) <= radius then
-                    out[#out + 1] = pid
+                local dist = #(origin - coords)
+                if dist <= radius then
+                    candidates[#candidates + 1] = { id = pid, dist = dist }
                 end
             end
         end
     end
+
+    -- Cap to the N closest in case a crowded zone (e.g. nightclub event) has
+    -- way more recipients than we want to spam at once.
+    if maxRecipients and maxRecipients > 0 and #candidates > maxRecipients then
+        table.sort(candidates, function(a, b) return a.dist < b.dist end)
+        for i = maxRecipients + 1, #candidates do candidates[i] = nil end
+    end
+
+    local out = {}
+    for _, c in ipairs(candidates) do out[#out + 1] = c.id end
     return out
 end
 
@@ -57,10 +68,6 @@ RegisterNetEvent('mbt_emote_menu:server:announceOpenJoin', function(emoteName, e
 
     if type(emoteName) ~= 'string' or type(emoteCategory) ~= 'string' then return end
     if not categorySet[emoteCategory] then return end
-
-    -- Banned emote: don't propagate the invitation. The initiator can still
-    -- play it via rpemotes if they have the command, but their announce
-    -- never reaches anyone else.
     if bannedSet[emoteName:lower()] then return end
 
     local cooldown = (MBT.OpenJoin and MBT.OpenJoin.AnnounceCooldownMs) or 5000
@@ -70,7 +77,8 @@ RegisterNetEvent('mbt_emote_menu:server:announceOpenJoin', function(emoteName, e
     lastAnnounce[src] = now
 
     local radius = (MBT.OpenJoin and MBT.OpenJoin.Radius) or 8.0
-    local targets = findPlayersInRange(src, radius)
+    local maxRecipients = MBT.OpenJoin and MBT.OpenJoin.MaxRecipients
+    local targets = findPlayersInRange(src, radius, maxRecipients)
     if #targets == 0 then return end
 
     local label = type(emoteLabel) == 'string' and emoteLabel:sub(1, 64) or emoteName
@@ -82,5 +90,10 @@ end)
 
 AddEventHandler('playerDropped', function()
     local src = source
-    if src then lastAnnounce[src] = nil end
+    if not src then return end
+    lastAnnounce[src] = nil
+    local ok, state = pcall(function() return Player(src).state end)
+    if ok and state then
+        state:set('mbtCurrentEmote', nil, true)
+    end
 end)

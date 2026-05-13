@@ -36,6 +36,8 @@ client_scripts {
     'modules/playlist/client.lua',
     'modules/partner/client.lua',
     'modules/openjoin/client.lua',
+    'modules/whatsthat/client.lua',
+    'modules/nearby/client.lua',
     'core/client.lua',
 }
 

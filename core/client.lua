@@ -26,12 +26,21 @@ local SanitizeName = Utils.Sanitize
 -- [ EMOTE ROUTING — used by playEmote callback, wheel, quickbind, playlist ]
 -------------------------------------------------------------------------------
 
+local lastEmotePlayAt = 0
+
 --- @param emoteName string sanitized emote name
 --- @param emoteType string category name (Walks, Expressions, Shared, etc.)
 --- @param variation number|nil variation index (default 1)
 function Core.PlayEmoteRaw(emoteName, emoteType, variation)
     local safeName = SanitizeName(emoteName)
     if not safeName or safeName == '' or not rpemotesResource then return end
+
+    if MBT.AntiSpam and MBT.AntiSpam.Enabled then
+        local now = GetGameTimer()
+        local cooldown = MBT.AntiSpam.CooldownMs or 250
+        if now - lastEmotePlayAt < cooldown then return end
+        lastEmotePlayAt = now
+    end
 
     local safeType = SanitizeName(emoteType)
     variation = tonumber(variation) or 1
@@ -97,6 +106,10 @@ local LOCALE_KEYS = {
     'preview_mode',
     -- Open Join pill
     'openjoin_label',
+    -- What's That Emote bubble
+    'whatsthat_try',
+    -- Nearby section (Shared Emotes 2.0)
+    'nearby_title', 'nearby_hint', 'nearby_more',
     -- Modals
     'modal_new_list', 'modal_list_name_placeholder',
     'modal_export_title', 'modal_import_title',

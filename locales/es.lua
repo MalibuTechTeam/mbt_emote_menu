@@ -119,6 +119,14 @@ RegisterLocale('es', {
     -- Open Join pill
     ['openjoin_label']             = 'Unirse',
 
+    -- What's That Emote bubble
+    ['whatsthat_try']              = 'Probar',
+
+    -- Nearby section (Shared Emotes 2.0)
+    ['nearby_title']               = 'Cerca',
+    ['nearby_hint']                = 'prueba un duo',
+    ['nearby_more']                = 'Ver todos los emotes compartidos',
+
     -- Modals
     ['modal_new_list']             = 'Nueva lista',
     ['modal_list_name_placeholder']= 'Nombre de lista...',
