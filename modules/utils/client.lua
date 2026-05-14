@@ -32,8 +32,6 @@ function Utils.SafeExportCall(resourceName, method, ...)
     pcall(function(...) exports[resourceName][method](exports[resourceName], ...) end, ...)
 end
 
--- Windows Virtual Key codes for IsRawKeyDown / IsRawKeyPressed. Shared between
--- the OpenJoin + WhatsThat key listeners so the table lives in one place.
 Utils.KEY_CODES = {
     A = 0x41, B = 0x42, C = 0x43, D = 0x44, E = 0x45, F = 0x46, G = 0x47,
     H = 0x48, I = 0x49, J = 0x4A, K = 0x4B, L = 0x4C, M = 0x4D, N = 0x4E,

@@ -66,7 +66,6 @@ startKeyListener = function()
     end)
 end
 
--- Find the closest emoting player within MaxDistance.
 local function findClosestEmotingPlayer(myCoords)
     local myPlayerId = PlayerId()
     local closest = nil

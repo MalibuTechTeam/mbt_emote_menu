@@ -59,6 +59,13 @@ function App() {
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       const data = event.data
+      // Defensive shape check: drop anything that isn't a proper Lua-bridge
+      // message (random postMessage noise from browser extensions in dev,
+      // etc). We deliberately do NOT check event.origin — FiveM CEF builds
+      // vary in what they report (empty, "null", custom scheme) and any
+      // non-permissive check risks rejecting legitimate SendNUIMessage
+      // events from our own Lua, which would silently break the menu.
+      if (!data || typeof data !== 'object') return
 
       switch (data.action) {
         case 'openMenu':

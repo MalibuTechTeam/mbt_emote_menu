@@ -1,15 +1,5 @@
 -------------------------------------------------------------------------------
 -- [ OPEN JOIN — CLIENT ] --
---
--- Two halves:
---  1. Outgoing announce: hooked by Core.PlayEmoteRaw — when the local player
---     plays an emote in a broadcast category, we ask the server to notify
---     nearby players.
---  2. Incoming invitation: when another nearby player plays a broadcast
---     emote, the server tells us; we surface a small NUI pill that the
---     player can confirm with the configured key to play the same emote.
---
--- Player-level opt-out is persisted via KVP so it survives reconnects.
 -------------------------------------------------------------------------------
 
 OpenJoin = OpenJoin or {}
@@ -141,6 +131,42 @@ RegisterNetEvent('mbt_emote_menu:client:openJoinInvitation', function(emoteName,
             hideInvitation()
         end
     end)
+
+    local radius = ((MBT.OpenJoin and MBT.OpenJoin.Radius) or 8.0) + 2.0
+    CreateThread(function()
+        Wait(800)
+        while currentInvitation and currentInvitation.expiresAt == snapshotExpiry do
+            local myPed = PlayerPedId()
+            if not myPed or myPed == 0 then break end
+            local myCoords = GetEntityCoords(myPed)
+            local stillEmoting = false
+            for _, playerId in ipairs(GetActivePlayers()) do
+                if playerId ~= PlayerId() then
+                    local ped = GetPlayerPed(playerId)
+                    if ped and ped ~= 0 and DoesEntityExist(ped) then
+                        if #(GetEntityCoords(ped) - myCoords) <= radius then
+                            local serverId = GetPlayerServerId(playerId)
+                            local bag = Player(serverId).state
+                            local emote = bag and bag.mbtCurrentEmote
+                            if not (type(emote) == 'table' and emote.name) then
+                                local ebag = Entity(ped).state
+                                emote = ebag and ebag.mbtCurrentEmote
+                            end
+                            if type(emote) == 'table' and emote.name == emoteName then
+                                stillEmoting = true
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+            if not stillEmoting then
+                hideInvitation()
+                break
+            end
+            Wait(500)
+        end
+    end)
 end)
 
 -------------------------------------------------------------------------------
@@ -209,7 +235,6 @@ RegisterCommand('mbt_openjoin', function(_, args)
     end
 end, false)
 
--- Stop showing the pill if the resource stops mid-invitation.
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName == GetCurrentResourceName() then hideInvitation() end
 end)

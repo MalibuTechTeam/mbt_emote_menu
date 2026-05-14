@@ -45,6 +45,10 @@ RegisterLocale('it', {
 
     -- Empty state
     ['no_emotes_found']     = 'Nessuna emote trovata',
+    ['no_emotes_hint']      = 'Prova una ricerca diversa o azzera i filtri',
+    ['no_emotes_arrow']     = 'Cerca in alto',
+    ['partner_hint']        = 'Avvicinati a un giocatore per invitarlo',
+    ['wheel_empty_hint']    = 'Trascina qui un\'emote',
 
     -- Quick Bind
     ['quickbind_title']     = 'Tasti Rapidi',

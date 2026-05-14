@@ -141,9 +141,6 @@ local function LoadAnimationList()
     end
 
     local catalog = {}
-
-    -- Server-wide banned emote names (case-insensitive). Built once per
-    -- LoadAnimationList so the loop below stays a single hash lookup.
     local bannedSet = {}
     for _, name in ipairs(MBT.BannedEmotes or {}) do
         if type(name) == 'string' then bannedSet[name:lower()] = true end
@@ -306,9 +303,6 @@ end)
 -------------------------------------------------------------------------------
 
 local cachedEcosystemStatus = nil
-
--- Per-source throttle tables. Keys are server IDs, values are last-call epoch ms.
--- Prevents a malicious / buggy client from spamming heavy net events.
 local lastCatalogRequest = {}
 local lastJobRequest = {}
 local lastEcosystemRequest = {}

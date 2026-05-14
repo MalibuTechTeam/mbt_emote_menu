@@ -26,10 +26,15 @@ body {
 
 /* ─── CSS Variables (overridden by config.lua theme) ────────────────────── */
 :root {
-  --mbt-accent:      #00E676;
-  --mbt-accent-g:    linear-gradient(135deg, #00E676 0%, #00B159 100%);
-  --mbt-accent-glow: rgba(0, 230, 118, 0.25);
-  --mbt-accent-soft: rgba(0, 230, 118, 0.08);
+  --mbt-accent:        #00E676;
+  /* RGB triplet for use in rgba(var(--mbt-accent-rgb), <a>). Single source of
+     truth for accent glows/tints so a future accent shift propagates cleanly
+     instead of fanning out hardcoded literals. */
+  --mbt-accent-rgb:    0, 230, 118;
+  --mbt-accent-strong: #00C66B; /* Slightly darkened for hover-on-fill states */
+  --mbt-accent-g:      linear-gradient(135deg, #00E676 0%, #00B159 100%);
+  --mbt-accent-glow:   rgba(0, 230, 118, 0.25);
+  --mbt-accent-soft:   rgba(0, 230, 118, 0.08);
   --mbt-bg: #0C0E14;
   --mbt-bg-glass: rgba(12, 14, 22, 0.95); /* Increased opacity for readability */
   --mbt-card: rgba(20, 23, 32, 0.75);
@@ -546,15 +551,21 @@ body {
 
 .mbt-card-wrap {
   position: relative;
-  -webkit-user-drag: element;
   pointer-events: auto;
   user-select: none;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, opacity 0.18s ease;
 }
 
 .mbt-card-wrap--dragover {
   transform: translateY(-4px);
   z-index: 5;
+}
+
+/* Source being dragged (react-dnd isDragging). Sits at low opacity in
+   place so the user can see the gap left behind while the (invisible
+   to us — no custom DragLayer yet) drag preview follows the cursor. */
+.mbt-card-wrap--dragging {
+  opacity: 0.35;
 }
 
 .mbt-card {
@@ -3145,7 +3156,7 @@ body {
   padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid var(--mbt-accent);
-  box-shadow: 0 0 18px rgba(0, 251, 138, 0.18),
+  box-shadow: 0 0 18px rgba(var(--mbt-accent-rgb), 0.18),
               0 6px 20px rgba(0, 0, 0, 0.45);
   color: var(--mbt-accent);
   font-family: inherit;
@@ -3182,9 +3193,17 @@ body {
 }
 
 /* ── Open Join pill ──────────────────────────────────────────
- * Anonymous proximity invitation. Shows "Join: <emote> [F]" when a nearby
- * player starts a broadcastable emote. Position is configurable, style
- * follows the active menu layout (default radial / cinematic blue-black).
+ * Anonymous proximity invitation. Shows "Join: <emote> [Y]" when a nearby
+ * player starts a broadcastable emote. Position configurable, style follows
+ * the active menu layout (default radial / cinematic blue-black).
+ *
+ * Motion language: confident enter, snappy exit. Slides from the nearest
+ * edge while scaling up; an accent ring pulses once on arrival as a
+ * discovery cue. Exit drops in 150ms with slight scale-down.
+ *
+ * Each `.pos-*` class declares its translate origin via CSS custom
+ * properties (--mbt-pill-tx / --mbt-pill-ty) so the enter/leave keyframes
+ * compose translate(...) scale(...) without per-position duplication.
  */
 .mbt-openjoin {
   position: fixed;
@@ -3195,7 +3214,7 @@ body {
   padding: 7px 12px 7px 11px;
   border-radius: 999px;
   border: 1px solid var(--mbt-accent);
-  box-shadow: 0 0 14px rgba(0, 251, 138, 0.12),
+  box-shadow: 0 0 14px rgba(var(--mbt-accent-rgb), 0.12),
               0 4px 14px rgba(0, 0, 0, 0.4);
   color: var(--mbt-text);
   font-family: inherit;
@@ -3204,7 +3223,21 @@ body {
   letter-spacing: 0.04em;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 280ms ease, transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translate(var(--mbt-pill-tx, 0), var(--mbt-pill-ty, -8px)) scale(0.94);
+  will-change: opacity, transform;
+}
+
+/* Accent ring that pulses outward once on arrival. Pseudo-element so it
+   can scale independently. */
+.mbt-openjoin::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 999px;
+  border: 1px solid var(--mbt-accent);
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: center;
 }
 
 /* Layout variants — match the menu's chrome. */
@@ -3223,26 +3256,58 @@ body {
   );
 }
 
-/* Positions: enter slides from the closest edge for an unintrusive feel. */
-.mbt-openjoin.pos-top-left     { top: 24px; left: 24px;  transform: translate(0, -8px); }
-.mbt-openjoin.pos-top-center   { top: 24px; left: 50%;   transform: translate(-50%, -8px); }
-.mbt-openjoin.pos-top-right    { top: 24px; right: 24px; transform: translate(0, -8px); }
-.mbt-openjoin.pos-bottom-left  { bottom: 110px; left: 24px;  transform: translate(0, 8px); }
-.mbt-openjoin.pos-bottom-center{ bottom: 110px; left: 50%;   transform: translate(-50%, 8px); }
-.mbt-openjoin.pos-bottom-right { bottom: 110px; right: 24px; transform: translate(0, 8px); }
+/* Position origins — each class sets the X/Y baseline that the keyframes
+   interpolate to. +8px from bottom = "rises into place"; -8px from top
+   = "falls in". */
+.mbt-openjoin.pos-top-left     { top: 24px;     left: 24px;   --mbt-pill-tx: 0;    --mbt-pill-ty: -8px; }
+.mbt-openjoin.pos-top-center   { top: 24px;     left: 50%;    --mbt-pill-tx: -50%; --mbt-pill-ty: -8px; }
+.mbt-openjoin.pos-top-right    { top: 24px;     right: 24px;  --mbt-pill-tx: 0;    --mbt-pill-ty: -8px; }
+.mbt-openjoin.pos-bottom-left  { bottom: 110px; left: 24px;   --mbt-pill-tx: 0;    --mbt-pill-ty: 8px;  }
+.mbt-openjoin.pos-bottom-center{ bottom: 110px; left: 50%;    --mbt-pill-tx: -50%; --mbt-pill-ty: 8px;  }
+.mbt-openjoin.pos-bottom-right { bottom: 110px; right: 24px;  --mbt-pill-tx: 0;    --mbt-pill-ty: 8px;  }
 
+/* Enter: 320ms slide + scale-up; 80ms after settle a single ring pulses
+   out as the discovery cue. */
 .mbt-openjoin.mbt-openjoin--on {
-  opacity: 1;
+  animation: mbt-openjoin-enter 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-.mbt-openjoin.pos-top-left.mbt-openjoin--on,
-.mbt-openjoin.pos-top-right.mbt-openjoin--on,
-.mbt-openjoin.pos-bottom-left.mbt-openjoin--on,
-.mbt-openjoin.pos-bottom-right.mbt-openjoin--on {
-  transform: translate(0, 0);
+.mbt-openjoin.mbt-openjoin--on::before {
+  animation: mbt-pulse-ring 700ms cubic-bezier(0.22, 1, 0.36, 1) 80ms 1 forwards;
 }
-.mbt-openjoin.pos-top-center.mbt-openjoin--on,
-.mbt-openjoin.pos-bottom-center.mbt-openjoin--on {
-  transform: translate(-50%, 0);
+
+/* Exit: 150ms — pill commits to going, slight scale-down + fade. */
+.mbt-openjoin.mbt-openjoin--leaving {
+  animation: mbt-openjoin-leave 150ms cubic-bezier(0.4, 0, 0.6, 1) forwards;
+}
+
+@keyframes mbt-openjoin-enter {
+  from {
+    opacity: 0;
+    transform: translate(var(--mbt-pill-tx, 0), var(--mbt-pill-ty, -8px)) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(var(--mbt-pill-tx, 0), 0) scale(1);
+  }
+}
+
+@keyframes mbt-openjoin-leave {
+  from {
+    opacity: 1;
+    transform: translate(var(--mbt-pill-tx, 0), 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--mbt-pill-tx, 0), 0) scale(0.96);
+  }
+}
+
+/* Single accent-color ring pulse — origin at center, scales outward to
+   ~1.18× while fading. One-shot only (no loop) so it reads as arrival,
+   not ambient decoration. */
+@keyframes mbt-pulse-ring {
+  0%   { opacity: 0.55; transform: scale(1); }
+  100% { opacity: 0;    transform: scale(1.18); }
 }
 
 .mbt-openjoin__icon {
@@ -3269,7 +3334,7 @@ body {
   font-size: 9px;
   font-weight: 600;
   color: var(--mbt-accent);
-  background: rgba(0, 251, 138, 0.08);
+  background: rgba(var(--mbt-accent-rgb), 0.08);
   border: 1px solid var(--mbt-accent);
   border-radius: 4px;
   letter-spacing: 0.04em;
@@ -3277,34 +3342,75 @@ body {
 
 /* ── What's That Emote? floating bubble ──────────────────────
  * Tracks a nearby emoting player in world space. Position is the screen
- * projection computed in Lua (left/top as % of viewport). The bubble is
- * anchored bottom-center on its position (player's head), then translated
- * up so it floats just above their head.
+ * projection computed in Lua and passed via CSS custom properties --mbt-x,
+ * --mbt-y (0..1 of viewport). Composed into a single translate3d so the
+ * bubble follows on the compositor thread, not the layout thread.
+ *
+ * Entry / exit are opacity-only to avoid fighting the tracking transform.
+ * The premium "arrival" cue comes from a one-shot ring pulse on ::before
+ * and a downward tail (::after) that points to the head — both purely
+ * decorative pseudo-elements.
  */
 .mbt-whatsthat {
   position: fixed;
   z-index: 9000;
-  transform: translate(-50%, calc(-100% - 12px));
+  left: 0;
+  top: 0;
+  transform: translate3d(
+    calc(var(--mbt-x, 0.5) * 100vw - 50%),
+    calc(var(--mbt-y, 0.5) * 100vh - 100% - 12px),
+    0
+  );
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
   border-radius: 999px;
   border: 1px solid var(--mbt-accent);
-  box-shadow: 0 0 12px rgba(0, 251, 138, 0.14),
+  box-shadow: 0 0 12px rgba(var(--mbt-accent-rgb), 0.14),
               0 3px 10px rgba(0, 0, 0, 0.35);
   color: var(--mbt-text);
   font-family: inherit;
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.03em;
+  font-variant-numeric: tabular-nums;
   pointer-events: none;
   opacity: 0;
-  /* left/top interpolate at ~60Hz so the bubble follows the player's head
-     fluidly even if NUI updates arrive a few ms apart. opacity fade is
-     longer for a soft appear/disappear. */
-  transition: left 60ms linear, top 60ms linear, opacity 200ms ease;
+  will-change: transform, opacity;
+  /* 60ms transform smooths the ~10Hz NUI updates to 60Hz perceptually.
+     Opacity has its own longer fade for a soft appear/disappear. */
+  transition: transform 60ms linear, opacity 200ms ease;
   white-space: nowrap;
+}
+
+/* Discovery ring — pulses outward once when the bubble locks onto a player.
+   Same easing language as OpenJoin so the brand reads as one motion system. */
+.mbt-whatsthat::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 999px;
+  border: 1px solid var(--mbt-accent);
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: center;
+}
+
+/* Tail / anchor triangle pointing down to the player's head — resolves
+   ambiguity when two peds overlap in screen space. */
+.mbt-whatsthat::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  width: 6px;
+  height: 6px;
+  background: inherit;
+  border-right: 1px solid var(--mbt-accent);
+  border-bottom: 1px solid var(--mbt-accent);
+  transform: translateX(-50%) rotate(45deg);
+  opacity: 0;
 }
 
 .mbt-whatsthat.layout-default {
@@ -3324,6 +3430,20 @@ body {
 
 .mbt-whatsthat--on {
   opacity: 1;
+}
+
+/* Ring pulse + tail reveal trigger only on --on so they don't fire on
+   the still-mounted-but-fading-out leaving state. */
+.mbt-whatsthat--on::before {
+  animation: mbt-pulse-ring 700ms cubic-bezier(0.22, 1, 0.36, 1) 60ms 1 forwards;
+}
+.mbt-whatsthat--on::after {
+  animation: mbt-whatsthat-tail-in 280ms cubic-bezier(0.16, 1, 0.3, 1) 120ms 1 forwards;
+}
+
+@keyframes mbt-whatsthat-tail-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(-3px) rotate(45deg); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0)    rotate(45deg); }
 }
 
 .mbt-whatsthat__icon {
@@ -3347,7 +3467,7 @@ body {
   font-size: 9px;
   font-weight: 600;
   color: var(--mbt-accent);
-  background: rgba(0, 251, 138, 0.08);
+  background: rgba(var(--mbt-accent-rgb), 0.08);
   border: 1px solid var(--mbt-accent);
   border-radius: 3px;
 }
@@ -3362,8 +3482,12 @@ body {
 /* ── Nearby Section ──────────────────────────────────────────
  * Card-style ribbon above the category pills that surfaces shared/duet
  * emotes whenever at least one other player is within proximity. Premium
- * styling with strong accent border, glow, and elevated header.
+ * styling with accent border, soft accent wash, and elevated header.
  * Driven by `nearbyCountUpdate` NUI events from modules/nearby/client.lua.
+ *
+ * Two layout variants match the menu chrome: `.layout-default` keeps the
+ * warm-green wash (sits over the radial blue-violet menu); `.layout-cinematic`
+ * cools the gradient to align with the colder dark-blue-to-black chrome.
  */
 .mbt-nearby {
   position: relative;
@@ -3376,16 +3500,31 @@ body {
   border: 1px solid var(--mbt-accent);
   background: linear-gradient(
     180deg,
-    rgba(0, 251, 138, 0.12) 0%,
-    rgba(0, 251, 138, 0.04) 35%,
+    rgba(var(--mbt-accent-rgb), 0.12) 0%,
+    rgba(var(--mbt-accent-rgb), 0.04) 35%,
     rgba(8, 18, 36, 0.55) 100%
   );
   box-shadow:
-    0 0 18px rgba(0, 251, 138, 0.18),
+    0 0 18px rgba(var(--mbt-accent-rgb), 0.18),
     0 4px 14px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(0, 251, 138, 0.18);
+    inset 0 1px 0 rgba(var(--mbt-accent-rgb), 0.18);
   animation: mbt-nearby-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
+}
+
+/* Cinematic layout — cooler, deeper backdrop so the ribbon stops fighting
+   the colder menu chrome. Border + glow stay accent for "alive" feel. */
+.mbt-nearby.layout-cinematic {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--mbt-accent-rgb), 0.08) 0%,
+    rgba(5, 11, 20, 0.7) 60%,
+    rgba(0, 4, 10, 0.85) 100%
+  );
+  box-shadow:
+    0 0 16px rgba(var(--mbt-accent-rgb), 0.15),
+    0 4px 14px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(var(--mbt-accent-rgb), 0.12);
 }
 
 /* Subtle accent glow strip along the top edge — feels "alive". */
@@ -3397,7 +3536,7 @@ body {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(0, 251, 138, 0.6) 50%,
+    rgba(var(--mbt-accent-rgb), 0.6) 50%,
     transparent 100%
   );
 }
@@ -3419,12 +3558,22 @@ body {
 
 .mbt-nearby__header-icon {
   color: var(--mbt-accent);
-  filter: drop-shadow(0 0 6px rgba(0, 251, 138, 0.55));
+  filter: drop-shadow(0 0 6px rgba(var(--mbt-accent-rgb), 0.55));
 }
 
 .mbt-nearby__title {
   color: var(--mbt-accent);
-  text-shadow: 0 0 8px rgba(0, 251, 138, 0.25);
+  text-shadow: 0 0 8px rgba(var(--mbt-accent-rgb), 0.25);
+}
+
+/* Visual separator between title and count badge — 2px dot stops them from
+   competing on the same axis. */
+.mbt-nearby__header-sep {
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgba(232, 232, 238, 0.35);
+  flex-shrink: 0;
 }
 
 .mbt-nearby__count {
@@ -3436,24 +3585,25 @@ body {
   padding: 0 6px;
   font-size: 10px;
   font-weight: 700;
-  color: var(--mbt-background);
+  color: var(--mbt-bg);
   background: var(--mbt-accent);
   border-radius: 999px;
   letter-spacing: 0;
-  box-shadow: 0 0 10px rgba(0, 251, 138, 0.45);
+  box-shadow: 0 0 10px rgba(var(--mbt-accent-rgb), 0.45);
 }
 
+/* `--mbt-subtext` (#6B7280) on tinted-green ribbon failed AA. Body text at
+   reduced opacity sits above 4.5:1 on both default and cinematic backgrounds. */
 .mbt-nearby__hint {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   margin-left: auto;
-  color: var(--mbt-subtext);
+  color: rgba(232, 232, 238, 0.78);
   font-size: 10px;
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: none;
-  opacity: 0.85;
 }
 
 .mbt-nearby__chips {
@@ -3465,9 +3615,10 @@ body {
 .mbt-nearby__chip {
   display: inline-flex;
   align-items: center;
+  max-width: 18ch;
   padding: 5px 11px;
   border-radius: 999px;
-  border: 1px solid rgba(0, 251, 138, 0.18);
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.18);
   background: rgba(8, 18, 36, 0.55);
   color: var(--mbt-text);
   font-family: inherit;
@@ -3476,6 +3627,8 @@ body {
   letter-spacing: 0.02em;
   cursor: pointer;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   transition: background var(--mbt-transition),
               border-color var(--mbt-transition),
               color var(--mbt-transition),
@@ -3487,6 +3640,14 @@ body {
   animation-delay: calc(var(--i, 0) * 30ms + 80ms);
 }
 
+/* Keyboard-visible focus for controller/tab navigation. */
+.mbt-nearby__chip:focus-visible,
+.mbt-nearby__more:focus-visible {
+  outline: 2px solid var(--mbt-accent);
+  outline-offset: 2px;
+  border-color: var(--mbt-accent);
+}
+
 @keyframes mbt-chip-in {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -3495,59 +3656,68 @@ body {
 .mbt-nearby__chip:hover {
   border-color: var(--mbt-accent);
   background: var(--mbt-accent);
-  color: var(--mbt-background);
-  box-shadow: 0 0 12px rgba(0, 251, 138, 0.35);
+  color: var(--mbt-bg);
+  box-shadow: 0 0 12px rgba(var(--mbt-accent-rgb), 0.35);
   transform: translateY(-1px);
 }
 
 .mbt-nearby__chip:active {
   transform: translateY(0);
-  box-shadow: 0 0 6px rgba(0, 251, 138, 0.5);
+  box-shadow: 0 0 6px rgba(var(--mbt-accent-rgb), 0.5);
 }
 
 /* "Featured" chip — the player's most-played shared emote leads the row.
-   Filled with accent so the eye lands on it immediately, suggesting "this
-   is the obvious one to try". */
+   Filled with accent so the eye lands on it immediately. */
 .mbt-nearby__chip--featured {
   background: var(--mbt-accent);
   border-color: var(--mbt-accent);
-  color: var(--mbt-background);
+  color: var(--mbt-bg);
   font-weight: 600;
-  box-shadow: 0 0 14px rgba(0, 251, 138, 0.38),
+  box-shadow: 0 0 14px rgba(var(--mbt-accent-rgb), 0.38),
               0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 .mbt-nearby__chip--featured:hover {
-  background: #00e07d; /* darken slightly on hover so the affordance still reads */
+  background: var(--mbt-accent-strong);
+  border-color: var(--mbt-accent-strong);
   transform: translateY(-1px);
-  box-shadow: 0 0 16px rgba(0, 251, 138, 0.5),
+  box-shadow: 0 0 16px rgba(var(--mbt-accent-rgb), 0.5),
               0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* "+N more" overflow chip — subtle dashed style. Escape hatch to the full
-   Shared category in the main grid. */
+/* "+N more" overflow chip — solid subtle chip with a chevron. Reads as
+   "more, click to expand", not "placeholder" (which is what dashed implies). */
 .mbt-nearby__more {
   display: inline-flex;
   align-items: center;
-  padding: 5px 11px;
+  gap: 4px;
+  padding: 5px 9px 5px 11px;
   border-radius: 999px;
-  border: 1px dashed rgba(0, 251, 138, 0.4);
-  background: transparent;
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.28);
+  background: rgba(var(--mbt-accent-rgb), 0.06);
   color: var(--mbt-accent);
   font-family: inherit;
   font-size: 10.5px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: all var(--mbt-transition);
+  transition: background var(--mbt-transition),
+              border-color var(--mbt-transition),
+              color var(--mbt-transition),
+              transform var(--mbt-transition);
   animation: mbt-chip-in 280ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
   animation-delay: calc(var(--i, 0) * 30ms + 80ms);
 }
 
 .mbt-nearby__more:hover {
-  border-style: solid;
-  background: rgba(0, 251, 138, 0.1);
+  background: var(--mbt-accent);
+  border-color: var(--mbt-accent);
+  color: var(--mbt-bg);
   transform: translateY(-1px);
+}
+
+.mbt-nearby__more-icon {
+  margin-top: 1px;
 }
 
 /* ── Placement Overlay ──────────────────────────────────────
@@ -3661,7 +3831,7 @@ body {
 .mbt-placement__hint--confirm .mbt-placement__kbd {
   color: var(--mbt-accent);
   border-color: var(--mbt-accent);
-  box-shadow: 0 0 8px rgba(0, 251, 138, 0.2);
+  box-shadow: 0 0 8px rgba(var(--mbt-accent-rgb), 0.2);
 }
 
 .mbt-placement__hint--confirm .mbt-placement__label {
@@ -3676,3 +3846,268 @@ body {
 .mbt-placement__hint--cancel .mbt-placement__label {
   color: #ff8a98;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PREMIUM POLISH — additive layer
+   ═══════════════════════════════════════════════════════════════════════════
+   Everything below is purely additive: keyframes triggered by class toggles,
+   View Transitions snapshots, pseudo-elements, and styles for new component
+   classes. NO `motion.div` wrappers anywhere — those broke interactions in
+   FiveM CEF by interfering with refs and scroll handlers. CSS-only routes
+   here so all the animations are compositor-friendly and unable to disrupt
+   click/scroll/keyboard targets.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── List-created pulse ─────────────────────────────────────
+ * Inline outcome for "list created" — replaces a toast with a beat-long
+ * scale + accent-glow pulse on the new chip. The class is added by
+ * EmoteMenu for ~1500ms after creation, then removed via setTimeout.
+ */
+.mbt-tab--just-created {
+  animation: mbt-tab-just-created 1500ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes mbt-tab-just-created {
+  0%   { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(var(--mbt-accent-rgb), 0.6); }
+  18%  { transform: scale(1.08); box-shadow: 0 0 22px 4px rgba(var(--mbt-accent-rgb), 0.5); }
+  60%  { transform: scale(1.0);  box-shadow: 0 0 14px 0 rgba(var(--mbt-accent-rgb), 0.3); }
+  100% { transform: scale(1.0);  box-shadow: 0 0 0 0   rgba(var(--mbt-accent-rgb), 0); }
+}
+
+/* ── Grid filter morph ──────────────────────────────────────
+ * When the filter / category / search / sort changes, the virtual grid's
+ * content updates in place (same DOM container, different cards). To make
+ * the change feel intentional, EmoteMenu toggles a class on the virtual
+ * container via reflow-restart trick so the keyframe replays on every
+ * filter change. NO motion wrapper — the .mbt-grid ref stays stable.
+ *
+ * Animates only opacity + filter to leave the inline `transform` (used by
+ * the virtual scroller for the slice offset) untouched. We can't touch
+ * transform without re-implementing the virtual offset. Filter brightness
+ * gives the morph a subtle "settle in" feel beyond pure opacity.
+ */
+.mbt-grid__virtual--filter-changed {
+  animation: mbt-grid-filter-fade 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes mbt-grid-filter-fade {
+  from { opacity: 0;   filter: brightness(1.15); }
+  to   { opacity: 1;   filter: brightness(1);    }
+}
+
+/* ── Tab content View Transitions ────────────────────────────
+ * Tab change directional slide via View Transitions API instead of React
+ * wrapper. EmoteMenu sets --vt-direction (+1 right, -1 left) on the root
+ * before calling document.startViewTransition(setState). The browser
+ * snapshots both states and animates the snapshots, leaving the live DOM
+ * (and its refs) untouched. Falls back to instant if VT API isn't
+ * supported (older CEF) — graceful degradation.
+ */
+::view-transition-old(mbt-grid-content),
+::view-transition-new(mbt-grid-content) {
+  animation-duration: 280ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+::view-transition-old(mbt-grid-content) {
+  animation-name: mbt-vt-slide-out;
+}
+
+::view-transition-new(mbt-grid-content) {
+  animation-name: mbt-vt-slide-in;
+}
+
+@keyframes mbt-vt-slide-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(calc(var(--vt-direction, 1) * -40px)); }
+}
+
+@keyframes mbt-vt-slide-in {
+  from { opacity: 0; transform: translateX(calc(var(--vt-direction, 1) * 40px)); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── EmptyState component ────────────────────────────────────
+ * First-impression empty layouts with floating illustration + animated
+ * arrow nudging toward the resolving action (search, create, refresh).
+ * Two sizes: `md` for full-grid empties, `sm` for inline panels.
+ */
+.mbt-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.mbt-empty--md {
+  flex: 1;
+  min-height: 0;
+  padding: 48px 24px;
+  gap: 12px;
+}
+
+.mbt-empty--sm {
+  padding: 24px 16px;
+  gap: 8px;
+}
+
+/* Icon floats gently on a 2.4s loop — gives the empty space a focal point
+   without shouting. The disc tints toward the brand accent. */
+.mbt-empty__icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    rgba(var(--mbt-accent-rgb), 0.08) 0%,
+    rgba(var(--mbt-accent-rgb), 0.02) 60%,
+    transparent 100%
+  );
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.12);
+  margin-bottom: 4px;
+  animation: mbt-empty-float 2.4s ease-in-out infinite;
+}
+
+.mbt-empty--sm .mbt-empty__icon-wrap {
+  width: 44px;
+  height: 44px;
+  animation-duration: 2.8s;
+}
+
+@keyframes mbt-empty-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+.mbt-empty__icon {
+  color: rgba(var(--mbt-accent-rgb), 0.7);
+}
+
+.mbt-empty__title {
+  color: var(--mbt-text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.mbt-empty--sm .mbt-empty__title {
+  font-size: 12px;
+}
+
+.mbt-empty__hint {
+  color: rgba(232, 232, 238, 0.55);
+  font-size: 11px;
+  max-width: 28ch;
+  line-height: 1.45;
+}
+
+/* Arrow nudges in its axis on a faster 1.6s loop — different beat from
+   the icon float so the two motions don't sync into a single rhythm. */
+.mbt-empty__arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(var(--mbt-accent-rgb), 0.08);
+  color: var(--mbt-accent);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.mbt-empty__arrow svg {
+  flex-shrink: 0;
+}
+
+.mbt-empty__arrow--up    { animation: mbt-empty-nudge-y 1.6s ease-in-out infinite; --mbt-nudge-sign: -1; }
+.mbt-empty__arrow--down  { animation: mbt-empty-nudge-y 1.6s ease-in-out infinite; --mbt-nudge-sign:  1; }
+.mbt-empty__arrow--left  { animation: mbt-empty-nudge-x 1.6s ease-in-out infinite; --mbt-nudge-sign: -1; }
+.mbt-empty__arrow--right { animation: mbt-empty-nudge-x 1.6s ease-in-out infinite; --mbt-nudge-sign:  1; }
+
+@keyframes mbt-empty-nudge-y {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(calc(var(--mbt-nudge-sign, 1) * 4px)); }
+}
+
+@keyframes mbt-empty-nudge-x {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(calc(var(--mbt-nudge-sign, 1) * 4px)); }
+}
+
+/* ── Wheel slot empty placeholder ────────────────────────────
+ * Empty wheel slots read as "place here" instead of a flat "Empty" word.
+ * The plus pulses subtly to suggest an actionable placeholder.
+ */
+.mbt-wheel__slot--empty {
+  border-style: dashed;
+  border-color: rgba(var(--mbt-accent-rgb), 0.25);
+  background: rgba(var(--mbt-accent-rgb), 0.04);
+}
+
+.mbt-wheel__label--empty {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(var(--mbt-accent-rgb), 0.85);
+  font-weight: 500;
+}
+
+.mbt-wheel__empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mbt-accent);
+  animation: mbt-wheel-empty-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes mbt-wheel-empty-pulse {
+  0%, 100% { transform: scale(1);    opacity: 0.6; }
+  50%      { transform: scale(1.12); opacity: 1;   }
+}
+
+/* ── Reduced motion guard ────────────────────────────────────
+ * Honor OS-level "reduce motion" by stripping animations the polish layer
+ * introduced. Keeps a short opacity fade (not vestibular) and forces the
+ * resting visual state so elements still appear/disappear, just without
+ * the slide/scale/pulse drama.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .mbt-nearby,
+  .mbt-nearby__chip,
+  .mbt-nearby__more,
+  .mbt-openjoin,
+  .mbt-openjoin::before,
+  .mbt-whatsthat,
+  .mbt-whatsthat::before,
+  .mbt-whatsthat::after,
+  .mbt-tab--just-created,
+  .mbt-grid__virtual--filter-changed,
+  .mbt-empty__icon-wrap,
+  .mbt-empty__arrow,
+  .mbt-wheel__empty-icon {
+    animation: none !important;
+    transition: opacity 120ms ease !important;
+  }
+
+  /* Force resting state so reduced-motion users still see the elements. */
+  .mbt-openjoin.mbt-openjoin--on {
+    opacity: 1 !important;
+    transform: translate(var(--mbt-pill-tx, 0), 0) scale(1) !important;
+  }
+  .mbt-openjoin.mbt-openjoin--leaving { opacity: 0 !important; }
+  .mbt-whatsthat--on::after { opacity: 1 !important; }
+  .mbt-openjoin::before, .mbt-whatsthat::before { opacity: 0 !important; }
+
+  /* View Transitions snapshot animations off. */
+  ::view-transition-old(mbt-grid-content),
+  ::view-transition-new(mbt-grid-content) {
+    animation: none !important;
+  }
+}
+

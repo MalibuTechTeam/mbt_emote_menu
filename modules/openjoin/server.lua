@@ -34,7 +34,9 @@ local categorySet = getCategorySet()
 local bannedSet = getBannedSet()
 
 local function findPlayersInRange(originSrc, radius, maxRecipients)
-    local origin = GetEntityCoords(GetPlayerPed(originSrc))
+    local originPed = GetPlayerPed(originSrc)
+    if not originPed or originPed == 0 then return {} end
+    local origin = GetEntityCoords(originPed)
     local candidates = {}
     for _, playerId in ipairs(GetPlayers()) do
         local pid = tonumber(playerId)
@@ -50,8 +52,6 @@ local function findPlayersInRange(originSrc, radius, maxRecipients)
         end
     end
 
-    -- Cap to the N closest in case a crowded zone (e.g. nightclub event) has
-    -- way more recipients than we want to spam at once.
     if maxRecipients and maxRecipients > 0 and #candidates > maxRecipients then
         table.sort(candidates, function(a, b) return a.dist < b.dist end)
         for i = maxRecipients + 1, #candidates do candidates[i] = nil end
@@ -67,8 +67,19 @@ RegisterNetEvent('mbt_emote_menu:server:announceOpenJoin', function(emoteName, e
     if not src or src <= 0 then return end
 
     if type(emoteName) ~= 'string' or type(emoteCategory) ~= 'string' then return end
+    emoteName = emoteName:sub(1, 64)
+    if emoteName == '' then return end
+
     if not categorySet[emoteCategory] then return end
     if bannedSet[emoteName:lower()] then return end
+
+    local ok, bag = pcall(function() return Player(src).state end)
+    if ok and bag then
+        local current = bag.mbtCurrentEmote
+        if type(current) == 'table' and type(current.name) == 'string' then
+            if current.name ~= emoteName then return end
+        end
+    end
 
     local cooldown = (MBT.OpenJoin and MBT.OpenJoin.AnnounceCooldownMs) or 5000
     local now = GetGameTimer()

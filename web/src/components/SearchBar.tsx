@@ -1,5 +1,6 @@
 import { Search, Square, PlusSquare } from 'lucide-react'
 import { useLocale } from '../utils/locale'
+import { AnimatedNumber } from './AnimatedNumber'
 
 interface SearchBarProps {
   value: string
@@ -27,7 +28,7 @@ export function SearchBar({ value, onChange, resultCount, totalCount, onCancel, 
         <Search className="mbt-search__icon" size={14} />
         {value.trim() && (
           <span className="mbt-search__count">
-            {resultCount}/{totalCount}
+            <AnimatedNumber value={resultCount} duration={250} />/{totalCount}
           </span>
         )}
       </div>

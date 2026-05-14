@@ -1,7 +1,8 @@
 ﻿import { memo, useState, useEffect, useCallback } from 'react'
-import { Users, RefreshCw, Send, X } from 'lucide-react'
+import { Users, UserSearch, RefreshCw, Send, X } from 'lucide-react'
 import { useNui } from '../utils/useNui'
 import { useLocale } from '../utils/locale'
+import { EmptyState } from './EmptyState'
 
 interface NearbyPlayer {
   serverId: number
@@ -62,16 +63,14 @@ export const PartnerFinder = memo(function PartnerFinder({
 
       {loading ? (
         <div className="mbt-partner__loading">{t.partner_loading || 'Searching players...'}</div>
-      ) : error ? (
+      ) : error || players.length === 0 ? (
         <div className="mbt-partner__empty">
-          {t.partner_empty || 'No players nearby'}
-          <button className="mbt-partner__refresh" onClick={refresh}>
-            <RefreshCw size={10} /> {t.partner_retry || 'Retry'}
-          </button>
-        </div>
-      ) : players.length === 0 ? (
-        <div className="mbt-partner__empty">
-          {t.partner_empty || 'No players nearby'}
+          <EmptyState
+            icon={UserSearch}
+            title={t.partner_empty || 'No players nearby'}
+            hint={t.partner_hint || 'Get closer to nearby players to invite them'}
+            size="sm"
+          />
           <button className="mbt-partner__refresh" onClick={refresh}>
             <RefreshCw size={10} /> {t.partner_retry || 'Retry'}
           </button>

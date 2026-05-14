@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useRef } from 'react'
+import { useDrop } from 'react-dnd'
 import { Keyboard, X } from 'lucide-react'
 import { useLocale } from '../utils/locale'
 import { useNui } from '../utils/useNui'
+import { DND_EMOTE_CARD, type EmoteCardDragItem } from './FavoriteDraggable'
 import type { Emote } from '../utils/types'
 
 interface QuickBindBarProps {
@@ -12,33 +14,79 @@ interface QuickBindBarProps {
 
 const SLOTS = ['1', '2', '3', '4', '5', '6']
 
+interface QuickBindSlotProps {
+  slot: string
+  emote: Emote | undefined
+  emptyLabel: string
+  onAssign: (slot: string, emote: Emote) => void
+  onPlay: (emote: Emote) => void
+  onClear: (slot: string) => void
+}
+
+/**
+ * One quick-bind slot. Uses react-dnd useDrop with the same EMOTE_CARD type
+ * the favorites cards source, so dragging a favorite onto a slot here lands
+ * the bind via the same backend (TouchBackend / pointer events) ox_inventory
+ * relies on. CEF's HTML5 native onDrop is not used.
+ */
+function QuickBindSlot({ slot, emote, emptyLabel, onAssign, onPlay, onClear }: QuickBindSlotProps) {
+  const ref = useRef<HTMLDivElement>(null)
+
+  const [{ isOver }, drop] = useDrop<EmoteCardDragItem, void, { isOver: boolean }>(
+    () => ({
+      accept: DND_EMOTE_CARD,
+      drop: (item) => onAssign(slot, item.emote),
+      collect: (m) => ({ isOver: m.isOver() }),
+    }),
+    [slot, onAssign],
+  )
+
+  drop(ref)
+
+  return (
+    <div
+      ref={ref}
+      data-slot={Number(slot) - 1}
+      className={
+        'mbt-quickbind__slot' +
+        (emote ? ' mbt-quickbind__slot--filled' : '') +
+        (isOver ? ' mbt-quickbind__slot--dragover' : '')
+      }
+      onClick={() => emote && onPlay(emote)}
+      title={emote ? emote.label : emptyLabel}
+    >
+      <span className="mbt-quickbind__key">NUM{slot}</span>
+      {emote ? (
+        <>
+          <span className="mbt-quickbind__name">{emote.label}</span>
+          <button
+            className="mbt-quickbind__clear"
+            onClick={(e) => {
+              e.stopPropagation()
+              onClear(slot)
+            }}
+          >
+            <X size={10} />
+          </button>
+        </>
+      ) : (
+        <span className="mbt-quickbind__empty">—</span>
+      )}
+    </div>
+  )
+}
+
 export function QuickBindBar({ keybinds, onPlay, onUpdate }: QuickBindBarProps) {
   const t = useLocale()
-  const [dragOver, setDragOver] = useState<string | null>(null)
+  const emptyLabel = t.quickbind_empty || 'Drag emote here'
 
-  const handleDrop = async (slot: string, e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(null)
-
-    const raw = e.dataTransfer.getData('application/json')
-    if (!raw) return
-
-    try {
-      const emoteData = JSON.parse(raw)
-      if (!emoteData || typeof emoteData.name !== 'string') {
-        console.warn('[MBT QuickBind] Invalid drag data: missing emote name')
-        return
-      }
-      await useNui('setKeybind', { slot, emote: emoteData })
-      const updated = { ...keybinds, [slot]: emoteData }
-      onUpdate(updated)
-    } catch (err) {
-      console.warn('[MBT QuickBind] Failed to parse drag data:', err)
-    }
+  const handleAssign = async (slot: string, emote: Emote) => {
+    if (!emote || typeof emote.name !== 'string') return
+    await useNui('setKeybind', { slot, emote })
+    onUpdate({ ...keybinds, [slot]: emote })
   }
 
-  const handleClear = async (slot: string, e: React.MouseEvent) => {
-    e.stopPropagation()
+  const handleClear = async (slot: string) => {
     await useNui('setKeybind', { slot, emote: null })
     const updated = { ...keybinds }
     delete updated[slot]
@@ -52,36 +100,17 @@ export function QuickBindBar({ keybinds, onPlay, onUpdate }: QuickBindBarProps) 
         <span>{t.quickbind_title || 'Quick Bind'}</span>
       </div>
       <div className="mbt-quickbind__slots">
-        {SLOTS.map((slot) => {
-          const emote = keybinds[slot]
-          return (
-            <div
-              key={slot}
-              data-slot={Number(slot) - 1}
-              className={`mbt-quickbind__slot ${emote ? 'mbt-quickbind__slot--filled' : ''} ${dragOver === slot ? 'mbt-quickbind__slot--dragover' : ''}`}
-              onClick={() => emote && onPlay(emote)}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(slot) }}
-              onDragLeave={() => setDragOver(null)}
-              onDrop={(e) => handleDrop(slot, e)}
-              title={emote ? emote.label : (t.quickbind_empty || 'Drag emote here')}
-            >
-              <span className="mbt-quickbind__key">NUM{slot}</span>
-              {emote ? (
-                <>
-                  <span className="mbt-quickbind__name">{emote.label}</span>
-                  <button
-                    className="mbt-quickbind__clear"
-                    onClick={(e) => handleClear(slot, e)}
-                  >
-                    <X size={10} />
-                  </button>
-                </>
-              ) : (
-                <span className="mbt-quickbind__empty">—</span>
-              )}
-            </div>
-          )
-        })}
+        {SLOTS.map((slot) => (
+          <QuickBindSlot
+            key={slot}
+            slot={slot}
+            emote={keybinds[slot]}
+            emptyLabel={emptyLabel}
+            onAssign={handleAssign}
+            onPlay={onPlay}
+            onClear={handleClear}
+          />
+        ))}
       </div>
     </div>
   )

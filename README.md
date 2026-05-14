@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/FiveM-Ready-00fb8a?style=for-the-badge&logo=fivem&logoColor=white" alt="FiveM Ready" />
   <img src="https://img.shields.io/badge/Framework-ESX%20%7C%20QBox%20%7C%20QBCore%20%7C%20Standalone-blue?style=for-the-badge" alt="Framework" />
-  <img src="https://img.shields.io/badge/Version-1.0.0-informational?style=for-the-badge" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-1.3.0-informational?style=for-the-badge" alt="Version" />
   <img src="https://img.shields.io/badge/Lua-5.4-purple?style=for-the-badge&logo=lua" alt="Lua 5.4" />
   <img src="https://img.shields.io/badge/React-TypeScript-61DAFB?style=for-the-badge&logo=react" alt="React + TS" />
   <img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue?style=for-the-badge" alt="PolyForm Noncommercial 1.0.0" />
@@ -55,10 +55,18 @@
 ### Playback
 
 - **Emote preview** — see the animation on your ped before committing (solo, invisible to others)
+- **Place in world** — drop an emote at a precise spot via rpemotes-reborn's WASD placement flow, with a branded in-game HUD overlay
 - **Playlist system** — queue multiple emotes in sequence with play/stop/clear controls
 - **Shared emote popup** — inline accept/decline for sync emote invitations
 - **Partner finder** — locate nearby players for shared animations
 - **Remember State** — menu remembers your scroll position, tab, and filters after playing an emote (resets on ESC/X, configurable)
+
+### Social & Discovery *(new in 1.3)*
+
+- **Open Join** — when you start a broadcast-eligible emote (dances, shared, ...), every player within radius gets a small anonymous pill (`Join: <emote> [Y]`) and can press one key to play the same emote. Initiator is never named. Per-player opt-out via `/mbt_openjoin off`. Pill auto-dismisses when the initiator walks off or stops, no manual cleanup needed
+- **What's That Emote?** — passive discovery. Walk near someone who is emoting and a floating bubble above their head shows the emote name with a hotkey hint — one press copies it onto your own character. Off by default (opt-in via `MBT.Features.WhatsThat`)
+- **Nearby ribbon** — when at least one player is in proximity, a dedicated ribbon surfaces above the category pills with your most-played shared / duet emotes, ranked by personal play count. One-click to start a duet with the closest player via the Partner Finder
+- **Premium motion language** — entry / exit animations on every social surface (slide + scale-up + accent ring pulse on arrival, snappy 150ms scale-down on exit), tail anchors on the floating bubble, smooth tab transitions via the View Transitions API. Respects `prefers-reduced-motion`
 
 ### Reliability
 
@@ -69,6 +77,11 @@
 ### Permissions & Security
 
 - **Job-locked emotes** — restrict specific emotes to certain jobs (police, mechanic, medic, etc.)
+- **Banned emotes blacklist** — server owners can blocklist specific emote names server-side; both the catalog and the social broadcast layer filter them out
+- **Per-source rate limiting** — every NetEvent the menu accepts is throttled per server ID (catalog request, job lookup, ecosystem status, social broadcast). Prevents a malicious or buggy client from flooding the server
+- **Anti-spam cooldown** — client-side cooldown between back-to-back emote plays (`MBT.AntiSpam.CooldownMs`, default 250ms), with a separate cooldown on social broadcasts (default 5s per source)
+- **Large-server safety** — Open Join announcements cap at the N closest recipients (`MBT.OpenJoin.MaxRecipients`, default 30) so a 1000-player server doesn't fan-out into a network storm at busy zones
+- **Anti-spoofing** — server validates the initiator's replicated `mbtCurrentEmote` state bag against the announced emote before relaying, blocking clients that try to advertise an emote they aren't actually playing
 - **Multi-framework support** — auto-detects ESX, QBox, QBCore, or standalone
 
 ### Ecosystem

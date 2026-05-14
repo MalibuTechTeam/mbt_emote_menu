@@ -15,6 +15,9 @@ local activeExpression = nil
 local placementAvailable = false
 local RequestEmoteCatalog
 local emoteLabelByName = {}
+local pendingOpen = false
+local PENDING_OPEN_TTL_MS = 20000
+local pendingOpenAt = 0
 
 Core = Core or {}
 
@@ -74,7 +77,6 @@ function Core.ToggleMenu()
     if isOpen then Core.CloseMenu() else Core.OpenMenu() end
 end
 
--- Locale keys forwarded to the NUI. Mirror this list when adding new keys to locales/*.lua.
 local LOCALE_KEYS = {
     -- Original
     'menu_title', 'search_placeholder',
@@ -83,7 +85,9 @@ local LOCALE_KEYS = {
     'status_playing', 'status_idle', 'status_walkstyle',
     'cancel_emote', 'shared_request', 'shared_accept', 'shared_decline',
     'play_emote', 'add_favorite', 'remove_favorite', 'set_keybind',
-    'no_emotes_found', 'quickbind_title', 'quickbind_empty',
+    'no_emotes_found', 'no_emotes_hint', 'no_emotes_arrow',
+    'partner_hint', 'wheel_empty_hint',
+    'quickbind_title', 'quickbind_empty',
     'wheel_empty', 'wheel_hint', 'wheel_hint_remove', 'wheel_removed',
     'partner_loading', 'partner_empty', 'partner_sent', 'partner_send', 'partner_retry',
     'playlist_empty', 'playlist_clear', 'playlist_loop_on', 'playlist_loop_off',
@@ -137,9 +141,6 @@ local function BuildLocaleStrings()
     return out
 end
 
--- Build the categories array with translated labels. Translation key comes from
--- 'localeKey' on each MBT.Categories entry (set in config.lua); falls back to the
--- raw 'label' if the key is missing or unresolved.
 local function BuildLocalizedCategories()
     local out = {}
     for i, c in ipairs(MBT.Categories or {}) do
@@ -159,8 +160,6 @@ local function BuildLocalizedCategories()
 end
 
 local function BuildMenuConfig()
-    -- Shallow-copy MBT.Features so we can override EmotePlacement based on runtime
-    -- export detection without mutating the user's config.
     local features = {}
     for k, v in pairs(MBT.Features or {}) do features[k] = v end
     features.EmotePlacement = (MBT.Features.EmotePlacement ~= false) and placementAvailable
@@ -186,13 +185,15 @@ function Core.OpenMenu()
         return
     end
 
-    -- Guard against opening before the catalog has arrived from the server.
-    -- Trigger the request loop again (idempotent thanks to the throttle) and bail.
     if #emoteCatalog == 0 then
+        pendingOpen = true
+        pendingOpenAt = GetGameTimer()
         MBT.Notification({ description = MBT.Locale['loading_emotes'] or 'Loading emotes, please wait...' })
         RequestEmoteCatalog()
         return
     end
+
+    pendingOpen = false
 
     isOpen = true
 
@@ -201,9 +202,6 @@ function Core.OpenMenu()
         activeWalkStyle = (w and w ~= '') and w or nil
     end
 
-    -- Always include config + locale (cheap; ensures language hot-swap on /restart works
-    -- and sidesteps the previous bug where the preload set catalogSentToNui=true and the
-    -- locale never reached the NUI). Catalog stays gated because it can be ~megabytes.
     local payload = {
         action         = 'openMenu',
         favorites      = Core.GetFavorites(),
@@ -286,9 +284,6 @@ RegisterNUICallback('cancelEmote', function(_, cb)
     cb({ ok = true })
 end)
 
--- "Place in world" — hands off to rpemotes-reborn's placement flow
--- (preview ped + WASD positioning). Requires rpemotes >= the version
--- that exposes StartNewPlacement as an export.
 RegisterNUICallback('placeEmote', function(data, cb)
     if not rpemotesResource then
         cb({ ok = false, error = 'rpemotes not detected' })
@@ -305,8 +300,6 @@ RegisterNUICallback('placeEmote', function(data, cb)
         return
     end
 
-    -- Close our menu first so rpemotes can take NUI focus for the placement HUD.
-    -- suppressHelpText skips the default GTA help text — we draw our own NUI overlay.
     Core.CloseMenu()
     Utils.SafeExportCall(rpemotesExportName, 'StartNewPlacement', emoteName, {
         suppressHelpText = true,
@@ -574,9 +567,6 @@ end)
 -------------------------------------------------------------------------------
 
 RegisterNetEvent('mbt_emote_menu:receiveEmoteCatalog', function(catalog, resourceName)
-    -- Defensive: server-side guard already filters #EmoteData == 0, but if a stale
-    -- empty payload ever lands here, ignore it and let the retry loop in
-    -- RequestEmoteCatalog handle it.
     if not catalog or #catalog == 0 then return end
 
     emoteCatalog = catalog
@@ -598,8 +588,6 @@ RegisterNetEvent('mbt_emote_menu:receiveEmoteCatalog', function(catalog, resourc
 
     Core._rpemotesExportName = rpemotesExportName
 
-    -- Detect whether rpemotes-reborn exposes the placement exports added in
-    -- the upstream PR. Read-only probe via GetPlacementState.
     if MBT.Features.EmotePlacement ~= false then
         local _, ok = Utils.SafeExport(rpemotesExportName, 'GetPlacementState')
         placementAvailable = ok
@@ -618,20 +606,22 @@ RegisterNetEvent('mbt_emote_menu:receiveEmoteCatalog', function(catalog, resourc
     })
     catalogSentToNui = true
 
-    Utils.MbtDebugger('Received emote catalog: ' ..
-        #emoteCatalog ..
-        ' emotes from ' .. tostring(resourceName) .. ' (exports: ' .. tostring(rpemotesExportName) .. ')')
+    Utils.MbtDebugger('Received emote catalog: ' .. #emoteCatalog .. ' emotes from ' .. tostring(resourceName) .. ' (exports: ' .. tostring(rpemotesExportName) .. ')')
+
+    if pendingOpen and (GetGameTimer() - pendingOpenAt) <= PENDING_OPEN_TTL_MS then
+        pendingOpen = false
+        Core.OpenMenu()
+    else
+        pendingOpen = false
+    end
 end)
 
 RegisterNetEvent('mbt_emote_menu:receiveEcosystemStatus', function(status)
     ecosystemStatus = status or {}
 end)
 
--- Server's LoadAnimationList() runs in a CreateThread and may not be done by the
--- time we ask. The server stays silent on an empty catalog (see core/server.lua),
--- so we poll until we get a real catalog back. Server throttles to 2s; we wait 2.5s.
 local CATALOG_RETRY_DELAY_MS = 2500
-local CATALOG_MAX_RETRIES = 8 -- ~20s total — generous, covers slow rpemotes parses.
+local CATALOG_MAX_RETRIES = 8
 
 RequestEmoteCatalog = function(attempt)
     attempt = attempt or 1

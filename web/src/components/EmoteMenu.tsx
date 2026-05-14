@@ -7,11 +7,15 @@ import {
   Star,
   History,
   Trophy,
+  SearchX,
 } from "lucide-react";
 import { PlaylistPanel } from "./PlaylistPanel";
 import { PartnerFinder } from "./PartnerFinder";
 import { useLocale, tFormat } from "../utils/locale";
 import { NearbySection } from "./NearbySection";
+import { AnimatedNumber } from "./AnimatedNumber";
+import { EmptyState } from "./EmptyState";
+import { FavoriteDraggable } from "./FavoriteDraggable";
 import { useNui } from "../utils/useNui";
 import { SearchBar } from "./SearchBar";
 import { EmoteCard } from "./EmoteCard";
@@ -165,6 +169,10 @@ export function EmoteMenu({
   } | null>(null);
   const [activeListId, setActiveListId] = useState<string | null>(null);
   const [showListCreator, setShowListCreator] = useState(false);
+  // Tracks the most recently created list so the chip can play a one-shot
+  // pulse — Family pattern: outcome belongs inline on the artifact, not in
+  // a toast that hides what just happened.
+  const [recentlyCreatedListId, setRecentlyCreatedListId] = useState<string | null>(null);
   const [newListName, setNewListName] = useState("");
   const [newListColor, setNewListColor] = useState("#ff295b");
   const [flyingItems, setFlyingItems] = useState<
@@ -525,12 +533,52 @@ export function EmoteMenu({
     };
   }, [handleClose, filteredEmotes, focusedIndex, importExportMode, onPlay]);
 
+  // Horizontal ordering for the tab directional slide via View Transitions API.
+  // Custom-list pseudo-tabs all sit to the right of "top" — selecting any
+  // list reads as "going further right". The direction is set on the root
+  // as `--vt-direction` so the CSS keyframes can pick it up.
+  const TAB_ORDER: Record<Tab, number> = {
+    all: 0, favorites: 1, recent: 2, top: 3, list: 4,
+  };
+
   const handleTabChange = useCallback((tab: Tab) => {
     mbtDebug('Tab changed', { tab });
-    setActiveTab(tab);
-    setActiveCategory(null);
-    setActiveFilter("all");
-  }, []);
+    const direction = TAB_ORDER[tab] >= TAB_ORDER[activeTab] ? 1 : -1;
+    document.documentElement.style.setProperty('--vt-direction', String(direction));
+
+    const apply = () => {
+      setActiveTab(tab);
+      setActiveCategory(null);
+      setActiveFilter("all");
+    };
+
+    // View Transitions API gives us a directional snapshot animation
+    // without any motion library or DOM wrapper. The live grid (and its
+    // refs/scroll listener) is untouched — the browser captures before /
+    // after frames and animates those instead. Graceful fallback to an
+    // instant apply on browsers without VT support.
+    const startVT = (document as { startViewTransition?: (cb: () => void) => unknown }).startViewTransition;
+    if (typeof startVT === 'function') {
+      startVT.call(document, apply);
+    } else {
+      apply();
+    }
+  }, [activeTab]);
+
+  // Grid filter morph — replays an opacity fade keyframe on the virtual
+  // container whenever any of these change, without re-mounting the grid
+  // (which would break scroll position and virtual-list ref). The reflow
+  // trick (remove class → force layout read → add class) is the standard
+  // way to restart a CSS animation without unmount.
+  const virtualContainerRef = useRef<HTMLDivElement | null>(null);
+  const filterKey = `${activeCategory ?? "all"}-${activeFilter}-${search}-${sortOrder}`;
+  useEffect(() => {
+    const el = virtualContainerRef.current;
+    if (!el) return;
+    el.classList.remove("mbt-grid__virtual--filter-changed");
+    void el.offsetWidth; // force reflow so the animation can restart
+    el.classList.add("mbt-grid__virtual--filter-changed");
+  }, [filterKey]);
 
   // ── Import/Export ──
   const handleExportOpen = () => {
@@ -631,72 +679,35 @@ export function EmoteMenu({
     handleEmotePlay(randomEmote);
   }, [filteredEmotes, handleEmotePlay]);
 
-  // Drag reorder for favorites tab
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-  const dragSourceIndex = useRef<number | null>(null);
-
-  const handleDragStartReorder = useCallback((idx: number) => {
-    dragSourceIndex.current = idx;
-  }, []);
-
-  const handleDragOverReorder = useCallback(
-    (e: React.DragEvent, idx: number) => {
-      if (activeTab !== "favorites" || dragSourceIndex.current === null) return;
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      if (dragOverIndex !== idx) setDragOverIndex(idx);
-    },
-    [activeTab, dragOverIndex],
-  );
-
-  const handleDropReorder = useCallback(
-    (idx: number) => {
-      if (activeTab !== "favorites" || dragSourceIndex.current === null) return;
-      const from = dragSourceIndex.current;
-      if (from === idx) {
-        setDragOverIndex(null);
-        dragSourceIndex.current = null;
-        return;
-      }
+  // Favorites reorder via react-dnd (TouchBackend / pointer events). The
+  // FavoriteDraggable wrapper calls back into handleReorderByIndex with the
+  // source + target indices in the current filteredEmotes slice; we then
+  // translate those to favOrder positions (the persisted ordering) and emit
+  // a new array upward. CEF's HTML5 native drag is bypassed entirely — this
+  // mirrors ox_inventory's working approach.
+  const handleReorderByIndex = useCallback(
+    (fromIdx: number, toIdx: number) => {
+      if (activeTab !== "favorites") return;
+      if (fromIdx === toIdx) return;
       const newOrder = [...favOrder];
       const visibleNames = filteredEmotes.map((e) => e.name);
-      const fromName = visibleNames[from];
-      const toName = visibleNames[idx];
+      const fromName = visibleNames[fromIdx];
+      const toName = visibleNames[toIdx];
+      if (!fromName || !toName) return;
       const fromOrderIdx = newOrder.indexOf(fromName);
       const toOrderIdx = newOrder.indexOf(toName);
-      if (fromOrderIdx >= 0 && toOrderIdx >= 0) {
-        newOrder.splice(fromOrderIdx, 1);
-        const insertAt = newOrder.indexOf(toName);
-        newOrder.splice(
-          insertAt >= 0 ? (from < idx ? insertAt + 1 : insertAt) : toOrderIdx,
-          0,
-          fromName,
-        );
-        onReorderFavorites(newOrder);
-      }
-      setDragOverIndex(null);
-      dragSourceIndex.current = null;
+      if (fromOrderIdx < 0 || toOrderIdx < 0) return;
+      newOrder.splice(fromOrderIdx, 1);
+      const insertAt = newOrder.indexOf(toName);
+      newOrder.splice(
+        insertAt >= 0 ? (fromIdx < toIdx ? insertAt + 1 : insertAt) : toOrderIdx,
+        0,
+        fromName,
+      );
+      onReorderFavorites(newOrder);
     },
     [activeTab, favOrder, filteredEmotes, onReorderFavorites],
   );
-
-  const handleDragStartItem = useCallback(
-    (e: React.DragEvent, emote: Emote, idx: number) => {
-      e.dataTransfer.setData("application/json", JSON.stringify(emote));
-      if (activeTab === "favorites") {
-        e.dataTransfer.effectAllowed = "move";
-        dragSourceIndex.current = idx;
-      } else {
-        e.dataTransfer.effectAllowed = "copy";
-      }
-    },
-    [activeTab],
-  );
-
-  const handleDragEndReorder = useCallback(() => {
-    setDragOverIndex(null);
-    dragSourceIndex.current = null;
-  }, []);
 
   // Targeted Fly Binding
   const handleBindClick = useCallback(
@@ -763,8 +774,12 @@ export function EmoteMenu({
     setShowListCreator(false);
     setActiveListId(list.id);
     setActiveTab("list");
-    onToast(tFormat(t.toast_list_created || 'List "%s" created', list.name), "success");
-  }, [newListName, newListColor, customLists, onSaveCustomLists, onToast]);
+    // Inline outcome instead of a toast: the new chip pulses for a beat
+    // (CSS keyframe via .mbt-tab--just-created), and we auto-switch to
+    // its tab so the next thing the user sees is their list ready.
+    setRecentlyCreatedListId(list.id);
+    window.setTimeout(() => setRecentlyCreatedListId(null), 1500);
+  }, [newListName, newListColor, customLists, onSaveCustomLists]);
 
   const handleDeleteList = useCallback(
     (listId: string) => {
@@ -882,7 +897,7 @@ export function EmoteMenu({
             >
               <History size={13} />
               <span>{t.tab_recent || "Recent"}</span>
-              <span className="mbt-tab__count">{recent.length}</span>
+              <AnimatedNumber value={recent.length} className="mbt-tab__count" />
             </button>
           )}
 
@@ -901,7 +916,7 @@ export function EmoteMenu({
           {customLists.map((list) => (
             <button
               key={list.id}
-              className={`mbt-tab ${activeTab === "list" && activeListId === list.id ? "mbt-tab--active" : ""}`}
+              className={`mbt-tab ${activeTab === "list" && activeListId === list.id ? "mbt-tab--active" : ""} ${recentlyCreatedListId === list.id ? "mbt-tab--just-created" : ""}`}
               style={{ "--chip-color": list.color } as React.CSSProperties}
               onClick={() => {
                 setActiveListId(list.id);
@@ -934,6 +949,7 @@ export function EmoteMenu({
             nearbyCount={nearbyCount}
             catalog={catalog}
             playCounts={playCounts}
+            layout={config?.layout}
             onPlay={handleEmotePlay}
             onShowMore={() => setActiveCategory("Shared")}
           />
@@ -1058,15 +1074,24 @@ export function EmoteMenu({
           </div>
         )}
 
+        {/* `mbt-grid-content` view-transition-name lets the directional
+            tab slide (via View Transitions API in handleTabChange) capture
+            this whole subtree as a single snapshot — empty state OR grid —
+            so both transition out together. */}
         {filteredEmotes.length === 0 ? (
-          <div className="mbt-grid--empty">
-            <span className="mbt-empty__text">
-              {t.no_emotes_found || "No emotes found"}
-            </span>
+          <div className="mbt-grid--empty" style={{ viewTransitionName: "mbt-grid-content" } as React.CSSProperties}>
+            <EmptyState
+              icon={SearchX}
+              title={t.no_emotes_found || "No emotes found"}
+              hint={t.no_emotes_hint || "Try a different search or clear the filters"}
+              arrowDirection="up"
+              arrowLabel={t.no_emotes_arrow || "Search above"}
+            />
           </div>
         ) : (
           <div
             className="mbt-grid"
+            style={{ viewTransitionName: "mbt-grid-content" } as React.CSSProperties}
             ref={(el) => {
               (
                 gridRef as React.MutableRefObject<HTMLDivElement | null>
@@ -1084,22 +1109,24 @@ export function EmoteMenu({
                 pointerEvents: "none",
               }}
             />
-            {/* Visible slice, positioned via transform */}
+            {/* Visible slice, positioned via transform. The ref lets the
+                filter-morph effect toggle a class for the in-place fade
+                without re-mounting any virtual content. */}
             <div
               className="mbt-grid__virtual"
+              ref={virtualContainerRef}
               style={{ transform: `translateY(${offsetY - totalHeight}px)` }}
             >
               {filteredEmotes.slice(startIndex, endIndex).map((emote, i) => {
                 const idx = startIndex + i;
                 return (
-                  <div
+                  <FavoriteDraggable
                     key={`${emote.category}-${emote.name}`}
-                    className={`mbt-card-wrap ${dragOverIndex === idx ? "mbt-card-wrap--dragover" : ""}`}
-                    draggable={activeTab === "favorites"}
-                    onDragStart={(e) => handleDragStartItem(e, emote, idx)}
-                    onDragOver={(e) => handleDragOverReorder(e, idx)}
-                    onDrop={() => handleDropReorder(idx)}
-                    onDragEnd={handleDragEndReorder}
+                    emote={emote}
+                    idx={idx}
+                    enabled={activeTab === "favorites"}
+                    onReorder={handleReorderByIndex}
+                    className="mbt-card-wrap"
                   >
                     <EmoteCard
                       emote={emote}
@@ -1147,7 +1174,7 @@ export function EmoteMenu({
                       onAddToList={handleAddToList}
                       onRemoveFromList={handleRemoveFromList}
                     />
-                  </div>
+                  </FavoriteDraggable>
                 );
               })}
             </div>
