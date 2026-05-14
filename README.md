@@ -88,7 +88,7 @@ Built-in translations for **6 languages**: English, Italian, Spanish, French, Ge
 |---|---|
 | [FiveM Server](https://fivem.net) | Build 6116+ |
 | OneSync | Enabled |
-| [rpemotes-reborn](https://github.com/rpemotes/rpemotes-reborn) | Latest |
+| [rpemotes-reborn](https://github.com/alberttheprince/rpemotes-reborn) | Latest |
 
 ---
 
@@ -250,7 +250,7 @@ The UI includes responsive breakpoints for all common resolutions including 2560
 
 ## Acknowledgments
 
-This project would not exist without [**rpemotes-reborn**](https://github.com/rpemotes/rpemotes-reborn) and the incredible work of its maintainers and contributors. rpemotes-reborn provides the entire animation engine, emote library, and shared emote logic that powers every feature in this menu. We are deeply grateful to the rpemotes-reborn team for building and maintaining such a solid foundation for the FiveM roleplay community.
+This project would not exist without [**rpemotes-reborn**](https://github.com/alberttheprince/rpemotes-reborn) and the incredible work of its maintainers and contributors. rpemotes-reborn provides the entire animation engine, emote library, and shared emote logic that powers every feature in this menu. We are deeply grateful to the rpemotes-reborn team for building and maintaining such a solid foundation for the FiveM roleplay community.
 
 **mbt_emote_menu** is a third-party UI overlay and is not affiliated with or endorsed by the rpemotes-reborn project. This resource is published with respect for the original project's license and guidelines. If you are part of the rpemotes-reborn team and have any concerns, please reach out to us directly.
 
@@ -273,4 +273,4 @@ This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENS
 
 You are free to use and modify this software for **noncommercial purposes only** — personal use, hobby servers, research, and education. Any commercial use, redistribution for profit, or inclusion in paid products is prohibited without written permission from Malibu Tech Team.
 
-This resource depends on [rpemotes-reborn](https://github.com/rpemotes/rpemotes-reborn) which is licensed under GPL-3.0. **mbt_emote_menu** does not include or redistribute any rpemotes-reborn source code — it communicates with rpemotes-reborn at runtime through FiveM exports and events.
+This resource depends on [rpemotes-reborn](https://github.com/alberttheprince/rpemotes-reborn) which is licensed under GPL-3.0. **mbt_emote_menu** does not include or redistribute any rpemotes-reborn source code — it communicates with rpemotes-reborn at runtime through FiveM exports and events.
