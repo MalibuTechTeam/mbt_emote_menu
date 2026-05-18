@@ -1,16 +1,16 @@
 # MBT Emote Menu — Premium NUI for rpemotes-reborn
 
 <p align="center">
-  <img src="https://img.shields.io/badge/FiveM-Ready-00fb8a?style=for-the-badge&logo=fivem&logoColor=white" alt="FiveM Ready" />
+  <img src="https://img.shields.io/badge/FiveM-Ready-00e676?style=for-the-badge&logo=fivem&logoColor=white" alt="FiveM Ready" />
   <img src="https://img.shields.io/badge/Framework-ESX%20%7C%20QBox%20%7C%20QBCore%20%7C%20Standalone-blue?style=for-the-badge" alt="Framework" />
-  <img src="https://img.shields.io/badge/Version-1.3.0-informational?style=for-the-badge" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-1.4.0-informational?style=for-the-badge" alt="Version" />
   <img src="https://img.shields.io/badge/Lua-5.4-purple?style=for-the-badge&logo=lua" alt="Lua 5.4" />
   <img src="https://img.shields.io/badge/React-TypeScript-61DAFB?style=for-the-badge&logo=react" alt="React + TS" />
   <img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue?style=for-the-badge" alt="PolyForm Noncommercial 1.0.0" />
 </p>
 
 <p align="center">
-  <img src="https://r2.fivemanage.com/dPa5OqQoEubnwFkRaIgUq/ScreenShot/thumb_mbt_rpemotes.png" alt="FiveM Ready" />
+  <img src=".github/release-assets/v1.4.0-cinematic.png" alt="MBT Emote Menu — Cinematic Layout" />
 </p>
 
 **mbt_emote_menu** is a premium NUI overlay that completely replaces the default rpemotes-reborn menu with a modern, responsive, and feature-rich interface built with React + TypeScript. Designed for serious RP servers that demand a polished player experience.
@@ -21,7 +21,7 @@
 
 | Default Layout | Cinematic Layout |
 |:-:|:-:|
-| ![Default](https://r2.fivemanage.com/dPa5OqQoEubnwFkRaIgUq/ScreenShot/mbt_rpemotes2_water.jpg) | ![Cinematic](https://r2.fivemanage.com/dPa5OqQoEubnwFkRaIgUq/ScreenShot/mbt_rpemotes1_water.jpg) |
+| ![Default](.github/release-assets/v1.4.0-standard.png) | ![Cinematic](.github/release-assets/v1.4.0-cinematic.png) |
 
 ---
 
@@ -31,7 +31,7 @@
 
 - **1800+ emotes** organized by category with **silhouette icons** (Emotes, Props, Dances, Shared, Expressions, Walk Styles, Animals, Emojis)
 - **Real-time search** with instant filtering across all emotes
-- **Two layout modes** — *Default* (classic panel) and *Cinematic* (transparent, immersive overlay)
+- **Two layout modes** *(fully redesigned in 1.4)* — *Default* (a bounded, draggable floating panel) and *Cinematic* (an edge-docked, vignette-blended immersive overlay)
 - **Left or right positioning** — configurable panel side
 - **Draggable menu** — click and drag the header to reposition (default layout)
 - **Fully responsive** — optimized breakpoints for 720p, 1080p, 1440p, 4K, and ultrawide monitors (21:9, 32:9)
@@ -40,10 +40,11 @@
 
 - **Favorites** system with import/export (JSON) and drag-to-reorder
 - **Recent emotes** — automatically tracks your last played emotes
-- **Top emotes** — ranked by play count
-- **Custom lists** — create personal collections with custom names and colors
+- **Top emotes** — ranked by your personal play count
+- **Trending this week** *(new in 1.4)* — a server-wide hero spotlight showing the single most-played emote across everyone on the server, on a rolling 7-day window (aggregate counts only, no per-player tracking)
+- **Custom lists** — create personal collections with custom names and icons
 - **Category filters** — filter by Props, Shared, or browse All
-- **Sorting** — A-Z, Z-A, or by category
+- **Sorting & filter** — A-Z, Z-A, or by category, plus a one-click random emote
 
 ### Quick Access
 
@@ -177,7 +178,7 @@ MBT.EmoteWheel = {
 
 ```lua
 MBT.Theme = {
-    Accent     = '00fb8a',   -- Primary accent color
+    Accent     = '00e676',   -- Primary accent color
     Background = '0C0E14',
     Card       = '141720',
     Text       = 'E8E8EE',

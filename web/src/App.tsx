@@ -2,13 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { EmoteMenu } from './components/EmoteMenu'
 import type { TrendingEmote } from './components/TrendingHero'
 import { EmoteWheel } from './components/EmoteWheel'
-import { PlacementOverlay } from './components/PlacementOverlay'
-import { PreviewVignette } from './components/PreviewVignette'
-import { OpenJoinPill, type OpenJoinPosition } from './components/OpenJoinPill'
-import { WhatsThatBubble } from './components/WhatsThatBubble'
-import { Toast, useToasts } from './components/Toast'
+import { AmbientLayer } from './components/AmbientLayer'
+import { emitToast } from './components/Toast'
 import { LocaleProvider, type LocaleStrings } from './utils/locale'
 import { useNui } from './utils/useNui'
+import { buildThemeVars } from './utils/theme'
 import type { Emote, MenuConfig, SharedRequest, JobPermissions, CustomList } from './utils/types'
 import { setDebugEnabled, mbtDebug } from './utils/debug'
 
@@ -38,24 +36,8 @@ function App() {
   const [savedMenuState, setSavedMenuState] = useState<{
     search: string; tab: string; category: string | null; filter: string; sort: string; scrollTop: number
   } | null>(null)
-  const [placementActive, setPlacementActive] = useState(false)
-  const [previewVignette, setPreviewVignette] = useState(false)
-  const [openJoin, setOpenJoin] = useState<{
-    visible: boolean
-    label: string
-    joinKey: string
-    position: OpenJoinPosition
-  }>({ visible: false, label: '', joinKey: 'F', position: 'bottom-center' })
-  const [whatsThat, setWhatsThat] = useState<{
-    visible: boolean
-    label: string
-    hotKey: string
-    x: number
-    y: number
-  }>({ visible: false, label: '', hotKey: 'G', x: 0.5, y: 0.5 })
   const [nearbyCount, setNearbyCount] = useState(0)
   const [trending, setTrending] = useState<TrendingEmote | null>(null)
-  const { toasts, addToast, dismissToast } = useToasts()
 
   // Listen for NUI messages from client.lua
   useEffect(() => {
@@ -108,52 +90,8 @@ function App() {
           setVisible(false)
           break
 
-        case 'placementStarted':
-          setPlacementActive(true)
-          break
-
-        case 'placementEnded':
-          setPlacementActive(false)
-          break
-
-        case 'previewVignette':
-          setPreviewVignette(!!data.visible)
-          break
-
-        case 'openJoinShow':
-          setOpenJoin({
-            visible: true,
-            label: data.label || '',
-            joinKey: data.joinKey || 'F',
-            position: (data.position as OpenJoinPosition) || 'bottom-center',
-          })
-          break
-
-        case 'openJoinHide':
-          setOpenJoin((s) => ({ ...s, visible: false }))
-          break
-
-        case 'whatsthatShow':
-          setWhatsThat({
-            visible: true,
-            label: data.label || '',
-            hotKey: data.hotKey || 'G',
-            x: typeof data.x === 'number' ? data.x : 0.5,
-            y: typeof data.y === 'number' ? data.y : 0.5,
-          })
-          break
-
-        case 'whatsthatMove':
-          setWhatsThat((s) => ({
-            ...s,
-            x: typeof data.x === 'number' ? data.x : s.x,
-            y: typeof data.y === 'number' ? data.y : s.y,
-          }))
-          break
-
-        case 'whatsthatHide':
-          setWhatsThat((s) => ({ ...s, visible: false }))
-          break
+        // placement / previewVignette / openJoin* / whatsthat* are owned
+        // by AmbientLayer (it runs its own message listener) — not here.
 
         case 'nearbyCountUpdate':
           setNearbyCount(typeof data.count === 'number' ? data.count : 0)
@@ -229,6 +167,18 @@ function App() {
     window.addEventListener('message', handler)
     return () => window.removeEventListener('message', handler)
   }, [])
+
+  // Apply the server theme (config.lua MBT.Theme) as CSS custom properties
+  // on :root, so the whole NUI — menu, wheel and the ambient overlays
+  // alike — shares one accent. index.css holds the built-in defaults.
+  useEffect(() => {
+    if (!config) return
+    const vars = buildThemeVars(config.theme)
+    const root = document.documentElement
+    for (const [key, value] of Object.entries(vars)) {
+      root.style.setProperty(key, String(value))
+    }
+  }, [config])
 
   // ESC is now handled inside EmoteMenu via handleClose → onClose prop
 
@@ -333,74 +283,24 @@ function App() {
     setSavedMenuState(null) // ESC → reset state on next open
   }, [])
 
-  // OpenJoin + WhatsThat both lead to "play the same emote nearby". When both
-  // are active and addressing the same emote, only show the OpenJoin pill so
-  // the player gets a single prompt rather than two competing affordances.
-  const whatsThatVisible =
-    whatsThat.visible && !(openJoin.visible && openJoin.label === whatsThat.label)
-
-  // Wheel, placement overlay and preview vignette are independent from the
-  // menu — render them even when the menu is closed (so the vignette can
-  // gracefully fade out on close, for example).
-  if (!visible && !wheelVisible) {
-    if (!placementActive && !previewVignette && !openJoin.visible && !whatsThatVisible && toasts.length === 0) return null
+  if (!visible || !config) {
+    // Menu closed (or config not yet loaded): render only the wheel, if
+    // held, plus the always-on ambient layer. AmbientLayer owns the
+    // overlay state and runs its own NUI message listener.
     return (
       <LocaleProvider strings={locale}>
-        <PreviewVignette visible={previewVignette} layout={config?.layout} />
-        <PlacementOverlay visible={placementActive} layout={config?.layout} />
-        <OpenJoinPill
-          visible={openJoin.visible}
-          emoteLabel={openJoin.label}
-          joinKey={openJoin.joinKey}
-          position={openJoin.position}
-          layout={config?.layout}
-        />
-        <WhatsThatBubble
-          visible={whatsThatVisible}
-          label={whatsThat.label}
-          hotKey={whatsThat.hotKey}
-          x={whatsThat.x}
-          y={whatsThat.y}
-          layout={config?.layout}
-        />
-        {toasts.length > 0 && <Toast toasts={toasts} onDismiss={dismissToast} />}
+        {wheelVisible && (
+          <EmoteWheel
+            visible={wheelVisible}
+            slots={wheelSlots}
+            activeIndex={wheelIndex}
+            maxSlots={wheelMaxSlots}
+          />
+        )}
+        <AmbientLayer layout={config?.layout} />
       </LocaleProvider>
     )
   }
-
-  // If only wheel is visible (menu closed)
-  if (!visible && wheelVisible) {
-    return (
-      <LocaleProvider strings={locale}>
-        <EmoteWheel
-          visible={wheelVisible}
-          slots={wheelSlots}
-          activeIndex={wheelIndex}
-          maxSlots={wheelMaxSlots}
-        />
-        <PreviewVignette visible={previewVignette} layout={config?.layout} />
-        <PlacementOverlay visible={placementActive} layout={config?.layout} />
-        <OpenJoinPill
-          visible={openJoin.visible}
-          emoteLabel={openJoin.label}
-          joinKey={openJoin.joinKey}
-          position={openJoin.position}
-          layout={config?.layout}
-        />
-        <WhatsThatBubble
-          visible={whatsThatVisible}
-          label={whatsThat.label}
-          hotKey={whatsThat.hotKey}
-          x={whatsThat.x}
-          y={whatsThat.y}
-          layout={config?.layout}
-        />
-        <Toast toasts={toasts} onDismiss={dismissToast} />
-      </LocaleProvider>
-    )
-  }
-
-  if (!config) return null
 
   return (
     <LocaleProvider strings={locale}>
@@ -443,28 +343,11 @@ function App() {
         activeExpression={activeExpression}
         onResetWalkstyle={handleResetWalkstyle}
         onResetExpression={handleResetExpression}
-        onToast={addToast}
+        onToast={emitToast}
         onClose={handleManualClose}
         onPlayClose={() => setVisible(false)}
       />
-      <PreviewVignette visible={previewVignette} layout={config?.layout} />
-      <PlacementOverlay visible={placementActive} layout={config?.layout} />
-      <OpenJoinPill
-        visible={openJoin.visible}
-        emoteLabel={openJoin.label}
-        joinKey={openJoin.joinKey}
-        position={openJoin.position}
-        layout={config?.layout}
-      />
-      <WhatsThatBubble
-        visible={whatsThatVisible}
-        label={whatsThat.label}
-        hotKey={whatsThat.hotKey}
-        x={whatsThat.x}
-        y={whatsThat.y}
-        layout={config?.layout}
-      />
-      <Toast toasts={toasts} onDismiss={dismissToast} />
+      <AmbientLayer layout={config?.layout} />
     </LocaleProvider>
   )
 }

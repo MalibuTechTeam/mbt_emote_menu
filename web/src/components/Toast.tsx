@@ -61,3 +61,23 @@ export function useToasts() {
 
   return { toasts, addToast, dismissToast }
 }
+
+/**
+ * Module-level toast bus. Lets any component fire a toast without
+ * routing the toast state through a common ancestor. AmbientLayer
+ * registers the live sink (its `useToasts().addToast`); `emitToast`
+ * forwards to it (no-op if no AmbientLayer is mounted).
+ */
+type ToastSink = (text: string, type?: ToastMessage['type'], duration?: number) => void
+let _toastSink: ToastSink | null = null
+
+/** Register the active toast sink. Returns an unregister cleanup. */
+export function setToastListener(sink: ToastSink): () => void {
+  _toastSink = sink
+  return () => { if (_toastSink === sink) _toastSink = null }
+}
+
+/** Fire a toast through the registered sink. */
+export function emitToast(text: string, type?: ToastMessage['type'], duration?: number) {
+  _toastSink?.(text, type, duration)
+}

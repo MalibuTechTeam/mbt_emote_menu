@@ -1516,20 +1516,34 @@ body {
 .mbt-card--expanded {
   position: relative;
   z-index: 10;
+  /* The drawer below is an absolute overlay — let it escape the card's
+     overflow:hidden clip so it can float over the cards beneath. */
+  overflow: visible;
 }
 
 /* ── Card drawer — v7 recessed "tray": darkened, inset-shadowed vano
    carved into the card. Holds curated sections (variants / lists /
    quick-bind keycaps + wheel chips). */
 .mbt-card__variants {
-  position: relative;
-  margin: 3px 5px 5px;
+  /* Absolute overlay, NOT in flow — the card row stays a fixed ~68px so
+     useVirtualGrid's 74px rowHeight assumption always holds and the list
+     never reflows / desyncs scroll while a drawer is open. The drawer
+     floats over the cards below; it auto-closes on mouseLeave so
+     covering them is fine. */
+  position: absolute;
+  top: 100%;
+  left: 5px;
+  right: 5px;
+  margin-top: 3px;
   padding: 0 14px;
   border-radius: 9px;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.17));
+  /* Opaque now — it's an overlay, not a carved-in tray. */
+  background: linear-gradient(180deg, #0e1512, #090d0b);
+  border: 1px solid var(--mbt-edge-hi);
   box-shadow:
     inset 0 2px 7px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(0, 0, 0, 0.55);
+    inset 0 1px 0 rgba(0, 0, 0, 0.55),
+    0 16px 32px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
   z-index: 20;

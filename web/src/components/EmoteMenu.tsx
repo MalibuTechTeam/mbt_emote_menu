@@ -332,7 +332,7 @@ export function EmoteMenu({
     await useNui("placeEmote", { name: emote.name });
   }, []);
 
-  const { theme, categories, features } = config;
+  const { categories, features } = config;
   const visibleCategories = categories.filter((c) => c.visible);
   const favCount = Object.keys(favorites).length;
 
@@ -345,25 +345,8 @@ export function EmoteMenu({
     return counts;
   }, [catalog]);
 
-  // ── Theme CSS vars ──
-  const themeVars = useMemo(
-    () =>
-      ({
-        "--mbt-accent": `#${theme.Accent}`,
-        "--mbt-accent-rgb": hexToRgb(theme.Accent),
-        "--mbt-accent-strong": `rgba(${hexToRgb(theme.Accent)}, 0.82)`,
-        "--mbt-accent-g": `linear-gradient(135deg, #${theme.Accent} 0%, rgba(${hexToRgb(theme.Accent)}, 0.75) 100%)`,
-        "--mbt-accent-glow": `rgba(${hexToRgb(theme.Accent)}, 0.25)`,
-        "--mbt-accent-soft": `rgba(${hexToRgb(theme.Accent)}, 0.08)`,
-        "--mbt-bg": `#${theme.Background}`,
-        "--mbt-bg-glass": `rgba(${hexToRgb(theme.Background)}, 0.88)`,
-        "--mbt-card": `rgba(${hexToRgb(theme.Card)}, 0.7)`,
-        "--mbt-text": `#${theme.Text}`,
-        "--mbt-subtext": `#${theme.SubText}`,
-        "--mbt-border": `rgba(${hexToRgb(theme.Border)}, 0.35)`,
-      }) as React.CSSProperties,
-    [theme],
-  );
+  // Theme CSS vars are applied on :root by App (see utils/theme.ts) so
+  // the menu, wheel and ambient overlays all share one accent.
 
   // ── Filter + sort pipeline ──
   const filteredEmotes = useMemo(() => {
@@ -826,7 +809,6 @@ export function EmoteMenu({
   return (
     <div
       className={`mbt-overlay mbt-overlay--${config.position} layout-${config.layout || "default"}`}
-      style={themeVars}
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
@@ -1367,14 +1349,6 @@ export function EmoteMenu({
       </div>
     </div>
   );
-}
-
-// ─── Helper ────────────────────────────────────────────────────────────────
-function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-  return `${r}, ${g}, ${b}`;
 }
 
 // Category → RGB triplet for the rail-pill colour dot. Triplets (not hex/var)
