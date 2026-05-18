@@ -21,11 +21,7 @@ RegisterLocale('de', {
     ['tab_recent']          = 'Zuletzt',
 
     -- Actions
-    ['play_emote']          = 'Abspielen',
     ['cancel_emote']        = 'Stoppen',
-    ['add_favorite']        = 'Zu Favoriten hinzufuegen',
-    ['remove_favorite']     = 'Aus Favoriten entfernen',
-    ['set_keybind']         = 'Taste zuweisen',
 
     -- Shared Emotes
     ['shared_request']      = 'moechte spielen',
@@ -35,7 +31,6 @@ RegisterLocale('de', {
     -- Filters
     ['filter_all']          = 'Alle',
     ['filter_props']        = 'Mit Props',
-    ['filter_solo']         = 'Solo',
     ['filter_shared']       = 'Geteilt',
 
     -- Status
@@ -48,7 +43,7 @@ RegisterLocale('de', {
     ['no_emotes_hint']      = 'Andere Suche probieren oder Filter zuruecksetzen',
     ['no_emotes_arrow']     = 'Oben suchen',
     ['partner_hint']        = 'Komm naher an einen Spieler, um ihn einzuladen',
-    ['wheel_empty_hint']    = 'Emote hier herein ziehen',
+    ['wheel_empty_hint']    = 'Leerer Slot',
 
     -- Quick Bind
     ['quickbind_title']     = 'Schnellzugriff',
@@ -73,12 +68,7 @@ RegisterLocale('de', {
     ['playlist_loop_on']    = 'Schleife aktiviert',
     ['playlist_loop_off']   = 'Schleife deaktiviert',
 
-    -- Ecosystem
-    ['eco_meta_clothes']    = 'MBT Meta Clothes',
-    ['eco_wearable_props']  = 'MBT Wearable Props',
-
     -- Buttons
-    ['btn_new']                    = 'Neu',
     ['btn_create']                 = 'Erstellen',
     ['btn_cancel']                 = 'Abbrechen',
     ['btn_done']                   = 'Fertig',
@@ -93,8 +83,6 @@ RegisterLocale('de', {
     -- Tooltips
     ['tooltip_new_list']           = 'Neue Liste',
     ['tooltip_stop_animation']     = 'Animation stoppen',
-    ['tooltip_sort_change']        = 'Sortierung aendern',
-    ['tooltip_random_emote']       = 'Zufaelliger Emote',
     ['tooltip_export_favorites']   = 'Favoriten exportieren',
     ['tooltip_import_favorites']   = 'Favoriten importieren',
     ['tooltip_preview_start']      = 'Vorschau (nur du)',
@@ -161,12 +149,34 @@ RegisterLocale('de', {
     ['badge_prop']                 = 'Prop',
     ['badge_dance']                = 'Dance',
 
+    -- Result bar & sort
+    ['sort_az']               = 'A-Z',
+    ['sort_za']               = 'Z-A',
+    ['sort_cat']              = 'Kategorie',
+    ['sortpop_sort_by']       = 'Sortieren nach',
+    ['sortpop_filter']        = 'Filter',
+    ['resultbar_emotes']      = 'Emotes',
+    ['btn_random']            = 'Zufalls-Emote',
+    ['btn_sort_filter']       = 'Sortieren & filtern',
+    ['tooltip_sort_filter']   = 'Sortieren & filtern',
+    ['tooltip_more']          = 'Mehr',
+    ['wheel_slot_label']      = 'Slot',
+    ['modal_list_icon_label'] = 'Symbol',
+
+    -- Keys synced from en.lua
+    ['quickbind_hint']         = 'Drücke eine Numpad-Taste im Spiel',
+    ['trending_kicker']        = 'Diese Woche im Trend',
+    ['trending_sub']           = '%s · %s Wiedergaben diese Woche',
+    ['drawer_quick_bind_hint'] = 'Numpad-Taste',
+    ['drawer_wheel_slot_hint'] = 'Radialmenü',
+    ['drawer_bind_key']        = 'NUM %s',
+    ['variant_count']          = '%s Varianten',
+
     -- Toasts
     ['toast_walk_reset']           = 'Gangstil zurueckgesetzt',
     ['toast_expression_reset']     = 'Ausdruck zurueckgesetzt',
     ['toast_emote_restricted']     = 'Emote auf bestimmte Jobs beschraenkt',
     ['toast_wheel_assigned']       = '%s zu NUM%s zugewiesen',
-    ['toast_list_created']         = 'Liste "%s" erstellt',
     ['toast_list_deleted']         = 'Liste "%s" geloescht',
     ['toast_list_already_in']      = 'Bereits in "%s"',
     ['toast_list_added']           = 'Zu "%s" hinzugefuegt',

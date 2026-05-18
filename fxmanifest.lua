@@ -27,6 +27,7 @@ server_scripts {
     'modules/bridges/qbcore.lua',
     'modules/bridges/qbox.lua',
     'modules/openjoin/server.lua',
+    'modules/trending/server.lua',
 }
 
 client_scripts {
@@ -36,6 +37,7 @@ client_scripts {
     'modules/playlist/client.lua',
     'modules/partner/client.lua',
     'modules/openjoin/client.lua',
+    'modules/trending/client.lua',
     'modules/whatsthat/client.lua',
     'modules/nearby/client.lua',
     'core/client.lua',

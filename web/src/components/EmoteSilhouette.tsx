@@ -24,21 +24,23 @@ type SilhouetteType =
   | 'music'
 
 // ─── keyword → silhouette mapping ───────────────────────────────────────────
+// \b word boundaries so a keyword matches a WHOLE word, not a substring —
+// otherwise 'dj' matches "a-dj-ust", 'hi' matches "t-hi-s", 'lay' matches
+// "p-lay", etc. Order matters — first match wins.
 const KEYWORD_MAP: [RegExp, SilhouetteType][] = [
-  // Specific actions first (order matters — first match wins)
-  [/phone|call|dial|cellphone|mobile/i,         'phone'],
-  [/smoke|smoking|cigar|cigarette|joint|blunt/i, 'smoking'],
-  [/drink|beer|wine|coffee|cup|bottle|sip|chug/i,'drinking'],
-  [/sit|bench|chair|stool|couch|throne|seated/i, 'sitting'],
-  [/lay|lie|sleep|bed|ground|push.?up|plank/i,   'lying'],
-  [/lean|wall|rail|fence|post/i,                 'leaning'],
-  [/crouch|kneel|pray|beg|squat|meditate|yoga/i, 'crouching'],
-  [/wave|hello|hi|bye|greet|salute|thumbs/i,     'waving'],
-  [/cheer|celebrate|victory|fist|clap|applaud/i,  'celebration'],
-  [/fight|punch|kick|box|slap|karate|martial/i,  'fighting'],
-  [/ball|basket|soccer|football|golf|tennis|bat/i,'sports'],
-  [/guitar|drum|dj|music|piano|violin|flute/i,   'music'],
-  [/point|direct|show|finger/i,                  'waving'],
+  [/\b(phone|call|dial|cellphone|mobile)\b/i,            'phone'],
+  [/\b(smoke|smoking|cigar|cigarette|joint|blunt)\b/i,   'smoking'],
+  [/\b(drink|beer|wine|coffee|cup|bottle|sip|chug)\b/i,  'drinking'],
+  [/\b(sit|bench|chair|stool|couch|throne|seated)\b/i,   'sitting'],
+  [/\b(lay|lie|sleep|bed|ground|push.?up|plank)\b/i,     'lying'],
+  [/\b(lean|wall|rail|fence|post)\b/i,                   'leaning'],
+  [/\b(crouch|kneel|pray|beg|squat|meditate|yoga)\b/i,   'crouching'],
+  [/\b(wave|hello|hi|bye|greet|salute|thumbs)\b/i,       'waving'],
+  [/\b(cheer|celebrate|victory|fist|clap|applaud)\b/i,   'celebration'],
+  [/\b(fight|fighting|punch|kick|box|boxing|slap|karate|martial)\b/i, 'fighting'],
+  [/\b(ball|basket|soccer|football|golf|tennis|bat)\b/i, 'sports'],
+  [/\b(guitar|drum|dj|music|piano|violin|flute)\b/i,     'music'],
+  [/\b(point|direct|show|finger)\b/i,                    'waving'],
 ]
 
 /**
@@ -69,70 +71,217 @@ export function getSilhouetteType(emote: Emote): SilhouetteType {
   return 'standing'
 }
 
-// ─── SVG paths ──────────────────────────────────────────────────────────────
-// Each silhouette is drawn in a 24×24 viewBox, designed to render crisply at
-// 18–22 px with currentColor fill.
+// ─── geometric pictogram set ─────────────────────────────────────────────────
+// One shared vocabulary across all 20 figures, drawn in a 24×24 viewBox:
+//   • HEAD   — <circle> radius 2.6 (cy≈4.6 for upright figures)
+//   • LIMBS  — rounded capsules: 2.6-wide rects with rx 1.3, or rotated paths
+// Only the POSE changes between figures. Designed to read crisply at ~22 px.
 
 const silhouettes: Record<SilhouetteType, ReactNode> = {
   standing: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm-2 7h4a2 2 0 0 1 2 2v5h-2v6h-4v-6H8v-5a2 2 0 0 1 2-2z" />
+    <>
+      <circle cx={12} cy={4.6} r={2.6} />
+      <rect x={10.7} y={7.6} width={2.6} height={7.4} rx={1.3} />
+      <rect x={7.3} y={8.2} width={2.6} height={6.6} rx={1.3} />
+      <rect x={14.1} y={8.2} width={2.6} height={6.6} rx={1.3} />
+      <rect x={10} y={13.8} width={2.6} height={7.2} rx={1.3} />
+      <rect x={11.4} y={13.8} width={2.6} height={7.2} rx={1.3} />
+    </>
   ),
   sitting: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm-2.5 7h5a1.5 1.5 0 0 1 1.5 1.5V14h3v2h-4v-2h-1v4h2v2H8v-2h2v-4H9v2H5v-2h3v-3.5A1.5 1.5 0 0 1 9.5 9z" />
+    <>
+      <circle cx={10} cy={4.6} r={2.6} />
+      <rect x={8.7} y={7.6} width={2.6} height={7.6} rx={1.3} />
+      <rect x={7.5} y={8.2} width={2.6} height={6.4} rx={1.3} />
+      <rect x={8.7} y={12.6} width={9} height={2.6} rx={1.3} />
+      <rect x={14.4} y={12.9} width={2.6} height={7.6} rx={1.3} />
+    </>
   ),
   lying: (
-    <path d="M3 14a2.5 2.5 0 1 1 5 0 2.5 2.5 0 0 1-5 0zm6-2h10a1.5 1.5 0 0 1 0 3H9a1.5 1.5 0 0 1 0-3zm1 4h4v2h-4v-2z" />
+    <>
+      <circle cx={5.4} cy={14} r={2.6} />
+      <rect x={8} y={12.7} width={9} height={2.6} rx={1.3} />
+      <rect x={9} y={9.5} width={2.6} height={5} rx={1.3} transform="rotate(50 10.3 12)" />
+      <rect x={15} y={12.7} width={2.6} height={6.6} rx={1.3} transform="rotate(-42 16.3 16)" />
+      <rect x={15.4} y={12.7} width={2.6} height={6.6} rx={1.3} transform="rotate(42 16.7 16)" />
+    </>
   ),
   dancing: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm1 7.3 3.5-2.1 1 1.7L14 11.5v3l3.5 3-.8 1.2L13 15.5V20h-2v-4.5L7.3 18.7l-.8-1.2 3.5-3v-3L6.5 8.9l1-1.7L11 9.3V11h2V9.3z" />
+    <>
+      <circle cx={12.4} cy={4.6} r={2.6} />
+      <rect x={11.1} y={7.4} width={2.6} height={7.2} rx={1.3} />
+      <rect x={11} y={7.6} width={2.6} height={6.6} rx={1.3} transform="rotate(58 12.3 10.9)" />
+      <rect x={9.8} y={5} width={2.6} height={6.6} rx={1.3} transform="rotate(-40 11.1 8.3)" />
+      <rect x={9.4} y={13.4} width={2.6} height={7.2} rx={1.3} transform="rotate(28 10.7 17)" />
+      <rect x={12.2} y={13.4} width={2.6} height={7.2} rx={1.3} transform="rotate(-30 13.5 17)" />
+    </>
   ),
   waving: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm4-1 1.4 1.4L15 4.8V7h-1V4.2l-1-.8V9h-2.5L10 11v5H8v-5.5l1.5-2.5H14V7a2 2 0 0 1 2-2V1zm-6 8h4v2l-1 1v4h2v2H8v-2h2v-4l-1-1V9h1z" />
+    <>
+      <circle cx={11.4} cy={4.6} r={2.6} />
+      <rect x={10.1} y={7.6} width={2.6} height={7.4} rx={1.3} />
+      <rect x={6.7} y={8.2} width={2.6} height={6.6} rx={1.3} />
+      <rect x={13.3} y={2.6} width={2.6} height={6.8} rx={1.3} transform="rotate(34 14.6 6)" />
+      <rect x={9.4} y={13.8} width={2.6} height={7.2} rx={1.3} />
+      <rect x={10.8} y={13.8} width={2.6} height={7.2} rx={1.3} />
+    </>
   ),
   leaning: (
-    <path d="M13 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM6 8h1v14H6V8zm5 1h4a1.5 1.5 0 0 1 1.5 1.5V14h-2v8h-4v-8h-2v-3.5A1.5 1.5 0 0 1 10 9h1z" />
+    <>
+      <circle cx={14} cy={5} r={2.6} />
+      <rect x={12.7} y={7.9} width={2.6} height={7} rx={1.3} transform="rotate(14 14 11.4)" />
+      <rect x={15.4} y={8.6} width={2.6} height={6.4} rx={1.3} transform="rotate(14 16.7 11.8)" />
+      <rect x={9.5} y={8.6} width={2.6} height={6.4} rx={1.3} transform="rotate(14 10.8 11.8)" />
+      <rect x={12.2} y={14.2} width={2.6} height={6.8} rx={1.3} transform="rotate(14 13.5 17.6)" />
+      <rect x={5.3} y={6} width={2.2} height={15.6} rx={1.1} />
+    </>
   ),
   prop: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm5 5h2v2h-2V7zm-7 2h4a2 2 0 0 1 2 2v1h-1.5l.5 2v.5L17 12v1l-3 .5V16h-1v6h-2v-6h-1v-2.5L7 13v-1l2.5.5V12l.5-2H8.5v-1a2 2 0 0 1 2-2z" />
+    <>
+      <circle cx={9.4} cy={5.2} r={2.6} />
+      <rect x={8.1} y={8.1} width={2.6} height={7} rx={1.3} />
+      <rect x={5.1} y={8.7} width={2.6} height={6} rx={1.3} />
+      <rect x={11.1} y={8.7} width={2.6} height={6} rx={1.3} />
+      <rect x={7.5} y={14} width={2.6} height={7} rx={1.3} />
+      <rect x={8.9} y={14} width={2.6} height={7} rx={1.3} />
+      <rect x={14.8} y={12.6} width={6.4} height={6.4} rx={1.4} />
+    </>
   ),
   walking: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm-1 7h3l2 4-1.8.9L13 11.5V14l2.5 4-.8 1-2.7-3.5V20h-2v-4.5L7.3 19l-.8-1L9 14v-2.5L7.8 13.9 6 13l2-4h3z" />
+    <>
+      <circle cx={12} cy={4.6} r={2.6} />
+      <rect x={10.7} y={7.5} width={2.6} height={7} rx={1.3} />
+      <rect x={6.6} y={8} width={2.6} height={6.6} rx={1.3} transform="rotate(28 7.9 11.3)" />
+      <rect x={14.8} y={8} width={2.6} height={6.6} rx={1.3} transform="rotate(-28 16.1 11.3)" />
+      <rect x={6.5} y={13.4} width={2.6} height={7.4} rx={1.3} transform="rotate(28 7.8 17.1)" />
+      <rect x={14.9} y={13.4} width={2.6} height={7.4} rx={1.3} transform="rotate(-28 16.2 17.1)" />
+    </>
   ),
   expression: (
-    <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm-2.5 6a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm5 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM8.5 14.5c.8 1.5 2 2.5 3.5 2.5s2.7-1 3.5-2.5" />
+    <>
+      <circle cx={12} cy={12} r={9.4} />
+      <circle cx={9} cy={10.2} r={1.4} />
+      <circle cx={15} cy={10.2} r={1.4} />
+      <path d="M8.4 14.4a1.05 1.05 0 0 1 1.9-.9 1.9 1.9 0 0 0 3.4 0 1.05 1.05 0 0 1 1.9.9 4 4 0 0 1-7.2 0z" />
+    </>
   ),
   crouching: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm-2 7h4a2 2 0 0 1 2 2v3h-2l1 4h-2l-1-4h-1l-1 4H8l1-4H7v-3a2 2 0 0 1 2-2h1z" />
+    <>
+      <circle cx={12} cy={7.4} r={2.6} />
+      <rect x={10.7} y={10} width={2.6} height={5} rx={1.3} />
+      <rect x={7.6} y={9.6} width={2.6} height={5} rx={1.3} transform="rotate(34 8.9 12.1)" />
+      <rect x={13.8} y={9.6} width={2.6} height={5} rx={1.3} transform="rotate(-34 15.1 12.1)" />
+      <rect x={7.6} y={13.6} width={2.6} height={5.4} rx={1.3} transform="rotate(46 8.9 16.3)" />
+      <rect x={13.8} y={13.6} width={2.6} height={5.4} rx={1.3} transform="rotate(-46 15.1 16.3)" />
+    </>
   ),
   shared: (
-    <path d="M7.5 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm9 0a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM5.5 8h4a1.5 1.5 0 0 1 1.5 1.5V13H9v7H6v-7H4V9.5A1.5 1.5 0 0 1 5.5 8zm9 0h4a1.5 1.5 0 0 1 1.5 1.5V13h-2v7h-3v-7h-2V9.5A1.5 1.5 0 0 1 14.5 8z" />
+    <>
+      <circle cx={7} cy={6.4} r={2.2} />
+      <rect x={5.9} y={8.9} width={2.2} height={6} rx={1.1} />
+      <rect x={3.5} y={9.3} width={2.2} height={5} rx={1.1} />
+      <rect x={8.3} y={9.3} width={2.2} height={5} rx={1.1} />
+      <rect x={5.3} y={14.2} width={2.2} height={6} rx={1.1} />
+      <rect x={6.5} y={14.2} width={2.2} height={6} rx={1.1} />
+      <circle cx={17} cy={6.4} r={2.2} />
+      <rect x={15.9} y={8.9} width={2.2} height={6} rx={1.1} />
+      <rect x={13.5} y={9.3} width={2.2} height={5} rx={1.1} />
+      <rect x={18.3} y={9.3} width={2.2} height={5} rx={1.1} />
+      <rect x={15.3} y={14.2} width={2.2} height={6} rx={1.1} />
+      <rect x={16.5} y={14.2} width={2.2} height={6} rx={1.1} />
+    </>
   ),
   animal: (
-    <path d="M4.5 3 6 5.5V8l2 1.5V12l-1 2v4h2v-3l2-2 2 2v3h2v-4l-1-2V9.5L16 8V5.5L17.5 3 16 4l-1-1v3l-1.5 1.5h-3L9 6V3L8 4 6.5 3zM10 10a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm4 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+    <>
+      <rect x={6} y={9.4} width={9.6} height={4.6} rx={2.3} />
+      <circle cx={17.6} cy={9.4} r={3.2} />
+      <path d="M15.2 5.6 16 8.4 14 8z" />
+      <path d="M20 5.6 19.2 8.4 21.2 8z" />
+      <rect x={6.6} y={13} width={2.2} height={6} rx={1.1} />
+      <rect x={9.4} y={13} width={2.2} height={6} rx={1.1} />
+      <rect x={12.4} y={13} width={2.2} height={6} rx={1.1} />
+      <rect x={3.6} y={8} width={2.2} height={5.4} rx={1.1} transform="rotate(38 4.7 10.7)" />
+    </>
   ),
   celebration: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM7 3l1.5 1.5L7 6V3zm10 0v3l-1.5-1.5L17 3zm-7 6h4a2 2 0 0 1 2 2v3l-2-1v3h2v2H8v-2h2v-3l-2 1v-3a2 2 0 0 1 2-2zm-2-3L6 4 4.5 5.5 6.5 7 8 6zm8 0L17.5 7 19.5 5.5 18 4l-2 2z" />
+    <>
+      <circle cx={12} cy={6.4} r={2.6} />
+      <rect x={10.7} y={9.3} width={2.6} height={6.5} rx={1.3} />
+      <rect x={9.9} y={4} width={2.6} height={7} rx={1.3} transform="rotate(-36 11.2 7.5)" />
+      <rect x={11.5} y={4} width={2.6} height={7} rx={1.3} transform="rotate(36 12.8 7.5)" />
+      <rect x={10} y={15} width={2.6} height={6.4} rx={1.3} />
+      <rect x={11.4} y={15} width={2.6} height={6.4} rx={1.3} />
+    </>
   ),
   emoji: (
-    <path d="M12 2a10 10 0 1 1 0 20 10 10 0 0 1 0-20zm0 2a8 8 0 1 0 0 16 8 8 0 0 0 0-16zm-3 6h2v2H9V10zm4 0h2v2h-2v-2zm-4 5h6l-1 2.5h-4L9 15z" />
+    <>
+      <circle cx={12} cy={12} r={9.4} />
+      <circle cx={9} cy={9.8} r={1.5} />
+      <circle cx={15} cy={9.8} r={1.5} />
+      <path d="M5.9 12.6a1.3 1.3 0 0 1 2.5-.5 4 4 0 0 0 7.2 0 1.3 1.3 0 0 1 2.5.5 6.6 6.6 0 0 1-12.2 0z" />
+    </>
   ),
   phone: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm4 5.5h1.5v3H16v-3zM10 9h4a2 2 0 0 1 2 2v1h-2v2h-1v-2h-2v2h-1v-2H8v-1a2 2 0 0 1 2-2zm0 6h4v7h-4v-7z" />
+    <>
+      <circle cx={12} cy={4.6} r={2.6} />
+      <rect x={10.7} y={7.6} width={2.6} height={7.4} rx={1.3} />
+      <rect x={6.7} y={8.2} width={2.6} height={6.6} rx={1.3} />
+      <rect x={14.4} y={4.2} width={2.6} height={6.4} rx={1.3} transform="rotate(42 15.7 7.4)" />
+      <rect x={15.4} y={1.8} width={3.4} height={5.4} rx={1} transform="rotate(42 17.1 4.5)" />
+      <rect x={10} y={13.8} width={2.6} height={7.2} rx={1.3} />
+      <rect x={11.4} y={13.8} width={2.6} height={7.2} rx={1.3} />
+    </>
   ),
   smoking: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm5 6h3v1.5h-3V8zM10 9h4a2 2 0 0 1 2 2v2h1v1h-3v-1h-1v1.5l1.5.5h3v1h-4l-1.5-.5V16h-1v6H9v-6H8v-5a2 2 0 0 1 2-2z" />
+    <>
+      <circle cx={11} cy={4.6} r={2.6} />
+      <rect x={9.7} y={7.6} width={2.6} height={7.4} rx={1.3} />
+      <rect x={6.3} y={8.2} width={2.6} height={6.6} rx={1.3} />
+      <rect x={11.6} y={6} width={2.6} height={6.2} rx={1.3} transform="rotate(-58 12.9 9.1)" />
+      <rect x={14.4} y={4.6} width={5} height={1.8} rx={0.9} />
+      <rect x={9} y={13.8} width={2.6} height={7.2} rx={1.3} />
+      <rect x={10.4} y={13.8} width={2.6} height={7.2} rx={1.3} />
+    </>
   ),
   drinking: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm4 4h2l-.5 3H16V6zM10 9h4a2 2 0 0 1 2 2v1h-1l1 1v1h-2v-1l-1-1h-2v1.5L12.5 14H15v1h-3l-1-1V12H9v-1a2 2 0 0 1 2-2h-1zm0 7h4v6h-4v-6z" />
+    <>
+      <circle cx={11} cy={4.6} r={2.6} />
+      <rect x={9.7} y={7.6} width={2.6} height={7.4} rx={1.3} />
+      <rect x={6.3} y={8.2} width={2.6} height={6.6} rx={1.3} />
+      <rect x={11.6} y={6} width={2.6} height={6} rx={1.3} transform="rotate(-52 12.9 9)" />
+      <path d="M14 3.4h4.4l-0.8 4.2h-2.8z" />
+      <rect x={9} y={13.8} width={2.6} height={7.2} rx={1.3} />
+      <rect x={10.4} y={13.8} width={2.6} height={7.2} rx={1.3} />
+    </>
   ),
   fighting: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm-2 7h4a2 2 0 0 1 2 2v2l2-2 1.5 1.5L16 16v-3h-1v3l2 4h-2l-2-4h-2v6h-2v-6l-2 4H5l2-4v-3H6v3l-3.5-3.5L4 8l2 2v-2a2 2 0 0 1 2-2h2z" />
+    <>
+      <circle cx={10.4} cy={5} r={2.6} />
+      <rect x={9.1} y={7.9} width={2.6} height={7} rx={1.3} />
+      <rect x={11} y={9} width={8.2} height={2.6} rx={1.3} />
+      <circle cx={19} cy={10.3} r={2} />
+      <rect x={6} y={9.4} width={2.6} height={5.6} rx={1.3} transform="rotate(38 7.3 12.2)" />
+      <rect x={6.3} y={14} width={2.6} height={7} rx={1.3} transform="rotate(30 7.6 17.5)" />
+      <rect x={11.1} y={14} width={2.6} height={7} rx={1.3} transform="rotate(-26 12.4 17.5)" />
+    </>
   ),
   sports: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm6 3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zM10 9h4a2 2 0 0 1 2 2v3h-2v2l2 2v4h-2v-3l-2-2v6h-2v-6l-2 2v3H6v-4l2-2v-2H6v-3a2 2 0 0 1 2-2h2z" />
+    <>
+      <circle cx={11} cy={4.6} r={2.6} />
+      <rect x={9.7} y={7.6} width={2.6} height={7.2} rx={1.3} />
+      <rect x={6.3} y={8.2} width={2.6} height={6.6} rx={1.3} />
+      <rect x={11.4} y={5.2} width={2.6} height={6.6} rx={1.3} transform="rotate(-44 12.7 8.5)" />
+      <rect x={9} y={13.6} width={2.6} height={7.2} rx={1.3} transform="rotate(22 10.3 17.2)" />
+      <rect x={11.4} y={13.6} width={2.6} height={7.2} rx={1.3} transform="rotate(-26 12.7 17.2)" />
+      <circle cx={17.6} cy={4} r={2.6} />
+    </>
   ),
   music: (
-    <path d="M12 2a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zm6 5v8a2 2 0 1 1-2-2V9l2-2zM10 9h3v2l-1 1v4h2v2H8v-2h2v-4l-1-1v-2h1zm-1 5v8H7v-8h2z" />
+    <>
+      <rect x={11.2} y={3} width={2.4} height={13.4} rx={1.2} />
+      <path d="M13.6 3a1 1 0 0 1 1.2-1q3.6 0.9 5.4 3.7a1 1 0 0 1-1.7 1q-1.5-2.3-4.5-3a1 1 0 0 1-0.4-0.7z" />
+      <circle cx={9.4} cy={16.4} r={3.6} />
+    </>
   ),
 }
 

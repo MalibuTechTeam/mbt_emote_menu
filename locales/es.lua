@@ -21,11 +21,7 @@ RegisterLocale('es', {
     ['tab_recent']          = 'Recientes',
 
     -- Actions
-    ['play_emote']          = 'Reproducir',
     ['cancel_emote']        = 'Detener',
-    ['add_favorite']        = 'Agregar a favoritos',
-    ['remove_favorite']     = 'Quitar de favoritos',
-    ['set_keybind']         = 'Asignar tecla',
 
     -- Shared Emotes
     ['shared_request']      = 'quiere jugar',
@@ -35,7 +31,6 @@ RegisterLocale('es', {
     -- Filters
     ['filter_all']          = 'Todos',
     ['filter_props']        = 'Con Props',
-    ['filter_solo']         = 'Solo',
     ['filter_shared']       = 'Compartidos',
 
     -- Status
@@ -48,7 +43,7 @@ RegisterLocale('es', {
     ['no_emotes_hint']      = 'Prueba otra busqueda o limpia los filtros',
     ['no_emotes_arrow']     = 'Buscar arriba',
     ['partner_hint']        = 'Acercate a un jugador para invitarlo',
-    ['wheel_empty_hint']    = 'Arrastra un emote aqui',
+    ['wheel_empty_hint']    = 'Espacio vacío',
 
     -- Quick Bind
     ['quickbind_title']     = 'Acceso rapido',
@@ -73,12 +68,7 @@ RegisterLocale('es', {
     ['playlist_loop_on']    = 'Loop activado',
     ['playlist_loop_off']   = 'Loop desactivado',
 
-    -- Ecosystem
-    ['eco_meta_clothes']    = 'MBT Meta Clothes',
-    ['eco_wearable_props']  = 'MBT Wearable Props',
-
     -- Buttons
-    ['btn_new']                    = 'Nuevo',
     ['btn_create']                 = 'Crear',
     ['btn_cancel']                 = 'Cancelar',
     ['btn_done']                   = 'Listo',
@@ -93,8 +83,6 @@ RegisterLocale('es', {
     -- Tooltips
     ['tooltip_new_list']           = 'Nueva lista personalizada',
     ['tooltip_stop_animation']     = 'Detener animacion',
-    ['tooltip_sort_change']        = 'Cambiar orden',
-    ['tooltip_random_emote']       = 'Emote aleatorio',
     ['tooltip_export_favorites']   = 'Exportar favoritos',
     ['tooltip_import_favorites']   = 'Importar favoritos',
     ['tooltip_preview_start']      = 'Vista previa (solo tu)',
@@ -161,12 +149,34 @@ RegisterLocale('es', {
     ['badge_prop']                 = 'Prop',
     ['badge_dance']                = 'Dance',
 
+    -- Result bar & sort
+    ['sort_az']               = 'A-Z',
+    ['sort_za']               = 'Z-A',
+    ['sort_cat']              = 'Categoría',
+    ['sortpop_sort_by']       = 'Ordenar por',
+    ['sortpop_filter']        = 'Filtrar',
+    ['resultbar_emotes']      = 'emotes',
+    ['btn_random']            = 'Emote aleatorio',
+    ['btn_sort_filter']       = 'Ordenar y filtrar',
+    ['tooltip_sort_filter']   = 'Ordenar y filtrar',
+    ['tooltip_more']          = 'Más',
+    ['wheel_slot_label']      = 'Slot',
+    ['modal_list_icon_label'] = 'Icono',
+
+    -- Keys synced from en.lua
+    ['quickbind_hint']         = 'Pulsa una tecla del teclado numérico en el juego',
+    ['trending_kicker']        = 'Tendencia esta semana',
+    ['trending_sub']           = '%s · %s reproducciones esta semana',
+    ['drawer_quick_bind_hint'] = 'Tecla numérica',
+    ['drawer_wheel_slot_hint'] = 'Menú radial',
+    ['drawer_bind_key']        = 'NUM %s',
+    ['variant_count']          = '%s variantes',
+
     -- Toasts
     ['toast_walk_reset']           = 'Estilo de caminar reiniciado',
     ['toast_expression_reset']     = 'Expresion reiniciada',
     ['toast_emote_restricted']     = 'Emote restringido a ciertos trabajos',
     ['toast_wheel_assigned']       = 'Asignado %s a NUM%s',
-    ['toast_list_created']         = 'Lista "%s" creada',
     ['toast_list_deleted']         = 'Lista "%s" eliminada',
     ['toast_list_already_in']      = 'Ya esta en "%s"',
     ['toast_list_added']           = 'Anadido a "%s"',

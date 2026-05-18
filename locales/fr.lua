@@ -21,11 +21,7 @@ RegisterLocale('fr', {
     ['tab_recent']          = 'Recents',
 
     -- Actions
-    ['play_emote']          = 'Jouer',
     ['cancel_emote']        = 'Arreter',
-    ['add_favorite']        = 'Ajouter aux favoris',
-    ['remove_favorite']     = 'Retirer des favoris',
-    ['set_keybind']         = 'Definir raccourci',
 
     -- Shared Emotes
     ['shared_request']      = 'veut jouer',
@@ -35,7 +31,6 @@ RegisterLocale('fr', {
     -- Filters
     ['filter_all']          = 'Tous',
     ['filter_props']        = 'Avec Props',
-    ['filter_solo']         = 'Solo',
     ['filter_shared']       = 'Partages',
 
     -- Status
@@ -48,7 +43,7 @@ RegisterLocale('fr', {
     ['no_emotes_hint']      = 'Essayez une autre recherche ou videz les filtres',
     ['no_emotes_arrow']     = 'Rechercher en haut',
     ['partner_hint']        = 'Approchez-vous d\'un joueur pour l\'inviter',
-    ['wheel_empty_hint']    = 'Glissez un emote ici',
+    ['wheel_empty_hint']    = 'Emplacement vide',
 
     -- Quick Bind
     ['quickbind_title']     = 'Acces rapide',
@@ -73,12 +68,7 @@ RegisterLocale('fr', {
     ['playlist_loop_on']    = 'Boucle activée',
     ['playlist_loop_off']   = 'Boucle désactivée',
 
-    -- Ecosystem
-    ['eco_meta_clothes']    = 'MBT Meta Clothes',
-    ['eco_wearable_props']  = 'MBT Wearable Props',
-
     -- Buttons
-    ['btn_new']                    = 'Nouveau',
     ['btn_create']                 = 'Creer',
     ['btn_cancel']                 = 'Annuler',
     ['btn_done']                   = 'Termine',
@@ -93,8 +83,6 @@ RegisterLocale('fr', {
     -- Tooltips
     ['tooltip_new_list']           = 'Nouvelle liste',
     ['tooltip_stop_animation']     = 'Arreter animation',
-    ['tooltip_sort_change']        = 'Changer le tri',
-    ['tooltip_random_emote']       = 'Emote aleatoire',
     ['tooltip_export_favorites']   = 'Exporter favoris',
     ['tooltip_import_favorites']   = 'Importer favoris',
     ['tooltip_preview_start']      = 'Apercu (vous seul)',
@@ -161,12 +149,34 @@ RegisterLocale('fr', {
     ['badge_prop']                 = 'Prop',
     ['badge_dance']                = 'Dance',
 
+    -- Result bar & sort
+    ['sort_az']               = 'A-Z',
+    ['sort_za']               = 'Z-A',
+    ['sort_cat']              = 'Catégorie',
+    ['sortpop_sort_by']       = 'Trier par',
+    ['sortpop_filter']        = 'Filtrer',
+    ['resultbar_emotes']      = 'emotes',
+    ['btn_random']            = 'Emote aléatoire',
+    ['btn_sort_filter']       = 'Trier & filtrer',
+    ['tooltip_sort_filter']   = 'Trier & filtrer',
+    ['tooltip_more']          = 'Plus',
+    ['wheel_slot_label']      = 'Slot',
+    ['modal_list_icon_label'] = 'Icône',
+
+    -- Keys synced from en.lua
+    ['quickbind_hint']         = 'Appuyez sur une touche du pavé numérique en jeu',
+    ['trending_kicker']        = 'Tendance cette semaine',
+    ['trending_sub']           = '%s · %s lectures cette semaine',
+    ['drawer_quick_bind_hint'] = 'Touche pavé num.',
+    ['drawer_wheel_slot_hint'] = 'Menu radial',
+    ['drawer_bind_key']        = 'NUM %s',
+    ['variant_count']          = '%s variantes',
+
     -- Toasts
     ['toast_walk_reset']           = 'Demarche reinitialisee',
     ['toast_expression_reset']     = 'Expression reinitialisee',
     ['toast_emote_restricted']     = 'Emote reservee a certains jobs',
     ['toast_wheel_assigned']       = 'Assigne %s a NUM%s',
-    ['toast_list_created']         = 'Liste "%s" creee',
     ['toast_list_deleted']         = 'Liste "%s" supprimee',
     ['toast_list_already_in']      = 'Deja dans "%s"',
     ['toast_list_added']           = 'Ajoute a "%s"',

@@ -150,6 +150,19 @@ MBT.SharedNearby = {
     PollMs  = 1000,   -- proximity check interval (low frequency — UI ribbon, not a tracker)
 }
 
+-- Trending: server-wide "Trending this week" hero. The server keeps a
+-- rolling window of daily play-count buckets (one per day) and surfaces the
+-- single top-scoring emote in the menu's hero card. Counts are aggregated
+-- across all players on the server, persisted to KVP so they survive
+-- restarts, and only the emote name + label + category + score are exposed
+-- to clients — never per-player play history.
+MBT.Trending = {
+    Enabled             = true,  -- master toggle for the trending pipeline + hero card
+    WindowDays          = 7,     -- rolling window length in days (score = sum of buckets)
+    MinPlays            = 10,    -- minimum window score for an emote to qualify as "trending"
+    SaveIntervalMinutes = 10,    -- how often the in-memory state is flushed to KVP
+}
+
 -------------------------------------------------------------------------------
 -- [ SECTION 4: CATEGORIES ] --
 -------------------------------------------------------------------------------
@@ -194,7 +207,7 @@ MBT.BannedEmotes = {
 -- Override default theme colors. These are sent to the NUI at startup.
 -- Hex values without '#'. Leave nil to use built-in MBT defaults.
 MBT.Theme = {
-    Accent     = '00fb8a', -- Green
+    Accent     = '00e676', -- Green
     Background = '0C0E14', -- Dark neutral background
     Card       = '141720', -- Card/panel background (neutral, no purple tint)
     Text       = 'E8E8EE', -- Primary text (slightly warm white)

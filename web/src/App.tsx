@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { EmoteMenu } from './components/EmoteMenu'
+import type { TrendingEmote } from './components/TrendingHero'
 import { EmoteWheel } from './components/EmoteWheel'
 import { PlacementOverlay } from './components/PlacementOverlay'
 import { PreviewVignette } from './components/PreviewVignette'
@@ -53,6 +54,7 @@ function App() {
     y: number
   }>({ visible: false, label: '', hotKey: 'G', x: 0.5, y: 0.5 })
   const [nearbyCount, setNearbyCount] = useState(0)
+  const [trending, setTrending] = useState<TrendingEmote | null>(null)
   const { toasts, addToast, dismissToast } = useToasts()
 
   // Listen for NUI messages from client.lua
@@ -70,8 +72,8 @@ function App() {
       switch (data.action) {
         case 'openMenu':
           // Catalog, config, locale are only sent on first open; reuse cached values on subsequent opens
-          if (data.catalog) setCatalog(data.catalog)
-          if (data.config) {
+          if (Array.isArray(data.catalog)) setCatalog(data.catalog)
+          if (data.config && typeof data.config === 'object') {
             setConfig(data.config)
             setDebugEnabled(!!data.config.debug)
           }
@@ -91,8 +93,8 @@ function App() {
           break
 
         case 'preloadCatalog':
-          if (data.catalog) setCatalog(data.catalog)
-          if (data.config) {
+          if (Array.isArray(data.catalog)) setCatalog(data.catalog)
+          if (data.config && typeof data.config === 'object') {
             setConfig(data.config)
             setDebugEnabled(!!data.config.debug)
           }
@@ -155,6 +157,26 @@ function App() {
 
         case 'nearbyCountUpdate':
           setNearbyCount(typeof data.count === 'number' ? data.count : 0)
+          break
+
+        case 'trending':
+          // Server-wide trending payload. `data.data` is { name, label,
+          // category, plays } or nil/empty when nothing qualifies — in
+          // which case the hero is simply not rendered.
+          if (
+            data.data &&
+            typeof data.data.name === 'string' &&
+            typeof data.data.plays === 'number'
+          ) {
+            setTrending({
+              name: data.data.name,
+              label: data.data.label || data.data.name,
+              category: data.data.category || 'Emotes',
+              plays: data.data.plays,
+            })
+          } else {
+            setTrending(null)
+          }
           break
 
         case 'sharedEmoteRequest':
@@ -394,6 +416,7 @@ function App() {
         keybinds={keybinds}
         sharedRequest={sharedRequest}
         nearbyCount={nearbyCount}
+        trending={trending}
         onPlay={handlePlayEmote}
         onCancel={handleCancelEmote}
         onToggleFavorite={handleToggleFavorite}

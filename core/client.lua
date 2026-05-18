@@ -67,6 +67,10 @@ function Core.PlayEmoteRaw(emoteName, emoteType, variation)
     if OpenJoin and OpenJoin.MaybeAnnounce then
         OpenJoin.MaybeAnnounce(safeName, emoteLabelByName[safeName] or safeName, safeType)
     end
+
+    if Trending and Trending.MaybeReport then
+        Trending.MaybeReport(safeName, emoteLabelByName[safeName] or safeName, safeType)
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -84,7 +88,6 @@ local LOCALE_KEYS = {
     'filter_all', 'filter_props', 'filter_shared',
     'status_playing', 'status_idle', 'status_walkstyle',
     'cancel_emote', 'shared_request', 'shared_accept', 'shared_decline',
-    'play_emote', 'add_favorite', 'remove_favorite', 'set_keybind',
     'no_emotes_found', 'no_emotes_hint', 'no_emotes_arrow',
     'partner_hint', 'wheel_empty_hint',
     'quickbind_title', 'quickbind_empty',
@@ -92,11 +95,11 @@ local LOCALE_KEYS = {
     'partner_loading', 'partner_empty', 'partner_sent', 'partner_send', 'partner_retry',
     'playlist_empty', 'playlist_clear', 'playlist_loop_on', 'playlist_loop_off',
     -- Buttons
-    'btn_new', 'btn_create', 'btn_cancel', 'btn_done', 'btn_import', 'btn_reset', 'btn_play', 'btn_stop',
+    'btn_create', 'btn_cancel', 'btn_done', 'btn_import', 'btn_reset', 'btn_play', 'btn_stop',
     -- Tabs (extra)
     'tab_top',
     -- Tooltips
-    'tooltip_new_list', 'tooltip_stop_animation', 'tooltip_sort_change', 'tooltip_random_emote',
+    'tooltip_new_list', 'tooltip_stop_animation',
     'tooltip_export_favorites', 'tooltip_import_favorites',
     'tooltip_preview_start', 'tooltip_preview_stop',
     'tooltip_add_to_playlist', 'tooltip_add_to_list', 'tooltip_list_delete',
@@ -114,6 +117,8 @@ local LOCALE_KEYS = {
     'whatsthat_try',
     -- Nearby section (Shared Emotes 2.0)
     'nearby_title', 'nearby_hint', 'nearby_more',
+    -- Trending hero
+    'trending_kicker', 'trending_sub',
     -- Modals
     'modal_new_list', 'modal_list_name_placeholder',
     'modal_export_title', 'modal_import_title',
@@ -129,7 +134,15 @@ local LOCALE_KEYS = {
     -- Toasts
     'toast_walk_reset', 'toast_expression_reset', 'toast_emote_restricted',
     'toast_wheel_assigned',
-    'toast_list_created', 'toast_list_deleted', 'toast_list_already_in', 'toast_list_added',
+    'toast_list_deleted', 'toast_list_already_in', 'toast_list_added',
+    -- Result bar & sort
+    'sort_az', 'sort_za', 'sort_cat',
+    'sortpop_sort_by', 'sortpop_filter', 'resultbar_emotes',
+    'btn_random', 'btn_sort_filter', 'tooltip_sort_filter', 'tooltip_more',
+    'wheel_slot_label', 'modal_list_icon_label',
+    -- Previously defined, now shipped to the NUI
+    'quickbind_hint', 'drawer_quick_bind_hint', 'drawer_wheel_slot_hint',
+    'drawer_bind_key', 'variant_count',
 }
 
 local function BuildLocaleStrings()
@@ -225,6 +238,13 @@ function Core.OpenMenu()
 
     SendNUIMessage(payload)
     SetNuiFocus(true, true)
+
+    -- Ask the server for the current "Trending this week" emote. The reply
+    -- arrives async via mbt_emote_menu:client:receiveTrending → SendNUIMessage.
+    if Trending and Trending.Request then
+        Trending.Request()
+    end
+
     Utils.MbtDebugger('Menu opened')
 end
 
@@ -336,24 +356,6 @@ RegisterNUICallback('getActiveStyles', function(_, cb)
         activeWalkStyle = (w and w ~= '') and w or nil
     end
     cb({ ok = true, activeWalk = activeWalkStyle, activeExpr = activeExpression })
-end)
-
-RegisterNUICallback('getPlayerState', function(_, cb)
-    if not rpemotesResource then
-        cb({ playing = false })
-        return
-    end
-
-    local se = function(method, ...) return Utils.SafeExport(rpemotesExportName, method, ...) end
-
-    cb({
-        playing   = se('IsPlayerInAnim') or false,
-        crouched  = se('IsPlayerCrouched') or false,
-        prone     = se('IsPlayerProne') or false,
-        pointing  = se('IsPlayerPointing') or false,
-        handsUp   = se('IsPlayerInHandsUp') or false,
-        walkstyle = se('getWalkstyle'),
-    })
 end)
 
 -------------------------------------------------------------------------------
@@ -501,7 +503,7 @@ RegisterCommand('mbt_layout', function(_, args)
         Core.OpenMenu()
     end
 
-    print('^2[mbt_emote_menu] Layout switched to: ' .. newLayout .. '^0')
+    Utils.MbtDebugger('Layout switched to: ' .. newLayout)
 end, false)
 
 -------------------------------------------------------------------------------

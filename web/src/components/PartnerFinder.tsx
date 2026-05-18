@@ -1,5 +1,5 @@
 ﻿import { memo, useState, useEffect, useCallback } from 'react'
-import { Users, UserSearch, RefreshCw, Send, X } from 'lucide-react'
+import { Users, User, UserSearch, RefreshCw, Send, X } from 'lucide-react'
 import { useNui } from '../utils/useNui'
 import { useLocale } from '../utils/locale'
 import { EmptyState } from './EmptyState'
@@ -81,6 +81,9 @@ export const PartnerFinder = memo(function PartnerFinder({
         <div className="mbt-partner__list">
           {players.map((p) => (
             <div key={p.serverId} className="mbt-partner__player">
+              <span className="mbt-partner__avatar" aria-hidden="true">
+                <User size={12} />
+              </span>
               <span className="mbt-partner__name">{p.name}</span>
               <span className="mbt-partner__dist">{p.dist}m</span>
             </div>

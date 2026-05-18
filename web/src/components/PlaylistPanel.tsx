@@ -41,7 +41,7 @@ export const PlaylistPanel = memo(function PlaylistPanel({
     <div className="mbt-playlist">
       <div className="mbt-playlist__header">
         <ListMusic size={12} />
-        <span>Playlist</span>
+        <span>{t.playlist_label || 'Playlist'}</span>
         <span className="mbt-playlist__count">{items.length}</span>
         <div className="mbt-playlist__controls">
           <button

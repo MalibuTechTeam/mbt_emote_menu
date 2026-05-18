@@ -52,9 +52,8 @@ export function NearbySection({
   return (
     <section className={`mbt-nearby layout-${layout}`} aria-label={t.nearby_title || 'Nearby'}>
       <header className="mbt-nearby__header">
-        <Users size={12} className="mbt-nearby__header-icon" aria-hidden="true" />
+        <Users size={12} className="mbt-nearby__hicon" aria-hidden="true" />
         <span className="mbt-nearby__title">{t.nearby_title || 'Nearby'}</span>
-        <span className="mbt-nearby__header-sep" aria-hidden="true" />
         <AnimatedNumber
           value={nearbyCount}
           className="mbt-nearby__count"

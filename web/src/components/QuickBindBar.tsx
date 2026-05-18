@@ -55,7 +55,7 @@ function QuickBindSlot({ slot, emote, emptyLabel, onAssign, onPlay, onClear }: Q
       onClick={() => emote && onPlay(emote)}
       title={emote ? emote.label : emptyLabel}
     >
-      <span className="mbt-quickbind__key">NUM{slot}</span>
+      <span className="mbt-quickbind__key">NUM {slot}</span>
       {emote ? (
         <>
           <span className="mbt-quickbind__name">{emote.label}</span>
@@ -98,6 +98,7 @@ export function QuickBindBar({ keybinds, onPlay, onUpdate }: QuickBindBarProps) 
       <div className="mbt-quickbind__header">
         <Keyboard size={12} />
         <span>{t.quickbind_title || 'Quick Bind'}</span>
+        <span className="mbt-quickbind__hint">{t.quickbind_hint || 'Press a numpad key in game'}</span>
       </div>
       <div className="mbt-quickbind__slots">
         {SLOTS.map((slot) => (

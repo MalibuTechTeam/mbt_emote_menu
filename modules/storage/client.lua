@@ -245,7 +245,3 @@ end)
 RegisterNUICallback('getWheelSlots', function(_, cb)
     cb({ ok = true, slots = Core.GetWheelSlots() })
 end)
-
-RegisterNUICallback('wheelScroll', function(_, cb)
-    cb({ ok = true })
-end)

@@ -11,11 +11,11 @@
 -------------------------------------------------------------------------------
 
 if not MBT.Features or MBT.Features.WhatsThat == false then
-    print('^3[mbt_emote_menu]^0 whatsthat: disabled in config (MBT.Features.WhatsThat = false)')
+    Utils.MbtDebugger('whatsthat: disabled in config (MBT.Features.WhatsThat = false)')
     return
 end
 
-print('^2[mbt_emote_menu]^0 whatsthat module loaded')
+Utils.MbtDebugger('whatsthat module loaded')
 
 local config = MBT.WhatsThat or {}
 
@@ -154,9 +154,9 @@ local lastBubbleVisible = false
 local lastSx, lastSy = -1, -1
 CreateThread(function()
     while true do
-        Wait(0)
+        local hasTarget = currentTarget and currentTarget.ped and DoesEntityExist(currentTarget.ped)
 
-        if not currentTarget or not currentTarget.ped or not DoesEntityExist(currentTarget.ped) then
+        if not hasTarget then
             if lastBubbleVisible then
                 SendNUIMessage({ action = 'whatsthatHide' })
                 lastBubbleVisible = false
@@ -189,6 +189,10 @@ CreateThread(function()
                 end
             end
         end
+
+        -- Per-frame only while tracking a bubble; otherwise idle — the
+        -- 100ms scan thread above is what surfaces a new target.
+        Wait(hasTarget and 0 or 250)
     end
 end)
 

@@ -21,11 +21,7 @@ RegisterLocale('en', {
     ['tab_recent']          = 'Recent',
 
     -- Actions
-    ['play_emote']          = 'Play',
     ['cancel_emote']        = 'Stop',
-    ['add_favorite']        = 'Add to Favorites',
-    ['remove_favorite']     = 'Remove from Favorites',
-    ['set_keybind']         = 'Set Keybind',
 
     -- Shared Emotes
     ['shared_request']      = 'wants to play',
@@ -35,7 +31,6 @@ RegisterLocale('en', {
     -- Filters
     ['filter_all']          = 'All',
     ['filter_props']        = 'With Props',
-    ['filter_solo']         = 'Solo',
     ['filter_shared']       = 'Shared',
 
     -- Status
@@ -48,10 +43,11 @@ RegisterLocale('en', {
     ['no_emotes_hint']      = 'Try a different search or clear the filters',
     ['no_emotes_arrow']     = 'Search above',
     ['partner_hint']        = 'Get closer to nearby players to invite them',
-    ['wheel_empty_hint']    = 'Drag an emote here',
+    ['wheel_empty_hint']    = 'Empty slot',
 
     -- Quick Bind
     ['quickbind_title']     = 'Quick Bind',
+    ['quickbind_hint']      = 'Press a numpad key in game',
     ['quickbind_empty']     = 'Drag emote here',
 
     -- Emote Wheel
@@ -73,12 +69,7 @@ RegisterLocale('en', {
     ['playlist_loop_on']    = 'Loop enabled',
     ['playlist_loop_off']   = 'Loop disabled',
 
-    -- Ecosystem
-    ['eco_meta_clothes']    = 'MBT Meta Clothes',
-    ['eco_wearable_props']  = 'MBT Wearable Props',
-
     -- Buttons
-    ['btn_new']                    = 'New',
     ['btn_create']                 = 'Create',
     ['btn_cancel']                 = 'Cancel',
     ['btn_done']                   = 'Done',
@@ -93,8 +84,6 @@ RegisterLocale('en', {
     -- Tooltips
     ['tooltip_new_list']           = 'New custom list',
     ['tooltip_stop_animation']     = 'Stop animation',
-    ['tooltip_sort_change']        = 'Change sort order',
-    ['tooltip_random_emote']       = 'Random emote',
     ['tooltip_export_favorites']   = 'Export favorites',
     ['tooltip_import_favorites']   = 'Import favorites',
     ['tooltip_preview_start']      = 'Preview animation (only you)',
@@ -131,6 +120,10 @@ RegisterLocale('en', {
     ['nearby_hint']                = 'try a duet',
     ['nearby_more']                = 'Show all shared emotes',
 
+    -- Trending hero
+    ['trending_kicker']            = 'Trending this week',
+    ['trending_sub']               = '%s · %s plays this week',
+
     -- Modals
     ['modal_new_list']             = 'New List',
     ['modal_list_name_placeholder']= 'List name...',
@@ -149,7 +142,11 @@ RegisterLocale('en', {
     ['drawer_textures']            = 'Textures',
     ['drawer_custom_lists']        = 'Custom Lists',
     ['drawer_quick_bind']          = 'Quick Bind',
+    ['drawer_quick_bind_hint']     = 'Numpad key',
     ['drawer_wheel_slot']          = 'Wheel Slot',
+    ['drawer_wheel_slot_hint']     = 'Radial menu',
+    ['drawer_bind_key']            = 'NUM %s',
+    ['variant_count']              = '%s variants',
 
     -- Misc labels
     ['playlist_label']             = 'Playlist',
@@ -161,12 +158,25 @@ RegisterLocale('en', {
     ['badge_prop']                 = 'Prop',
     ['badge_dance']                = 'Dance',
 
+    -- Result bar & sort
+    ['sort_az']               = 'A-Z',
+    ['sort_za']               = 'Z-A',
+    ['sort_cat']              = 'Category',
+    ['sortpop_sort_by']       = 'Sort by',
+    ['sortpop_filter']        = 'Filter',
+    ['resultbar_emotes']      = 'emotes',
+    ['btn_random']            = 'Random emote',
+    ['btn_sort_filter']       = 'Sort & filter',
+    ['tooltip_sort_filter']   = 'Sort & filter',
+    ['tooltip_more']          = 'More',
+    ['wheel_slot_label']      = 'Slot',
+    ['modal_list_icon_label'] = 'Icon',
+
     -- Toasts
     ['toast_walk_reset']           = 'Walk style reset',
     ['toast_expression_reset']     = 'Expression reset',
     ['toast_emote_restricted']     = 'Emote restricted to specific jobs',
     ['toast_wheel_assigned']       = 'Assigned %s to NUM%s',
-    ['toast_list_created']         = 'List "%s" created',
     ['toast_list_deleted']         = 'List "%s" deleted',
     ['toast_list_already_in']      = 'Already in "%s"',
     ['toast_list_added']           = 'Added to "%s"',

@@ -18,7 +18,9 @@ end
 RegisterNUICallback('getNearbyPlayers', function(data, cb)
     local playerPed = PlayerPedId()
     local playerCoords = GetEntityCoords(playerPed)
-    local maxDist = tonumber(data.radius) or 10.0
+    -- Clamp to a sane ceiling so a modified NUI can't pass a huge radius
+    -- and turn this into a server-wide player scanner.
+    local maxDist = math.min(tonumber(data.radius) or 10.0, 25.0)
     local nearby = {}
 
     for _, playerId in ipairs(GetActivePlayers()) do

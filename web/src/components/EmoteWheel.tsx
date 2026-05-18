@@ -1,5 +1,6 @@
 import { memo, useState, useEffect, useCallback } from 'react'
 import { Plus } from 'lucide-react'
+import { EmoteSilhouette } from './EmoteSilhouette'
 import { useLocale } from '../utils/locale'
 import type { Emote } from '../utils/types'
 
@@ -42,6 +43,12 @@ export const EmoteWheel = memo(function EmoteWheel({
     hintParts.push(t.wheel_hint_remove || 'X to remove')
   }
 
+  // Category-tinted disc — same slug derivation EmoteCard uses, so the
+  // silhouette picks up the matching --mbt-card-cat colour.
+  const catClass = currentEmote
+    ? `mbt-card--cat-${currentEmote.category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+    : ''
+
   return (
     <div className="mbt-wheel">
       <div className="mbt-wheel__indicator">
@@ -59,22 +66,33 @@ export const EmoteWheel = memo(function EmoteWheel({
         <div
           className={`mbt-wheel__slot ${isRemoved ? 'mbt-wheel__slot--removed' : ''} ${isEmpty ? 'mbt-wheel__slot--empty' : ''}`}
         >
-          <span className="mbt-wheel__num">{activeIndex}</span>
-          {isEmpty ? (
-            // Empty slot reads as "place an emote here" instead of a flat
-            // "Empty" word. The plus pulses subtly (CSS keyframe) to suggest
-            // an actionable placeholder.
-            <span className="mbt-wheel__label mbt-wheel__label--empty">
-              <span className="mbt-wheel__empty-icon" aria-hidden="true">
-                <Plus size={11} strokeWidth={2.5} />
+          <span
+            className={`mbt-wheel__disc ${catClass}`}
+            aria-hidden="true"
+          >
+            {isEmpty || isRemoved ? (
+              <Plus size={18} strokeWidth={2.5} />
+            ) : (
+              <EmoteSilhouette emote={currentEmote!} size={20} />
+            )}
+          </span>
+          <div className="mbt-wheel__body">
+            {isEmpty ? (
+              <span className="mbt-wheel__label mbt-wheel__label--empty">
+                {t.wheel_empty_hint || t.wheel_empty || 'Empty slot'}
               </span>
-              <span>{t.wheel_empty_hint || t.wheel_empty || 'Drag an emote here'}</span>
+            ) : (
+              <span className="mbt-wheel__label">
+                {isRemoved ? (t.wheel_removed || 'Removed') : currentEmote!.label}
+              </span>
+            )}
+            <span className="mbt-wheel__slotrow">
+              <span className="mbt-wheel__slotlabel">
+                {t.wheel_slot_label || 'Slot'}
+              </span>
+              <kbd className="mbt-wheel__num">{activeIndex}</kbd>
             </span>
-          ) : (
-            <span className="mbt-wheel__label">
-              {isRemoved ? (t.wheel_removed || 'Removed') : currentEmote!.label}
-            </span>
-          )}
+          </div>
         </div>
         <span className="mbt-wheel__hint">{hintParts.join(' · ')}</span>
       </div>

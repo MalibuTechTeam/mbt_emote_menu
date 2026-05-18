@@ -23,14 +23,6 @@ export function useLocale() {
 }
 
 /**
- * Get a translated string by key, with fallback to the key itself.
- */
-export function useT(key: string): string {
-  const strings = useContext(LocaleContext)
-  return strings[key] || key
-}
-
-/**
  * Substitute %s/%d positional placeholders in a locale template.
  * Mirrors Lua's string.format for the only two specifiers we use.
  *

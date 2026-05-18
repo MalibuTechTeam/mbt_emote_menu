@@ -1,8 +1,8 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import {
   X,
-  Shuffle,
-  ListPlus,
+  Square,
+  Plus,
   LayoutGrid,
   Star,
   History,
@@ -17,10 +17,13 @@ import { AnimatedNumber } from "./AnimatedNumber";
 import { EmptyState } from "./EmptyState";
 import { FavoriteDraggable } from "./FavoriteDraggable";
 import { useNui } from "../utils/useNui";
+import { LIST_ICONS, LIST_ICON_KEYS, DEFAULT_LIST_ICON, listIconFor } from "../utils/listIcons";
 import { SearchBar } from "./SearchBar";
+import { ResultBar } from "./ResultBar";
+import { HeaderMenu } from "./HeaderMenu";
 import { EmoteCard } from "./EmoteCard";
+import { TrendingHero, type TrendingEmote } from "./TrendingHero";
 import { QuickBindBar } from "./QuickBindBar";
-import { StatusBar } from "./StatusBar";
 import { SharedEmotePopup } from "./SharedEmotePopup";
 import { useVirtualGrid } from "../utils/useVirtualGrid";
 import type {
@@ -42,6 +45,7 @@ interface EmoteMenuProps {
   keybinds: Record<string, Emote>;
   sharedRequest: SharedRequest | null;
   nearbyCount: number;
+  trending: TrendingEmote | null;
   onPlay: (emote: Emote) => void;
   onCancel: () => void;
   onToggleFavorite: (emote: Emote) => void;
@@ -109,6 +113,7 @@ export function EmoteMenu({
   keybinds,
   sharedRequest,
   nearbyCount,
+  trending,
   onPlay,
   onCancel,
   onToggleFavorite,
@@ -174,7 +179,7 @@ export function EmoteMenu({
   // a toast that hides what just happened.
   const [recentlyCreatedListId, setRecentlyCreatedListId] = useState<string | null>(null);
   const [newListName, setNewListName] = useState("");
-  const [newListColor, setNewListColor] = useState("#ff295b");
+  const [newListIcon, setNewListIcon] = useState<string>(DEFAULT_LIST_ICON);
   const [flyingItems, setFlyingItems] = useState<
     Array<{
       id: string;
@@ -238,7 +243,7 @@ export function EmoteMenu({
   const handleHeaderMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (config.layout === "cinematic") return;
-      if ((e.target as HTMLElement).closest(".mbt-header__close")) return;
+      if ((e.target as HTMLElement).closest(".mbt-header__actions")) return;
       e.preventDefault();
       isDragging.current = true;
       const menu = menuRef.current;
@@ -345,6 +350,8 @@ export function EmoteMenu({
     () =>
       ({
         "--mbt-accent": `#${theme.Accent}`,
+        "--mbt-accent-rgb": hexToRgb(theme.Accent),
+        "--mbt-accent-strong": `rgba(${hexToRgb(theme.Accent)}, 0.82)`,
         "--mbt-accent-g": `linear-gradient(135deg, #${theme.Accent} 0%, rgba(${hexToRgb(theme.Accent)}, 0.75) 100%)`,
         "--mbt-accent-glow": `rgba(${hexToRgb(theme.Accent)}, 0.25)`,
         "--mbt-accent-soft": `rgba(${hexToRgb(theme.Accent)}, 0.08)`,
@@ -357,18 +364,6 @@ export function EmoteMenu({
       }) as React.CSSProperties,
     [theme],
   );
-
-  // ── Sort ──
-  const sortLabels: Record<SortOrder, string> = {
-    az: "A→Z",
-    za: "Z→A",
-    cat: "Cat",
-  };
-  const nextSort: Record<SortOrder, SortOrder> = {
-    az: "za",
-    za: "cat",
-    cat: "az",
-  };
 
   // ── Filter + sort pipeline ──
   const filteredEmotes = useMemo(() => {
@@ -461,7 +456,10 @@ export function EmoteMenu({
     offsetY,
   } = useVirtualGrid({
     totalItems: filteredEmotes.length,
-    rowHeight: 54,
+    // Card outer height = 66px .mbt-card__row + 1px top/bottom border
+    // = 68px, plus the 6px .mbt-grid__virtual inter-card gap = 74. Same
+    // in both shells — the v7 card component is shared and layout-agnostic.
+    rowHeight: 74,
     columns: 1,
     overscan: 4,
   });
@@ -766,11 +764,12 @@ export function EmoteMenu({
     const list: CustomList = {
       id: Date.now().toString(36),
       name: newListName.trim(),
-      color: newListColor,
+      icon: newListIcon,
       emotes: [],
     };
     onSaveCustomLists([...customLists, list]);
     setNewListName("");
+    setNewListIcon(DEFAULT_LIST_ICON);
     setShowListCreator(false);
     setActiveListId(list.id);
     setActiveTab("list");
@@ -779,7 +778,7 @@ export function EmoteMenu({
     // its tab so the next thing the user sees is their list ready.
     setRecentlyCreatedListId(list.id);
     window.setTimeout(() => setRecentlyCreatedListId(null), 1500);
-  }, [newListName, newListColor, customLists, onSaveCustomLists]);
+  }, [newListName, newListIcon, customLists, onSaveCustomLists]);
 
   const handleDeleteList = useCallback(
     (listId: string) => {
@@ -841,6 +840,10 @@ export function EmoteMenu({
             : undefined
         }
       >
+        {/* ── Grip handle ── (standard floating panel only — the
+            cinematic shell is edge-docked and not draggable) */}
+        {config.layout !== "cinematic" && <div className="mbt-grip" />}
+
         {/* ── Header ── */}
         <div
           className="mbt-header"
@@ -853,9 +856,31 @@ export function EmoteMenu({
               {t.menu_title || "Emote Menu"}
             </span>
           </div>
-          <button className="mbt-header__close" onClick={handleClose}>
-            <X size={14} />
-          </button>
+          <div className="mbt-header__actions">
+            <button
+              className="mbt-header__new"
+              onClick={() => setShowListCreator(true)}
+              title={t.tooltip_new_list || "New custom list"}
+            >
+              <Plus size={14} />
+            </button>
+            <button
+              className="mbt-header__stop"
+              onClick={onCancel}
+              title={t.tooltip_stop_animation || "Stop animation"}
+            >
+              <Square size={12} fill="currentColor" />
+            </button>
+            {features.Favorites && (
+              <HeaderMenu
+                onExport={handleExportOpen}
+                onImport={handleImportOpen}
+              />
+            )}
+            <button className="mbt-header__close" onClick={handleClose}>
+              <X size={14} />
+            </button>
+          </div>
         </div>
 
         {/* ── Search ── */}
@@ -864,8 +889,6 @@ export function EmoteMenu({
           onChange={setSearch}
           resultCount={filteredEmotes.length}
           totalCount={catalog.length}
-          onCancel={onCancel}
-          onAddList={() => setShowListCreator(true)}
         />
 
         {/* ── Tabs ── */}
@@ -913,34 +936,28 @@ export function EmoteMenu({
           </button>
 
           {/* Custom Lists integrated directly into the core grid */}
-          {customLists.map((list) => (
-            <button
-              key={list.id}
-              className={`mbt-tab ${activeTab === "list" && activeListId === list.id ? "mbt-tab--active" : ""} ${recentlyCreatedListId === list.id ? "mbt-tab--just-created" : ""}`}
-              style={{ "--chip-color": list.color } as React.CSSProperties}
-              onClick={() => {
-                setActiveListId(list.id);
-                setActiveTab("list");
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                handleDeleteList(list.id);
-              }}
-              title={t.tooltip_list_delete || 'Right-click to delete'}
-            >
-              <span
-                className="mbt-tab__dot"
-                style={{
-                  background: list.color,
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
+          {customLists.map((list) => {
+            const ListIcon = listIconFor(list.icon);
+            return (
+              <button
+                key={list.id}
+                className={`mbt-tab ${activeTab === "list" && activeListId === list.id ? "mbt-tab--active" : ""} ${recentlyCreatedListId === list.id ? "mbt-tab--just-created" : ""}`}
+                onClick={() => {
+                  setActiveListId(list.id);
+                  setActiveTab("list");
                 }}
-              />
-              <span>{list.name}</span>
-              <span className="mbt-tab__count">{list.emotes.length}</span>
-            </button>
-          ))}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  handleDeleteList(list.id);
+                }}
+                title={t.tooltip_list_delete || 'Right-click to delete'}
+              >
+                <ListIcon size={13} />
+                <span>{list.name}</span>
+                <span className="mbt-tab__count">{list.emotes.length}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* ── Nearby section (only while browsing All tab) ── */}
@@ -960,17 +977,22 @@ export function EmoteMenu({
           <div className="mbt-categories">
             <button
               className={`mbt-pill ${!activeCategory ? "mbt-pill--active" : ""}`}
+              style={{ "--mbt-pill-cat": "154, 160, 166" } as React.CSSProperties}
               onClick={() => setActiveCategory(null)}
             >
-              {t.tab_all || "All"}
+              <span className="mbt-pill__label">{t.tab_all || "All"}</span>
+              <span className="mbt-pill__count">{catalog.length}</span>
             </button>
             {visibleCategories.map((cat) => (
               <button
                 key={cat.type}
                 className={`mbt-pill ${activeCategory === cat.type ? "mbt-pill--active" : ""}`}
+                style={{ "--mbt-pill-cat": pillCatVar(cat.type) } as React.CSSProperties}
                 onClick={() => setActiveCategory(cat.type)}
               >
-                {cat.label}
+                <span className="mbt-pill__label">
+                  {categoryShortLabel(cat.type, cat.label)}
+                </span>
                 {categoryCounts[cat.type] != null && (
                   <span className="mbt-pill__count">
                     {categoryCounts[cat.type]}
@@ -981,57 +1003,16 @@ export function EmoteMenu({
           </div>
         )}
 
-        {/* ── Filter Chips + Sort + Import/Export ── */}
-        <div className="mbt-filters">
-          {(["all", "props", "shared"] as Filter[]).map((f) => (
-            <button
-              key={f}
-              className={`mbt-chip ${activeFilter === f ? "mbt-chip--active" : ""}`}
-              onClick={() => setActiveFilter(f)}
-            >
-              {f === "all"
-                ? t.filter_all || "All"
-                : f === "props"
-                  ? t.filter_props || "Props"
-                  : t.filter_shared || "Shared"}
-            </button>
-          ))}
-          <div className="mbt-filters__actions">
-            <button
-              className="mbt-sort-btn"
-              onClick={() => setSortOrder(nextSort[sortOrder])}
-              title={t.tooltip_sort_change || 'Change sort order'}
-            >
-              {sortLabels[sortOrder]}
-            </button>
-            <button
-              className="mbt-random-btn"
-              onClick={handleRandomPlay}
-              title={t.tooltip_random_emote || 'Random emote'}
-              disabled={filteredEmotes.length === 0}
-            >
-              <Shuffle size={11} />
-            </button>
-            {features.Favorites && (
-              <>
-                <button
-                  className="mbt-fav-io-btn"
-                  onClick={handleExportOpen}
-                  title={t.tooltip_export_favorites || 'Export favorites'}
-                >
-                  ↑
-                </button>
-                <button
-                  className="mbt-fav-io-btn"
-                  onClick={handleImportOpen}
-                  title={t.tooltip_import_favorites || 'Import favorites'}
-                >
-                  ↓
-                </button>
-              </>
-            )}
-          </div>
-        </div>
+        {/* ── Result Bar + Sort & Filter popover ── */}
+        <ResultBar
+          resultCount={filteredEmotes.length}
+          sortOrder={sortOrder}
+          onSortChange={setSortOrder}
+          activeFilter={activeFilter}
+          onFilterChange={setActiveFilter}
+          onRandom={handleRandomPlay}
+          randomDisabled={filteredEmotes.length === 0}
+        />
 
         {/* ── Emote Grid ── */}
         {/* Active Walk/Expression Banner */}
@@ -1073,6 +1054,18 @@ export function EmoteMenu({
             )}
           </div>
         )}
+
+        {/* ── Trending Hero ── (clean browse view only). Rendered as a
+            normal element ABOVE the grid — never inside .mbt-grid__virtual,
+            since useVirtualGrid assumes a uniform rowHeight and the hero is
+            taller. */}
+        {activeTab === "all" &&
+          !activeCategory &&
+          !search &&
+          activeFilter === "all" &&
+          trending && (
+            <TrendingHero trending={trending} onPlay={handleEmotePlay} />
+          )}
 
         {/* `mbt-grid-content` view-transition-name lets the directional
             tab slide (via View Transitions API in handleTabChange) capture
@@ -1242,6 +1235,13 @@ export function EmoteMenu({
             >
               <div className="mbt-modal__header">
                 <span className="mbt-modal__title">{t.modal_new_list || 'New List'}</span>
+                <button
+                  className="mbt-modal__btn-close"
+                  onClick={() => setShowListCreator(false)}
+                  title={t.btn_cancel || 'Cancel'}
+                >
+                  <X size={14} />
+                </button>
               </div>
               <div className="mbt-list-creator">
                 <input
@@ -1253,24 +1253,24 @@ export function EmoteMenu({
                   onKeyDown={(e) => e.key === "Enter" && handleCreateList()}
                   autoFocus
                 />
-                <div className="mbt-list-creator__colors">
-                  {[
-                    "#ff295b",
-                    "#3b82f6",
-                    "#22c55e",
-                    "#f59e0b",
-                    "#a855f7",
-                    "#ec4899",
-                    "#06b6d4",
-                    "#f97316",
-                  ].map((c) => (
-                    <button
-                      key={c}
-                      className={`mbt-list-creator__color ${newListColor === c ? "mbt-list-creator__color--active" : ""}`}
-                      style={{ background: c }}
-                      onClick={() => setNewListColor(c)}
-                    />
-                  ))}
+                <span className="mbt-list-creator__label">
+                  {t.modal_list_icon_label || 'Icon'}
+                </span>
+                <div className="mbt-list-creator__icons">
+                  {LIST_ICON_KEYS.map((key) => {
+                    const Icon = LIST_ICONS[key];
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        className={`mbt-list-creator__icon ${newListIcon === key ? "mbt-list-creator__icon--active" : ""}`}
+                        onClick={() => setNewListIcon(key)}
+                        title={key}
+                      >
+                        <Icon size={15} />
+                      </button>
+                    );
+                  })}
                 </div>
                 <button
                   className="mbt-modal__btn mbt-modal__btn--confirm"
@@ -1293,8 +1293,6 @@ export function EmoteMenu({
             onClose={() => setPartnerFinderState(null)}
           />
         )}
-
-        {/* ── Status Bar ── */}
 
         {/* ── Import/Export Modal ── */}
         {importExportMode !== "hidden" && (
@@ -1377,4 +1375,37 @@ function hexToRgb(hex: string): string {
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
   return `${r}, ${g}, ${b}`;
+}
+
+// Category → RGB triplet for the rail-pill colour dot. Triplets (not hex/var)
+// so the CSS can feed them to CEF-safe rgb()/rgba() — FiveM's CEF lacks
+// color-mix(). Slug derived the same way EmoteCard builds its
+// `mbt-card--cat-*` class, so both stay in sync.
+const CATEGORY_COLOR_VAR: Record<string, string> = {
+  emotes: "34, 211, 238",
+  propemotes: "245, 190, 74",
+  props: "245, 190, 74",
+  dances: "236, 72, 153",
+  shared: "251, 113, 88",
+  expressions: "168, 139, 250",
+  walks: "94, 234, 212",
+  "walk-styles": "94, 234, 212",
+  animalemotes: "251, 146, 60",
+  animals: "251, 146, 60",
+  emojis: "250, 224, 72",
+};
+function pillCatVar(type: string): string {
+  const slug = type.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return CATEGORY_COLOR_VAR[slug] || "154, 160, 166";
+}
+
+// The category rail is a tidy 3-column grid; long config labels
+// ("Expressions", "Walk Styles") blow out a cell. Show short forms for
+// those; every other category uses its config label unchanged.
+const CATEGORY_SHORT_LABEL: Record<string, string> = {
+  Expressions: "Expr.",
+  Walks: "Walks",
+};
+function categoryShortLabel(type: string, label: string): string {
+  return CATEGORY_SHORT_LABEL[type] || label;
 }

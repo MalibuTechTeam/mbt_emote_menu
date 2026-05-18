@@ -40,7 +40,8 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: (id: 
 
   return (
     <div className={`mbt-toast ${typeClass} ${exiting ? 'mbt-toast--exit' : ''}`} onClick={dismiss}>
-      {toast.text}
+      <span className="mbt-toast__dot" aria-hidden="true" />
+      <span className="mbt-toast__text">{toast.text}</span>
     </div>
   )
 }

@@ -38,7 +38,6 @@ body {
   --mbt-bg: #0C0E14;
   --mbt-bg-glass: rgba(12, 14, 22, 0.95); /* Increased opacity for readability */
   --mbt-card: rgba(20, 23, 32, 0.75);
-  --mbt-card-hover: rgba(28, 32, 42, 0.82);
   --mbt-text: #E8E8EE;
   --mbt-subtext: #6B7280;
   --mbt-border: rgba(255, 255, 255, 0.05);
@@ -47,15 +46,41 @@ body {
   --mbt-success:  #22c55e;
   --mbt-warning:  #fb8c00;
   --mbt-info:     #60A5FA;
-  --mbt-shared:   #A78BFA;
 
-  --mbt-radius: 4px; /* Unified slightly rounded corners */
-  --mbt-radius-sm: 4px;
-  --mbt-radius-pill: 8px;
+  /* ─── Category palette — shared design system. */
+  --mbt-cat-shared:  #fb7158;
+
+  /* ─── Text ladder — fixed values, tuned for legibility on compressed
+     video (YouTube / Discord). Never put functional text on --mbt-text-faint. */
+  --mbt-text-hi:    #F2F0EA;
+  --mbt-text-mid:   #BFBDB4;
+  --mbt-text-lo:    #8C8A82;
+  --mbt-text-faint: #6A6962;
+
+  /* ─── Surface + edge ladder (shell-agnostic) ─── */
+  --mbt-surface-1: #0B100E;
+  --mbt-surface-2: #121814;
+  --mbt-surface-3: #1A221E;
+  --mbt-edge-hi:   rgba(255, 255, 255, 0.10);
+  --mbt-edge:      rgba(255, 255, 255, 0.055);
+  --mbt-edge-lo:   rgba(255, 255, 255, 0.03);
+
+  --mbt-ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+
+  --mbt-radius: 10px;
+  --mbt-radius-sm: 8px;
+  --mbt-radius-pill: 999px;
   --mbt-font-mono: 'JetBrains Mono', 'Space Mono', 'Consolas', monospace;
   --mbt-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --mbt-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.03);
-  --mbt-blur: 24px;
+}
+
+/* ─── Shared keyframes ──────────────────────────────────────────────────── */
+/* One-shot spring pop — hover feedback on icon glyphs (the card disc icon,
+   the favourite star). Motion, not colour. Transform-only, CEF-safe. */
+@keyframes mbt-icon-pop {
+  0%   { transform: scale(1); }
+  42%  { transform: scale(1.26); }
+  100% { transform: scale(1); }
 }
 
 /* ─── Scrollbar ─────────────────────────────────────────────────────────── */
@@ -83,54 +108,89 @@ body {
 .mbt-overlay {
   position: fixed;
   inset: 0;
-  pointer-events: all;
   display: flex;
   align-items: center;
 }
 
+/* Standard shell — the panel floats on the raw game scene, so the
+   overlay itself is a transparent pointer passthrough. Only the panel
+   captures clicks (it re-enables pointer-events on .mbt-menu). The
+   cinematic shell overrides this with its vignette gradient + pointer
+   capture further down. */
+.mbt-overlay--right,
+.mbt-overlay--left {
+  background: transparent;
+  pointer-events: none;
+}
+
 .mbt-overlay--right {
   justify-content: flex-end;
-  padding-right: 28px;
-  background: linear-gradient(to left, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 25%, transparent 45%);
+  padding-right: 70px;
 }
 
 .mbt-overlay--left {
   justify-content: flex-start;
-  padding-left: 28px;
-  background: linear-gradient(to right, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 25%, transparent 45%);
+  padding-left: 70px;
 }
 
+/* Standard shell — a bounded, draggable floating premium panel
+   (mockup _mockup-standard.html .panel). Reads as a solid movable
+   object: layered dark surface, 1px border, big drop shadow, a faint
+   accent radial glow at the top edge. */
 .mbt-menu {
-  width: 24vw;
-  min-width: 380px;
-  max-width: 480px;
-  height: 82vh;
+  width: 444px;
+  height: 820px;
+  max-height: calc(100vh - 44px);
   display: flex;
   flex-direction: column;
-  background: radial-gradient(
-    circle at center center,
-    rgba(15, 30, 55, 0.8) 0%,
-    rgba(5, 12, 25, 0.95) 100%
-  ) !important;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--mbt-radius);
+  padding: 0 20px;
+  isolation: isolate;
+  pointer-events: auto;
+  color: var(--mbt-subtext);
+  background:
+    radial-gradient(120% 52% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.055), transparent 62%),
+    linear-gradient(180deg, #121814 0%, #0C100E 52%, #090C0A 100%);
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  border-radius: 18px;
   overflow: visible; /* Changed to allow grid children to be calculated correctly */
-  box-shadow: var(--mbt-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow:
+    0 44px 96px rgba(0, 0, 0, 0.74),
+    0 10px 30px rgba(0, 0, 0, 0.54),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
   animation: mbt-menu-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
 }
 
-/* Accent glow line at top */
-.mbt-menu::before {
-  content: '';
+/* Grip handle — small rounded pill at the top-center of the panel
+   (mockup .panel__grip). Standard shell only; the cinematic shell
+   hides it. */
+.mbt-grip {
   position: absolute;
-  top: 0;
-  left: 20%;
-  right: 20%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--mbt-accent), transparent);
-  opacity: 0.6;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34px;
+  height: 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.13);
+  pointer-events: none;
 }
+
+.layout-cinematic .mbt-grip {
+  display: none;
+}
+
+/* Standard shell — the panel owns the 20px side inset (padding: 0 20px
+   on .mbt-menu), so its direct children flush to that edge: only their
+   vertical padding is kept. Mirrors the cinematic "gold standard
+   padding" rule. The grid keeps its own 0 horizontal padding (cards
+   carry a 14px margin), so it is left out. */
+:not(.layout-cinematic) > .mbt-menu > .mbt-header { padding: 20px 0 12px; }
+:not(.layout-cinematic) > .mbt-menu > .mbt-search { padding: 10px 2px; }
+:not(.layout-cinematic) > .mbt-menu > .mbt-tabs { padding: 14px 2px 13px; }
+:not(.layout-cinematic) > .mbt-menu > .mbt-categories { padding: 4px 0; }
+:not(.layout-cinematic) > .mbt-menu > .mbt-resultbar { padding: 12px 2px 8px; }
+:not(.layout-cinematic) > .mbt-menu > .mbt-quickbind { padding: 11px 0 0; }
 
 @keyframes mbt-menu-enter {
   from {
@@ -181,29 +241,41 @@ body {
 
 .mbt-header__left {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: baseline;
+  gap: 9px;
 }
 
+/* "MBT" — solid accent wordmark with a soft glow (matches the v7
+   mockup; no background-clip text trick). */
 .mbt-logo {
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  background: var(--mbt-accent);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 1.6px;
+  color: var(--mbt-accent);
+  text-shadow: 0 0 14px rgba(var(--mbt-accent-rgb), 0.35);
 }
 
+/* "EMOTE MENU" — delicate, tracked, muted; secondary to the wordmark. */
 .mbt-header__title {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--mbt-text);
-  letter-spacing: 3px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mbt-text-lo);
+  letter-spacing: 2.4px;
   text-transform: uppercase;
 }
 
+.mbt-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ─── HEADER ACTION CLUSTER — [+] [STOP] [...] [X]. One cohesive set:
+   all 28px, quiet/near-transparent at rest, a subtle neutral background
+   on hover. `+` and STOP carry their meaning through the icon glyph
+   colour only — no filled tinted box. */
+.mbt-header__new,
+.mbt-header__stop,
 .mbt-header__close {
   display: flex;
   align-items: center;
@@ -219,282 +291,468 @@ body {
   transition: all var(--mbt-transition);
 }
 
+.mbt-header__new:hover,
+.mbt-header__stop:hover,
 .mbt-header__close:hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: var(--mbt-border-hover);
   color: var(--mbt-text);
 }
 
-/* ─── SEARCH & STOP ────────────────────────────────────────────── */
-.mbt-search {
-  padding: 0px 16px 12px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-}
-
-.mbt-search__input-wrapper {
-  flex: 0 0 60%; /* Fixed 60% width */
-  position: relative;
-  min-width: 0;
-}
-
-.mbt-search__icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--mbt-subtext);
-  pointer-events: none;
-  transition: color var(--mbt-transition);
-  z-index: 2;
-}
-
-.mbt-search__input {
-  width: 100%;
-  padding: 10px 12px 10px 34px;
-  background: var(--mbt-card);
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius-sm);
-  color: var(--mbt-text);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  transition: all var(--mbt-transition);
-}
-
-.mbt-search__input::placeholder {
-  color: var(--mbt-subtext);
-  text-transform: uppercase;
-  font-size: 10px;
-  letter-spacing: 0.5px;
-}
-
-.mbt-search__input:focus {
-  border-color: var(--mbt-accent);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.mbt-search__input:focus + .mbt-search__icon {
+/* meaning lives in the glyph colour, not a box */
+.mbt-header__new {
   color: var(--mbt-accent);
 }
 
-.mbt-search__count {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 10px;
-  color: var(--mbt-subtext);
+.mbt-header__new:hover {
+  color: var(--mbt-accent);
+}
+
+.mbt-header__stop {
+  color: #ff6b6b;
+}
+
+.mbt-header__stop:hover {
+  color: #ff6b6b;
+}
+
+/* ─── SEARCH — v7 minimal. Just a magnifier + input over a single
+   underline that lights accent on focus. Shared base. "New list" moved
+   to the lens "+" tab; "Stop" moved to the header. */
+.mbt-search {
+  padding: 0 16px;
+}
+
+.mbt-search__input-wrapper {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 2px;
+  border-bottom: 1px solid var(--mbt-edge);
+  transition: border-color 0.2s;
+}
+
+.mbt-search__input-wrapper:focus-within {
+  border-color: rgba(var(--mbt-accent-rgb), 0.55);
+}
+
+.mbt-search__icon {
+  position: static;
+  transform: none;
+  flex-shrink: 0;
+  order: -1;
+  color: var(--mbt-text-lo);
   pointer-events: none;
-  opacity: 0.6;
-  z-index: 2;
+  transition: color var(--mbt-transition);
 }
 
-.mbt-search__actions {
-  flex: 0 0 calc(40% - 8px); /* 40% minus the gap */
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.mbt-search__input-wrapper:focus-within .mbt-search__icon {
+  color: var(--mbt-accent);
 }
 
-.mbt-search__btn {
-  flex: 1; /* Buttons share the 40% space equally */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 8px 10px;
-  border-radius: var(--mbt-radius-sm);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: all var(--mbt-transition);
+.mbt-search__input {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  padding: 0;
+  background: transparent;
   border: none;
+  border-radius: 0;
+  color: var(--mbt-text-hi);
+  font-size: 13px;
   font-family: inherit;
-  white-space: nowrap;
+  letter-spacing: 0.3px;
+  outline: none;
+  transition: none;
 }
 
-.mbt-search__btn span {
-  opacity: 0.9;
+.mbt-search__input::placeholder {
+  color: var(--mbt-text-lo);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 1.4px;
 }
 
-.mbt-search__btn:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.1);
+.mbt-search__input:focus {
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
-.mbt-search__btn:active {
-  transform: translateY(0);
-}
-
-/* New List Button: Cyan/Blue Gradient */
-.mbt-search__btn--add {
-  background: linear-gradient(135deg, #00B4D8 0%, #0077B6 100%);
-  box-shadow: 0 4px 12px rgba(0, 180, 216, 0.25);
-}
-
-/* Stop Button: Red Gradient */
-.mbt-search__btn--stop {
-  background: linear-gradient(135deg, #FF4D4D 0%, #C62828 100%);
-  box-shadow: 0 4px 12px rgba(255, 77, 77, 0.25);
+.mbt-search__count {
+  position: static;
+  transform: none;
+  flex-shrink: 0;
+  font-size: 10px;
+  color: var(--mbt-text-lo);
+  pointer-events: none;
+  opacity: 1;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TABS (All / Favorites / Recent)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─── TABS (Navigation) ─────────────────────────────────────────── */
+/* ─── TABS / Lens strip — v7. Slim flat strip, underline on active.
+   No pills, no boxes — the navigation reads as text. Shared base. */
 .mbt-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding: 12px 16px 8px;
-  border-bottom: 1px solid var(--mbt-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  align-items: center;
+  padding: 16px 16px 14px;
+  border-bottom: none;
 }
 
 .mbt-tab {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
-  padding: 10px 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius-sm);
-  color: var(--mbt-subtext);
-  font-size: 10.5px;
-  font-weight: 700;
+  gap: 6px;
+  padding: 2px 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--mbt-text-lo);
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.9px;
+  white-space: nowrap;
   cursor: pointer;
-  transition: all var(--mbt-transition);
+  transition: color 0.18s;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .mbt-tab:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--mbt-text);
-  border-color: var(--mbt-border-hover);
+  background: transparent;
+  color: var(--mbt-text-mid);
 }
 
 .mbt-tab--active {
-  background: var(--mbt-accent-soft);
-  border-color: var(--mbt-accent);
-  color: var(--mbt-accent);
-  box-shadow: 0 0 15px var(--mbt-accent-glow);
+  background: transparent;
+  color: var(--mbt-text-hi);
+  box-shadow: none;
+}
+
+/* underline on the active lens */
+.mbt-tab--active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--mbt-accent);
+  box-shadow: 0 0 8px rgba(var(--mbt-accent-rgb), 0.5);
 }
 
 .mbt-tab__count {
-  font-family: var(--mbt-font-mono);
-  font-size: 8px;
-  opacity: 0.6;
-  background: rgba(255, 255, 255, 0.06);
-  padding: 2px 5px;
-  border-radius: 4px;
-  margin-left: auto;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--mbt-text-lo);
+  letter-spacing: 0;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  margin-left: 0;
 }
 
-.mbt-tab-divider {
-  grid-column: 1 / -1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--mbt-border), transparent);
-  margin: 6px 0;
-  opacity: 0.3;
+.mbt-tab--active .mbt-tab__count {
+  color: rgba(var(--mbt-accent-rgb), 0.7);
 }
 
-.mbt-tab--list .mbt-tab__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-}
-
-/* Custom list tabs maintained without the add button */
-
-/* ─── CATEGORY PILLS (Sub-Navigation) ────────────────────────────── */
+/* ─── CATEGORY RAIL — v7. The navigation spine: a 3-col grid of
+   rounded pills, each with a small colour dot. Shared base. */
 .mbt-categories {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 6px;
-  padding: 8px 16px 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  padding: 4px 16px;
 }
 
-/* ─── FILTERS (Quick Actions) ───────────────────────────────────── */
-.mbt-filters {
+/* ─── RESULT BAR + SORT & FILTER POPOVER — v7. Replaces the old
+   filter-chip row. A thin row: result count left, "Sort & filter"
+   button right. Shared base; cinematic shell only zeroes padding. */
+.mbt-resultbar {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  background: rgba(0, 0, 0, 0.2);
-  border-bottom: 1px solid var(--mbt-border);
+  justify-content: space-between;
+  padding: 12px 16px 8px;
+  z-index: 6;
 }
 
-.mbt-pill {
+.mbt-resultbar__count {
+  font-size: 10px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-resultbar__num {
+  color: var(--mbt-text-hi);
+  font-weight: 700;
+}
+
+.mbt-sortbtn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: var(--mbt-radius-sm);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--mbt-text-mid);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--mbt-edge);
+  transition: color 0.16s, background 0.16s, border-color 0.16s;
+}
+
+.mbt-sortbtn:hover,
+.mbt-sortbtn--open {
+  color: var(--mbt-text-hi);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--mbt-edge-hi);
+}
+
+/* ── RESULT BAR TOOLS — the right-side control cluster: a standalone
+   Random icon-button paired with the Sort & filter button. */
+.mbt-resultbar__tools {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Random — icon-only 28px button. Resting surface matches .mbt-sortbtn
+   so the two read as one set; the icon lifts to accent on hover. */
+.mbt-randbtn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 10px 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--mbt-border);
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
   border-radius: var(--mbt-radius-sm);
-  color: var(--mbt-subtext);
-  font-size: 10px;
+  cursor: pointer;
+  color: var(--mbt-text-mid);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--mbt-edge);
+  transition: color 0.16s, background 0.16s, border-color 0.16s,
+              transform 0.14s var(--mbt-ease-out);
+}
+
+.mbt-randbtn:hover {
+  color: var(--mbt-accent);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--mbt-edge-hi);
+}
+
+.mbt-randbtn:active {
+  transform: scale(0.92);
+}
+
+.mbt-randbtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  color: var(--mbt-text-mid);
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--mbt-edge);
+}
+
+/* The popover — opaque, anchored under the button (mockup `.sortpop`).
+   Also reused by the header overflow menu (`.mbt-headermenu__pop`). */
+.mbt-sortpop {
+  position: absolute;
+  top: calc(100% + 5px);
+  right: 2px;
+  width: 214px;
+  padding: 6px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--mbt-surface-3), var(--mbt-surface-1));
+  border: 1px solid var(--mbt-edge-hi);
+  box-shadow:
+    0 22px 48px rgba(0, 0, 0, 0.66),
+    0 6px 16px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 var(--mbt-edge);
+  z-index: 20;
+  animation: mbt-sortpop-in 0.16s var(--mbt-ease-out);
+}
+
+@keyframes mbt-sortpop-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mbt-sortpop__head {
+  font-size: 9px;
   font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--mbt-text-lo);
+  padding: 7px 9px 5px;
+}
+
+.mbt-sortpop__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 9px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--mbt-text-mid);
+  background: transparent;
+  text-align: left;
+  transition: background 0.14s, color 0.14s;
+}
+
+.mbt-sortpop__item span {
+  flex: 1;
+  min-width: 0;
+}
+
+.mbt-sortpop__item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--mbt-text-hi);
+}
+
+/* the trailing check — only shown on the active row */
+.mbt-sortpop__item > svg:last-child {
+  margin-left: auto;
+  opacity: 0;
+  flex-shrink: 0;
+}
+
+.mbt-sortpop__item--active {
+  color: var(--mbt-accent);
+}
+
+.mbt-sortpop__item--active > svg:last-child {
+  opacity: 1;
+}
+
+.mbt-sortpop__item:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.mbt-sortpop__item:disabled:hover {
+  background: transparent;
+  color: var(--mbt-text-mid);
+}
+
+.mbt-sortpop__div {
+  height: 1px;
+  background: var(--mbt-edge);
+  margin: 4px 6px;
+}
+
+/* ─── HEADER OVERFLOW MENU — the "..." button + its menu ─── */
+.mbt-headermenu {
+  position: relative;
+}
+
+.mbt-headermenu__btn--open {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--mbt-border-hover);
+  color: var(--mbt-text);
+}
+
+.mbt-headermenu__pop {
+  top: calc(100% + 6px);
+  right: 0;
+  width: 188px;
+}
+
+.mbt-pill {
+  --mbt-pill-cat: 154, 160, 166;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 8px 28px;
+  background: rgba(255, 255, 255, 0.022);
+  border: 1px solid var(--mbt-edge-lo);
+  border-radius: 999px;
+  color: var(--mbt-text-mid);
+  font-size: 10.5px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
-  transition: all var(--mbt-transition);
+  transition: background 0.16s, border-color 0.16s, color 0.16s;
+}
+
+/* the category colour dot */
+.mbt-pill::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(var(--mbt-pill-cat));
+  box-shadow: 0 0 8px rgba(var(--mbt-pill-cat), 0.6);
 }
 
 .mbt-pill:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--mbt-text);
+  background: rgba(255, 255, 255, 0.045);
+  border-color: var(--mbt-edge);
+  color: var(--mbt-text-mid);
 }
 
 .mbt-pill--active {
-  background: var(--mbt-accent-soft);
-  border-color: var(--mbt-accent);
-  color: var(--mbt-accent);
-  box-shadow: 0 0 10px var(--mbt-accent-glow);
+  background: rgba(var(--mbt-pill-cat), 0.15);
+  border-color: rgba(var(--mbt-pill-cat), 0.48);
+  color: rgb(var(--mbt-pill-cat));
+  box-shadow: none;
+}
+
+/* label — fills the pill, ellipsis if a custom label runs long, so the
+   count always lands in the same spot across the 3-column grid */
+.mbt-pill__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
 }
 
 .mbt-pill__count {
-  font-size: 8px;
-  opacity: 0.6;
-  margin-left: 2px;
+  flex-shrink: 0;
+  margin-left: 8px;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--mbt-text-lo);
 }
 
-
-.mbt-chip {
-  padding: 4px 10px;
-  background: transparent;
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius-sm);
-  color: var(--mbt-subtext);
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  transition: all var(--mbt-transition);
+.mbt-pill--active .mbt-pill__count {
+  color: rgb(var(--mbt-pill-cat));
 }
 
-.mbt-chip:hover {
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--mbt-text);
-}
-
-.mbt-chip--active {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: var(--mbt-text);
-}
+/* per-category dot colour — keyed off nth-child position in the rail.
+   The rail order is fixed: All, Emotes, Props, Dances, Shared,
+   Expressions, Walks, Animals, Emojis. */
+/* --mbt-pill-cat is set inline per pill in EmoteMenu.tsx — data-driven,
+   robust against the config-driven category order. */
 
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -517,10 +775,14 @@ body {
   display: none;
 }
 
+/* 6px inter-card gap. The virtual grid positions rows by a fixed
+   rowHeight (see useVirtualGrid call in EmoteMenu.tsx): a 66px
+   .mbt-card__row + 1px top/bottom border = 68px card, + 6px gap = 74.
+   Keep this gap and that rowHeight in sync or cards overlap / cramp. */
 .mbt-grid__virtual {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 6px;
   align-content: start;
 }
 
@@ -538,11 +800,6 @@ body {
 .mbt-empty__icon {
   color: var(--mbt-subtext);
   opacity: 0.4;
-}
-
-.mbt-empty__text {
-  color: var(--mbt-subtext);
-  font-size: 13px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -568,90 +825,205 @@ body {
   opacity: 0.35;
 }
 
-.mbt-card {
-  position: relative;
-  background: transparent;
+/* ── Trending Hero — the one earned colour moment on the clean browse
+   view. Server-wide "Trending this week" spotlight. CEF-safe: only
+   transform/opacity animate, no backdrop-filter blur. Category colour
+   arrives via the --mbt-hero-cat custom prop set inline by the React
+   component (mirrors the rail-pill / card-disc tinting). */
+.mbt-hero {
+  --mbt-hero-cat: 154, 160, 166;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 106px;
+  margin-bottom: 10px;
+  padding: 0 18px;
+  border-radius: 16px;
+  background:
+    radial-gradient(130% 160% at 12% -16%,
+      rgba(var(--mbt-hero-cat), 0.24), transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.046),
+      rgba(255, 255, 255, 0.012) 56%, rgba(255, 255, 255, 0));
+  border: 1px solid rgba(var(--mbt-hero-cat), 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 20px 46px rgba(0, 0, 0, 0.52);
+}
+
+.mbt-hero__disc {
+  flex-shrink: 0;
+  width: 58px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  color: rgb(var(--mbt-hero-cat));
+  background: radial-gradient(circle at 50% 32%,
+    rgba(var(--mbt-hero-cat), 0.36),
+    rgba(var(--mbt-hero-cat), 0.11) 78%);
+  border: 1px solid rgba(var(--mbt-hero-cat), 0.4);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.10),
+    0 10px 22px rgba(0, 0, 0, 0.32);
+}
+
+/* The hero disc shows the silhouette glyph at full category colour —
+   it overrides the muted card-disc tint and the chip surface styling. */
+.mbt-hero__disc .mbt-silhouette {
+  width: 27px;
+  height: 27px;
+  padding: 0;
   border: none;
-  border-radius: 0;
-  padding: 14px 16px;
-  cursor: pointer;
-  color: var(--mbt-text, #f1f5f9);
-  transition: all 0.1s ease;
-  overflow: hidden;
-  min-height: 54px;
+  background: none;
+  box-shadow: none;
+  color: rgb(var(--mbt-hero-cat));
+}
+
+.mbt-hero:hover .mbt-hero__disc .mbt-silhouette {
+  animation: mbt-icon-pop 0.42s var(--mbt-ease-out);
+}
+
+.mbt-hero__body {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  gap: 4px;
+}
+
+.mbt-hero__kicker {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: rgb(var(--mbt-hero-cat));
+}
+
+.mbt-hero__name {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  line-height: 1.05;
+  color: var(--mbt-text-hi);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mbt-hero__sub {
+  font-size: 11.5px;
+  letter-spacing: 0.2px;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-hero__play {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 17px;
+  border: none;
+  border-radius: 11px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #04140c;
+  background: var(--mbt-accent);
+  box-shadow: 0 8px 22px rgba(var(--mbt-accent-rgb), 0.30);
+  transition: transform 0.14s var(--mbt-ease-out), box-shadow 0.18s;
+}
+
+.mbt-hero__play:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 11px 26px rgba(var(--mbt-accent-rgb), 0.42);
+}
+
+.mbt-hero__play svg {
+  fill: currentColor;
+}
+
+/* ── Card — v7 shared base. Neutral surface; colour lives only in the
+   small disc-icon glyph, kept at a constant MUTED category tint. Hover
+   feedback is a soft white border + lift + icon-pop motion — no colour
+   flood. Both layouts inherit this. */
+.mbt-card {
+  --mbt-card-cat-rgb: var(--mbt-accent-rgb);
+  --mbt-card-cat: rgb(var(--mbt-card-cat-rgb));
+  position: relative;
+  /* No own horizontal margin — each shell owns its inset (cinematic 30px
+     pad, standard 20px pad). Card sits flush to the menu inset. */
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.032) 0%,
+    rgba(255, 255, 255, 0.009) 52%, rgba(255, 255, 255, 0) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  border-radius: 12px;
+  padding: 0;
+  cursor: pointer;
+  color: var(--mbt-text, #f1f5f9);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    background 0.18s var(--mbt-ease-out),
+    border-color 0.18s,
+    box-shadow 0.18s,
+    transform 0.16s var(--mbt-ease-out);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   gap: 0;
   -webkit-user-drag: element;
   pointer-events: auto;
   user-select: none;
-  will-change: background, padding-left; /* Optimize for state changes */
+  will-change: transform;
 }
+
+/* ── Category palette → per-card disc-glyph tint (un-prefixed = shared base) */
+.mbt-card--cat-emotes { --mbt-card-cat-rgb: 34, 211, 238; }
+.mbt-card--cat-propemotes { --mbt-card-cat-rgb: 245, 190, 74; }
+.mbt-card--cat-dances { --mbt-card-cat-rgb: 236, 72, 153; }
+.mbt-card--cat-shared { --mbt-card-cat-rgb: 251, 113, 88; }
+.mbt-card--cat-expressions { --mbt-card-cat-rgb: 168, 139, 250; }
+.mbt-card--cat-walks { --mbt-card-cat-rgb: 94, 234, 212; }
+.mbt-card--cat-animalemotes { --mbt-card-cat-rgb: 251, 146, 60; }
+.mbt-card--cat-emojis { --mbt-card-cat-rgb: 250, 224, 72; }
 
 .mbt-card__row {
   display: flex;
   flex-direction: row;
   width: 100%;
   align-items: center;
-  gap: 12px;
-  min-height: 26px; /* Stabilizes the vertically centered items */
+  gap: 13px;
+  height: 66px;
+  padding: 0 10px 0 12px;
+  position: relative;
 }
 
 .mbt-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  /* padding-left shift removed for absolute trigger stability */
-}
-
-/* Accent bar on hover */
-.mbt-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 15%;
-  bottom: 15%;
-  width: 3px;
-  background: var(--mbt-accent);
-  border-radius: 0 4px 4px 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 0 15px var(--mbt-accent-glow);
-}
-
-.mbt-card:hover::before {
-  opacity: 1;
-}
-
-/* Neon Accent bar on hover */
-.mbt-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 15%;
-  bottom: 15%;
-  width: 3px;
-  background: var(--mbt-accent);
-  border-radius: 0 4px 4px 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 0 15px var(--mbt-accent-glow);
-}
-
-.mbt-card:hover::before {
-  opacity: 1;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.062),
+    rgba(255, 255, 255, 0.018) 55%, rgba(255, 255, 255, 0));
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.085),
+    0 14px 32px rgba(0, 0, 0, 0.50);
+  transform: translateY(-1px);
 }
 
 .mbt-card:active {
-  background: rgba(255, 255, 255, 0.04);
-  transform: none;
+  transform: translateY(0);
 }
 
 .mbt-card__name {
   font-size: 14px;
-  font-weight: 500;
-  color: var(--mbt-text);
+  font-weight: 600;
+  color: var(--mbt-text-mid);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -663,116 +1035,260 @@ body {
   line-height: 1.3;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 13px;
+  transition: color 0.16s;
 }
 
+.mbt-card:hover .mbt-card__name,
+.mbt-card--expanded .mbt-card__name {
+  color: var(--mbt-text-hi);
+}
+
+.mbt-card__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.mbt-card__label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: inherit;
+}
+
+.mbt-card__category {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  line-height: 1.15;
+  color: var(--mbt-text-lo);
+  transition: color 0.16s;
+}
+
+/* card sub-line — category text + inline tag (mockup .card__sub) */
+.mbt-card__sub {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mbt-card__category-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.mbt-card:hover .mbt-card__category,
+.mbt-card--focused .mbt-card__category {
+  color: var(--mbt-text-mid);
+}
+
+/* inline tag chip — Prop / Sync / Duo, sits after the category text */
+.mbt-card__tag {
+  flex-shrink: 0;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--mbt-text-mid);
+  line-height: 1.2;
+}
+
+/* variant chip — compact inline chip in the sub-line, signals
+   "expandable variants". Quieter than .mbt-card__tag: no border fill,
+   a chevron-down glyph + the count. */
+.mbt-card__var {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+  padding: 2px 5px 2px 3px;
+  border-radius: 4px;
+  border: 1px solid var(--mbt-edge-lo);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--mbt-text-lo);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.16s, border-color 0.16s;
+}
+
+.mbt-card__var-icon {
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.mbt-card:hover .mbt-card__var,
+.mbt-card--focused .mbt-card__var {
+  color: var(--mbt-text-mid);
+  border-color: var(--mbt-edge);
+}
+
+/* ── Card disc — the neutral charcoal BOX that holds the glyph. */
+.mbt-card__disc {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.016));
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: background 0.18s, border-color 0.18s, transform 0.16s var(--mbt-ease-out);
+}
+
+.mbt-card:hover .mbt-card__disc,
+.mbt-card--focused .mbt-card__disc,
+.mbt-card--expanded .mbt-card__disc {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.025));
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* No scale on the disc box — scaling a 1px border to a sub-pixel width
+   renders fuzzy/doubled in CEF. Hover feedback = the box brightens
+   (above) + the glyph inside does the one-shot pop (below). */
+
+/* ── Silhouette — just the category glyph (the box is .mbt-card__disc).
+   Full category colour so each card reads as its category at a glance. */
 .mbt-silhouette {
   flex-shrink: 0;
-  opacity: 0.45;
-  transition: opacity 0.2s ease;
+  color: var(--mbt-card-cat);
 }
 
-.mbt-card:hover .mbt-silhouette,
-.mbt-card--focused .mbt-silhouette {
-  opacity: 0.8;
+.mbt-card:hover .mbt-silhouette {
+  animation: mbt-icon-pop 0.42s var(--mbt-ease-out);
 }
 
 .mbt-card--active-style .mbt-silhouette {
-  opacity: 1;
   color: var(--mbt-accent);
 }
 
+/* Resting metadata column — 1X play-count + Active badge. Last item in
+   the row flow, so it always sits at a fixed offset from the right edge
+   (the 34px margin clears the absolutely-positioned fav star). This is
+   what column-aligns the 1X badge across every card regardless of how
+   many action buttons a card has. */
 .mbt-card__meta {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: flex-end;
+  gap: 9px;
+  flex-shrink: 0;
+  margin-right: 34px;
   position: relative;
   z-index: 1;
+  transition: opacity 0.16s;
 }
 
+/* Action buttons — pulled out of flow and pinned over the card's right
+   edge so their (per-card variable) count never shifts the meta column.
+   Hidden at rest, revealed on hover (see the icon-button block below). */
 .mbt-card__actions {
   display: flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  position: relative;
-  z-index: 1;
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
 }
 
+/* On hover / drawer-open the action overlay takes over the right edge,
+   so the resting meta badges fade out — a clean swap, no reflow. */
+.mbt-card:hover .mbt-card__meta,
+.mbt-card--expanded .mbt-card__meta {
+  opacity: 0;
+}
+
+/* ── Badges — v7 neutral bordered chips. Near-monochrome at rest; no
+   category colour flood. Only the "active" badge carries the accent. */
 .mbt-badge {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-family: var(--mbt-font-mono);
-  font-size: 8.5px;
+  font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.7px;
   padding: 2px 6px;
-  border-radius: 2px;
-}
-
-.mbt-badge--prop {
-  background: rgba(96, 165, 250, 0.12);
-  color: var(--mbt-info);
-}
-
-.mbt-badge--shared {
-  background: rgba(167, 139, 250, 0.12);
-  color: var(--mbt-shared);
-}
-
-.mbt-badge--dance {
-  background: rgba(34, 197, 94, 0.12);
-  color: var(--mbt-success);
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--mbt-text-mid);
 }
 
 .mbt-badge--plays {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--mbt-accent);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--mbt-text-lo);
   font-variant-numeric: tabular-nums;
 }
 
 .mbt-badge--active {
-  background: var(--mbt-accent);
-  color: #fff;
-  font-weight: 600;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  font-size: 8px;
-  animation: mbt-pulse-badge 2s ease-in-out infinite;
-}
-
-@keyframes mbt-pulse-badge {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  background: rgba(var(--mbt-accent-rgb), 0.14);
+  border-color: rgba(var(--mbt-accent-rgb), 0.42);
+  color: var(--mbt-accent);
+  font-weight: 700;
 }
 
 .mbt-card__fav {
-  background: none;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
   border: none;
-  font-size: 15px;
-  cursor: pointer;
-  color: var(--mbt-subtext);
-  transition: all var(--mbt-transition);
-  padding: 2px;
+  border-radius: 7px;
+  font-size: 17px;
   line-height: 1;
+  cursor: pointer;
+  color: var(--mbt-text-lo);
   z-index: 2;
-  opacity: 0;
   flex-shrink: 0;
+  opacity: 0.6;
+  transition: color 0.16s, background 0.16s, opacity 0.16s, transform 0.18s var(--mbt-ease-out);
 }
 
 .mbt-card:hover .mbt-card__fav {
-  opacity: 1;
-}
-
-.mbt-card__fav--active {
-  color: var(--mbt-warning);
-  opacity: 1;
+  opacity: 0.7;
 }
 
 .mbt-card__fav:hover {
-  transform: scale(1.3);
+  opacity: 1;
+  color: var(--mbt-text-hi);
+  background: transparent;
+  animation: mbt-icon-pop 0.4s var(--mbt-ease-out);
+}
+
+.mbt-card__fav--active {
+  opacity: 1;
+  color: var(--mbt-accent);
+}
+
+.mbt-card__fav--active:hover {
+  color: var(--mbt-accent);
 }
 
 
@@ -785,11 +1301,14 @@ body {
   bottom: 70px;
   left: 16px;
   right: 16px;
-  background: var(--mbt-bg-glass);
-  border: 1px solid var(--mbt-shared);
-  border-radius: var(--mbt-radius);
-  padding: 14px 16px;
+  background: linear-gradient(180deg, #141a16, #0c100d);
+  border: 1px solid var(--mbt-edge-hi);
+  border-radius: 14px;
+  overflow: hidden;
   z-index: 10;
+  box-shadow:
+    0 24px 54px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   animation: mbt-popup-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -806,134 +1325,95 @@ body {
 
 .mbt-shared-popup__header {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 15px 16px 12px;
 }
 
 .mbt-shared-popup__icon {
-  color: var(--mbt-shared);
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--mbt-cat-shared);
 }
 
 .mbt-shared-popup__title {
-  font-size: 13px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--mbt-text-mid);
+}
+
+.mbt-shared-popup__title b {
+  color: var(--mbt-text-hi);
   font-weight: 600;
-  color: var(--mbt-text);
 }
 
 .mbt-shared-popup__emote {
-  color: var(--mbt-shared);
+  color: var(--mbt-accent);
+  font-weight: 700;
 }
 
 .mbt-shared-popup__actions {
   display: flex;
   gap: 8px;
+  padding: 0 16px 14px;
 }
 
 .mbt-shared-popup__btn {
   flex: 1;
-  padding: 8px;
-  border: 1px solid transparent;
-  border-radius: var(--mbt-radius-sm);
-  font-size: 12px;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  border: none;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
   font-family: inherit;
   cursor: pointer;
-  transition: all var(--mbt-transition);
-  text-align: center;
+  transition: background var(--mbt-transition), transform 0.14s var(--mbt-ease-out);
 }
 
 .mbt-shared-popup__btn--accept {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: rgba(34, 197, 94, 0.3);
-  color: var(--mbt-success);
+  background: var(--mbt-accent);
+  color: #04140c;
+  box-shadow: 0 6px 16px rgba(var(--mbt-accent-rgb), 0.28);
 }
 
 .mbt-shared-popup__btn--accept:hover {
-  background: rgba(34, 197, 94, 0.25);
+  background: var(--mbt-accent-strong);
 }
 
 .mbt-shared-popup__btn--decline {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.2);
-  color: var(--mbt-danger);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--mbt-edge-hi);
+  color: var(--mbt-text-mid);
 }
 
 .mbt-shared-popup__btn--decline:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .mbt-shared-popup__timer {
-  width: 100%;
-  height: 2px;
+  height: 3px;
   background: rgba(255, 255, 255, 0.06);
-  border-radius: 2px;
-  margin-top: 10px;
   overflow: hidden;
 }
 
 .mbt-shared-popup__timer-bar {
   height: 100%;
-  background: var(--mbt-shared);
-  border-radius: 2px;
+  background: var(--mbt-accent);
+  box-shadow: 0 0 8px rgba(var(--mbt-accent-rgb), 0.5);
   animation: mbt-timer-shrink 10s linear forwards;
 }
 
 @keyframes mbt-timer-shrink {
   from { width: 100%; }
   to { width: 0%; }
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   KEYBIND SLOTS
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.mbt-keybind-bar {
-  display: flex;
-  gap: 4px;
-  padding: 6px 16px 8px;
-  border-top: 1px solid var(--mbt-border);
-}
-
-.mbt-keybind-slot {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 4px;
-  background: var(--mbt-card);
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius-sm);
-  cursor: pointer;
-  transition: all var(--mbt-transition);
-}
-
-.mbt-keybind-slot:hover {
-  border-color: var(--mbt-accent);
-  background: var(--mbt-accent-soft);
-}
-
-.mbt-keybind-slot__key {
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--mbt-accent);
-  text-transform: uppercase;
-}
-
-.mbt-keybind-slot__name {
-  font-size: 9px;
-  color: var(--mbt-subtext);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-  text-align: center;
-}
-
-.mbt-keybind-slot--empty .mbt-keybind-slot__name {
-  color: rgba(255, 255, 255, 0.15);
-  font-style: italic;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -945,269 +1425,158 @@ body {
    720p → 1080p → Ultrawide 1080p → 1440p → Ultrawide 1440p → 4K+
    ═══════════════════════════════════════════════════════════════════════ */
 
+/* The standard shell is a fixed-size bounded panel (444 × 680, mockup
+   _mockup-standard.html .panel) — its `max-height: calc(100vh - 44px)`
+   already keeps it on-screen at short resolutions, so the width/height
+   media overrides below are scoped to the CINEMATIC shell only. The
+   card-row / font-size tweaks stay layout-agnostic. */
+
 /* 720p (1280×720) — Compact */
 @media (max-height: 720px) {
-  .mbt-menu {
-    width: 320px;
-    min-width: 300px;
+  .layout-cinematic .mbt-menu {
     height: 92vh;
   }
-  .mbt-card__name { font-size: 10px; }
-  .mbt-card { padding: 6px 8px; gap: 4px; }
+  .mbt-card__name { font-size: 12px; }
   :not(.layout-cinematic) .mbt-tabs { padding: 8px 12px 6px; }
-  :not(.layout-cinematic) .mbt-categories { padding: 6px 12px 8px; }
-  :not(.layout-cinematic) .mbt-search { padding: 0px 12px 8px; }
-  :not(.layout-cinematic) .mbt-filters { padding: 4px 12px; }
+  :not(.layout-cinematic) .mbt-categories { padding: 4px 12px; }
+  :not(.layout-cinematic) .mbt-search { padding: 0 12px; }
+  :not(.layout-cinematic) .mbt-resultbar { padding: 8px 12px; }
   :not(.layout-cinematic) .mbt-header { padding: 10px 12px; }
-  :not(.layout-cinematic) .mbt-quickbind { padding: 8px 12px; }
-  .mbt-badge { font-size: 8px; padding: 1px 4px; }
-  .mbt-card__preview, .mbt-card__playlist-add, .mbt-card__list-add, .mbt-card__fav { padding: 2px; }
+  :not(.layout-cinematic) .mbt-quickbind { padding: 8px 12px 0; }
+  .mbt-badge { font-size: 8px; }
 }
 
 /* Small screens ≤1400px width (e.g. 1366×768 laptops) */
 @media (max-width: 1400px) and (min-height: 721px) {
-  .mbt-menu {
-    width: 360px;
+  .layout-cinematic .mbt-menu {
     height: 78vh;
   }
-  .mbt-card__name { font-size: 11px; }
-  .mbt-card { padding: 8px 10px; gap: 6px; }
+  .mbt-card__name { font-size: 13px; }
 }
 
 /* 1080p Standard (1920×1080) — Base styles, no override needed */
 
-/* Ultrawide 1080p (2560×1080, 3440×1080, 3840×1080) — wide but short */
-@media (min-width: 2500px) and (max-height: 1100px) {
-  .mbt-menu {
-    width: 400px;
-    height: 88vh;
-  }
-}
-
 /* 1440p (2560×1440) */
 @media (min-height: 1400px) and (max-height: 1500px) {
-  .mbt-menu {
-    width: 420px;
-    height: 80vh;
-  }
-  .mbt-card { padding: 10px 14px; }
-  .mbt-card__name { font-size: 13px; }
-}
-
-/* Ultrawide 1440p (3440×1440, 5120×1440) */
-@media (min-width: 3400px) and (min-height: 1400px) and (max-height: 1500px) {
-  .mbt-menu {
-    width: 440px;
-    height: 82vh;
-  }
+  .mbt-card__name { font-size: 14px; }
 }
 
 /* 4K (3840×2160) */
 @media (min-height: 2000px) {
-  .mbt-menu {
-    width: 500px;
-    max-width: 560px;
-    height: 75vh;
-  }
-  .mbt-card { padding: 12px 16px; }
-  .mbt-card__name { font-size: 14px; }
-  :not(.layout-cinematic) .mbt-tabs { padding: 14px 20px 10px; }
-  :not(.layout-cinematic) .mbt-categories { padding: 10px 20px 14px; }
-  :not(.layout-cinematic) .mbt-search { padding: 0px 20px 14px; }
-  :not(.layout-cinematic) .mbt-filters { padding: 8px 20px; }
+  .mbt-card__name { font-size: 15px; }
+  :not(.layout-cinematic) .mbt-tabs { padding: 18px 20px 16px; }
+  :not(.layout-cinematic) .mbt-categories { padding: 4px 20px; }
+  :not(.layout-cinematic) .mbt-search { padding: 0 20px; }
+  :not(.layout-cinematic) .mbt-resultbar { padding: 12px 20px 8px; }
   :not(.layout-cinematic) .mbt-header { padding: 16px 20px; }
-  :not(.layout-cinematic) .mbt-quickbind { padding: 14px 20px; }
-  .mbt-badge { font-size: 11px; padding: 3px 8px; }
-}
-
-/* Super Ultrawide (5120×1440, 3840×1080) — extra wide, ensure menu isn't lost */
-@media (min-width: 5000px) {
-  .mbt-menu {
-    width: 480px;
-  }
+  :not(.layout-cinematic) .mbt-quickbind { padding: 14px 20px 0; }
+  .mbt-badge { font-size: 10px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
    CINEMATIC RESPONSIVE OVERRIDES
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* 720p cinematic — solo width */
+/* The cinematic menu is the fixed-width edge-docked panel (mockup
+   .menu — 468px). It is full-height by design, so the only thing the
+   short-screen / hi-dpi breakpoints need to tweak is width. */
+
+/* 720p cinematic — slightly narrower so it doesn't dominate */
 @media (max-height: 720px) {
   .layout-cinematic .mbt-menu {
-    width: 380px;
+    width: 408px;
+    max-width: 408px;
   }
 }
 
-/* 1440p cinematic — solo width */
+/* 1440p cinematic — a touch wider */
 @media (min-height: 1400px) {
   .layout-cinematic .mbt-menu {
     width: 500px;
+    max-width: 500px;
   }
 }
 
-/* 4K cinematic — solo width */
+/* 4K cinematic — wider still */
 @media (min-height: 2000px) {
   .layout-cinematic .mbt-menu {
     width: 560px;
+    max-width: 560px;
   }
 }
 
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   QUICK BIND BAR
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* First .mbt-quickbind definition removed — unified at line ~2127 */
-
-.mbt-quickbind__header {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--mbt-subtext);
-  margin-bottom: 6px;
-}
-
-.mbt-quickbind__slots {
-  display: flex;
-  gap: 4px;
-}
-
-.mbt-quickbind__slot {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 6px 2px;
-  border-radius: 6px;
-  border: 1px dashed var(--mbt-border);
-  background: transparent;
-  cursor: pointer;
-  position: relative;
-  transition: all 0.15s ease;
-  min-width: 0;
-}
-
-.mbt-quickbind__slot:hover {
-  border-color: var(--mbt-accent);
-  background: var(--mbt-accent-soft);
-}
-
-.mbt-quickbind__slot--filled {
-  border-style: solid;
-  border-color: rgba(255, 255, 255, 0.08);
-  background: var(--mbt-card);
-}
-
-.mbt-quickbind__slot--filled:hover {
-  border-color: var(--mbt-accent);
-  background: var(--mbt-accent-soft);
-}
-
-.mbt-quickbind__slot--dragover {
-  border-color: var(--mbt-accent) !important;
-  background: var(--mbt-accent-soft) !important;
-  box-shadow: 0 0 8px var(--mbt-accent-glow);
-}
-
-.mbt-quickbind__key {
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--mbt-accent);
-  letter-spacing: 0.3px;
-}
-
-.mbt-quickbind__name {
-  font-size: 9px;
-  color: var(--mbt-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  text-align: center;
-}
-
-.mbt-quickbind__empty {
-  font-size: 10px;
-  color: var(--mbt-subtext);
-  opacity: 0.4;
-}
-
-.mbt-quickbind__clear {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  background: none;
-  border: none;
-  color: var(--mbt-subtext);
-  cursor: pointer;
-  padding: 1px;
-  border-radius: 3px;
-  opacity: 0;
-  transition: opacity 0.15s;
-  line-height: 1;
-}
-
-.mbt-quickbind__slot:hover .mbt-quickbind__clear {
-  opacity: 1;
-}
-
-.mbt-quickbind__clear:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-}
-
+/* Quick Bind dock — the canonical v7 definition lives in the
+   "Quick Bind Bar" block further down. Earlier duplicate removed. */
 
 /* ═══════════════════════════════════════════════════════════════════════════
    EMOTE CARD VARIANTS
    ═══════════════════════════════════════════════════════════════════════════ */
-
-.mbt-badge--variant {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  background: rgba(168, 85, 247, 0.15);
-  color: #a855f7;
-}
 
 .mbt-card--expanded {
   position: relative;
   z-index: 10;
 }
 
+/* ── Card drawer — v7 recessed "tray": darkened, inset-shadowed vano
+   carved into the card. Holds curated sections (variants / lists /
+   quick-bind keycaps + wheel chips). */
 .mbt-card__variants {
   position: relative;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  padding: 10px;
-  margin-top: 8px;
+  margin: 3px 5px 5px;
+  padding: 0 14px;
+  border-radius: 9px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.17));
+  box-shadow:
+    inset 0 2px 7px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(0, 0, 0, 0.55);
   display: flex;
   flex-direction: column;
-  gap: 12px;
   z-index: 20;
   animation: mbt-variants-in 0.15s ease;
-  width: 100%;
 }
 
 .mbt-drawer__section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-left: 10px;
-  margin-right: 10px;
+  gap: 9px;
+  padding: 13px 0;
+}
+
+.mbt-drawer__section + .mbt-drawer__section,
+.mbt-drawer__section--wheel {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .mbt-drawer__title {
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--mbt-subtext);
+  letter-spacing: 1.7px;
+  color: var(--mbt-text-mid);
+}
+
+/* drawer section header — icon + title + right-aligned hint (mockup .drawer__label) */
+.mbt-drawer__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mbt-drawer__label svg {
+  width: 13px;
+  height: 13px;
+  color: var(--mbt-text-lo);
+  flex-shrink: 0;
+}
+
+.mbt-drawer__hint {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: none;
+  color: var(--mbt-text-faint);
 }
 
 .mbt-drawer__grid {
@@ -1222,86 +1591,95 @@ body {
   gap: 6px;
 }
 
+/* keyboard bind = physical keycap; pressed IN when assigned */
 .mbt-drawer__bind-btn {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--mbt-border);
-  color: var(--mbt-text);
   height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-family: inherit;
+  font-size: 9px;
   font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--mbt-text-lo);
+  background: linear-gradient(180deg, #2a3137, #181d22);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 6px;
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.14s, background 0.14s, border-color 0.14s,
+    box-shadow 0.14s, transform 0.12s var(--mbt-ease-out);
 }
 
 .mbt-drawer__bind-btn:hover {
-  background: var(--mbt-accent-soft);
-  border-color: var(--mbt-accent);
-  color: var(--mbt-accent);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px var(--mbt-accent-glow);
+  color: var(--mbt-text-hi);
+  border-color: rgba(255, 255, 255, 0.18);
+  background: linear-gradient(180deg, #313940, #1d2329);
 }
 
 /* ── Wheel Slot Section ── */
 .mbt-drawer__section--wheel {
-  border-top: 1px solid var(--mbt-border);
-  margin-top: 4px;
-  margin-left: 10px;
-  margin-right: 10px;
-  padding-top: 6px;
-  padding-bottom: 10px;
+  margin: 0;
+  padding: 13px 0;
 }
 
 .mbt-drawer__wheel-grid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  gap: 5px;
+  gap: 6px;
 }
 
+/* wheel slot = round chip (echoes the radial wheel) */
 .mbt-drawer__wheel-btn {
   position: relative;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--mbt-border);
-  color: var(--mbt-subtext);
   width: 32px;
   height: 32px;
-  border-radius: 50%;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--mbt-text-lo);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 50%;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.14s, background 0.14s, border-color 0.14s,
+    box-shadow 0.14s, transform 0.12s var(--mbt-ease-out);
 }
 
 .mbt-drawer__wheel-btn:hover {
-  background: var(--mbt-accent-soft);
-  border-color: var(--mbt-accent);
-  color: var(--mbt-accent);
-  transform: scale(1.1);
-  box-shadow: 0 0 10px var(--mbt-accent-glow);
+  color: var(--mbt-text-hi);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--mbt-edge);
 }
 
+/* the slot THIS emote occupies — chip clearly reads as assigned:
+   accent border + accent fill + glow, not just a dot */
 .mbt-drawer__wheel-btn--active {
+  color: #04140c;
+  font-weight: 800;
   background: var(--mbt-accent);
   border-color: var(--mbt-accent);
-  color: #fff;
-  box-shadow: 0 0 12px var(--mbt-accent-glow);
+  box-shadow:
+    0 0 14px rgba(var(--mbt-accent-rgb), 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
 }
 
 .mbt-drawer__wheel-btn--active:hover {
-  background: transparent;
-  color: var(--mbt-accent);
+  color: #04140c;
+  background: var(--mbt-accent);
+  border-color: var(--mbt-accent);
 }
 
 .mbt-drawer__wheel-btn--occupied {
   border-color: rgba(255, 255, 255, 0.15);
-  color: var(--mbt-subtext);
+  color: var(--mbt-text-lo);
 }
 
 .mbt-drawer__wheel-num {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1;
 }
@@ -1313,7 +1691,7 @@ body {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--mbt-subtext);
+  background: var(--mbt-text-lo);
   opacity: 0.6;
 }
 
@@ -1321,357 +1699,112 @@ body {
   display: none;
 }
 
-.mbt-card__variant-btn {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--mbt-border);
-  color: var(--mbt-subtext);
-  padding: 6px;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.1s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
-}
-
-.mbt-card__variant-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--mbt-text);
-  border-color: var(--mbt-border-hover);
-}
-
-
 @keyframes mbt-variants-in {
   from { opacity: 0; transform: translateY(-4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* variant / texture buttons — sit in the recessed tray */
 .mbt-card__variant-btn {
-  background: transparent;
-  border: none;
-  border-left: 2px solid transparent; /* default neon border off */
-  color: var(--mbt-text);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  color: var(--mbt-text-mid);
   font-size: 11px;
-  padding: 6px 10px;
-  border-radius: 0 4px 4px 0;
+  padding: 7px 10px;
+  border-radius: 6px;
   cursor: pointer;
   text-align: left;
-  transition: all 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.14s, background 0.14s, border-color 0.14s;
 }
 
 .mbt-card__variant-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-  border-left-color: var(--mbt-accent);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--mbt-text-hi);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 /* ══════/* ── Playlist Bar ────────────────────────────────────────── */
-.mbt-playlist {
-  background: rgba(0, 0, 0, 0.25);
-  border-top: 1px solid var(--mbt-border);
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
+/* Playlist styles are consolidated in the full Playlist Panel block below. */
 
-.mbt-playlist__header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--mbt-accent);
-}
-
-.mbt-playlist__header span {
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-}
-
-.mbt-playlist__count {
-  font-family: var(--mbt-font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--mbt-text);
-  padding: 1px 6px;
-  border-radius: 4px;
-  opacity: 0.8;
-}
-
-.mbt-playlist__controls {
-  margin-left: auto;
-  display: flex;
-  gap: 6px;
-}
-
-.mbt-playlist__btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius-sm);
-  color: var(--mbt-subtext);
-  cursor: pointer;
-  transition: all var(--mbt-transition);
-}
-
-.mbt-playlist__btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--mbt-border-hover);
-  color: var(--mbt-text);
-}
-
-.mbt-playlist__btn--active {
-  background: var(--mbt-accent-soft);
-  border-color: var(--mbt-accent);
-  color: var(--mbt-accent);
-  box-shadow: 0 0 10px var(--mbt-accent-glow);
-}
-
-.mbt-playlist__btn--play:hover {
-  border-color: #22c55e;
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.1);
-}
-
-.mbt-playlist__btn--stop:hover {
-  border-color: #ef4444;
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.mbt-playlist__empty {
-  font-size: 11px;
-  color: var(--mbt-subtext);
-  opacity: 0.4;
-  text-align: center;
-  padding: 12px 0;
-  border: 1px dashed var(--mbt-border);
-  border-radius: var(--mbt-radius-sm);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   CATEGORY PILL COUNT BADGE
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.mbt-pill__count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 16px;
-  height: 14px;
-  padding: 0 4px;
-  margin-left: 4px;
-  background: rgba(255, 255, 255, 0.07);
-  border-radius: 8px;
-  font-size: 9px;
-  font-weight: 700;
-  color: var(--mbt-subtext);
-  transition: color var(--mbt-transition), background var(--mbt-transition);
-}
-
-.mbt-pill--active .mbt-pill__count {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   SORT BUTTON + IMPORT/EXPORT BUTTONS (filter row)
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.mbt-filters__actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.mbt-sort-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 9px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius-sm);
-  color: var(--mbt-subtext);
-  font-size: 10px;
-  font-weight: 700;
-  font-family: inherit;
-  letter-spacing: 0.3px;
-  cursor: pointer;
-  transition: all var(--mbt-transition);
-  white-space: nowrap;
-}
-
-.mbt-sort-btn:hover {
-  border-color: var(--mbt-text);
-  color: var(--mbt-text);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.mbt-random-btn, .mbt-fav-io-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius-sm);
-  color: var(--mbt-subtext);
-  cursor: pointer;
-  transition: all var(--mbt-transition);
-  line-height: 1;
-}
-
-.mbt-random-btn:hover, .mbt-fav-io-btn:hover {
-  border-color: var(--mbt-text);
-  color: var(--mbt-text);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.mbt-random-btn:disabled {
-  opacity: 0.2;
-  cursor: not-allowed;
-}
-
+/* Category pill count — styled in the v7 CATEGORY RAIL block above. */
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PREVIEW EYE BUTTON
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.mbt-card__preview {
+/* ── Card action icon buttons — v7 `.act`. Hidden at rest, revealed
+   muted on card hover, white + soft fill on their own hover. */
+.mbt-card__preview,
+.mbt-card__playlist-add,
+.mbt-card__place,
+.mbt-card__list-add {
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 5px;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  color: var(--mbt-subtext);
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  color: var(--mbt-text-lo);
   cursor: pointer;
-  opacity: 0;
-  transition: all var(--mbt-transition);
   line-height: 1;
-  gap: 3px;
-  font-size: 9px;
-  font-family: inherit;
-  font-weight: 600;
+  opacity: 0;
+  transform: scale(0.84);
+  transition: color 0.16s, background 0.16s, opacity 0.16s, transform 0.18s var(--mbt-ease-out);
 }
 
-.mbt-card:hover .mbt-card__preview {
+.mbt-card:hover .mbt-card__preview,
+.mbt-card--expanded .mbt-card__preview,
+.mbt-card:hover .mbt-card__playlist-add,
+.mbt-card--expanded .mbt-card__playlist-add,
+.mbt-card:hover .mbt-card__place,
+.mbt-card--expanded .mbt-card__place,
+.mbt-card:hover .mbt-card__list-add,
+.mbt-card--expanded .mbt-card__list-add,
+.mbt-card__list-add--active {
+  opacity: 0.7;
+  transform: scale(1);
+}
+
+/* own-hover — no box. The icon brightens to full opacity + light
+   colour and does a one-shot pop so it reads as alive / ready to
+   click through motion, not a background plate. */
+.mbt-card__preview:hover,
+.mbt-card__playlist-add:hover,
+.mbt-card__place:hover,
+.mbt-card__list-add:hover,
+.mbt-card__list-add--active {
   opacity: 1;
-}
-
-.mbt-card__preview:hover {
-  color: var(--mbt-text);
-  border-color: var(--mbt-border);
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--mbt-text-hi);
+  background: transparent;
+  animation: mbt-icon-pop 0.4s var(--mbt-ease-out);
 }
 
 .mbt-card__preview--active {
-  opacity: 1 !important;
-  color: var(--mbt-accent) !important;
-  border-color: var(--mbt-accent) !important;
-  background: var(--mbt-accent-soft) !important;
+  opacity: 1;
+  transform: scale(1);
+  color: var(--mbt-accent);
+  background: transparent;
 }
 
 .mbt-card--previewing {
-  border-color: var(--mbt-accent) !important;
-  box-shadow: 0 0 0 1px var(--mbt-accent-glow) !important;
+  border-color: rgba(var(--mbt-accent-rgb), 0.42) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.085),
+    0 0 0 1px rgba(var(--mbt-accent-rgb), 0.18) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    KEYBOARD FOCUSED CARD
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Add-to-playlist button on card ── */
-
-.mbt-card__playlist-add {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 4px;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  color: var(--mbt-subtext);
-  cursor: pointer;
-  opacity: 0;
-  transition: all var(--mbt-transition);
-  line-height: 1;
-}
-
-.mbt-card:hover .mbt-card__playlist-add {
-  opacity: 1;
-}
-
-.mbt-card__playlist-add:hover {
-  color: var(--mbt-accent);
-  border-color: var(--mbt-accent);
-  background: var(--mbt-accent-soft);
-}
-
-/* ── Place in world button ── */
-.mbt-card__place {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 4px;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  color: var(--mbt-subtext);
-  cursor: pointer;
-  opacity: 0;
-  transition: all var(--mbt-transition);
-  line-height: 1;
-}
-
-.mbt-card:hover .mbt-card__place {
-  opacity: 1;
-}
-
-.mbt-card__place:hover {
-  color: var(--mbt-accent);
-  border-color: var(--mbt-accent);
-  background: var(--mbt-accent-soft);
-}
-
-/* ── Add to Custom List button ── */
-.mbt-card__list-add {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2px 4px;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  color: var(--mbt-subtext);
-  cursor: pointer;
-  opacity: 0;
-  transition: all var(--mbt-transition);
-  line-height: 1;
-}
-
-.mbt-card:hover .mbt-card__list-add,
-.mbt-card__list-add--active {
-  opacity: 1;
-}
-
-.mbt-card__list-add:hover,
-.mbt-card__list-add--active {
-  color: var(--mbt-accent);
-  border-color: var(--mbt-accent);
-  background: var(--mbt-accent-soft);
-}
+/* Card action icon buttons (preview / playlist / place / list) are
+   styled together in the v7 `.act` block above. */
 
 /* ── Custom Lists drawer section ── */
 .mbt-drawer__list-grid {
@@ -1686,10 +1819,10 @@ body {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--mbt-border);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: 6px;
-  color: var(--mbt-text);
+  color: var(--mbt-text-mid);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -1703,8 +1836,8 @@ body {
 }
 
 .mbt-drawer__list-btn--active {
-  background: color-mix(in srgb, var(--list-color) 15%, transparent);
-  border-color: var(--list-color);
+  background: rgba(var(--mbt-accent-rgb), 0.12);
+  border-color: var(--mbt-accent);
   color: var(--list-color);
 }
 
@@ -1727,40 +1860,41 @@ body {
 
 /* ── Playlist Panel ── */
 
+/* PlaylistPanel — recessed dock zone, sibling of .mbt-quickbind */
 .mbt-playlist {
-  background: rgba(0, 0, 0, 0.85);
-  border-top: 1px solid var(--mbt-border);
-  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  padding: 13px 16px 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 200px;
+  gap: 9px;
   flex-shrink: 0;
 }
 
+/* header row — matches .mbt-quickbind__header */
 .mbt-playlist__header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: var(--mbt-accent);
 }
 
-.mbt-playlist__header span {
-  font-size: 10px;
-  font-weight: 800;
+.mbt-playlist__header > span:not(.mbt-playlist__count) {
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 1.6px;
 }
 
 .mbt-playlist__count {
   font-family: var(--mbt-font-mono);
   font-size: 9px;
   font-weight: 700;
-  background: var(--mbt-accent-soft);
+  background: rgba(var(--mbt-accent-rgb), 0.10);
   color: var(--mbt-accent);
   padding: 1px 6px;
-  border-radius: 10px;
-  min-width: 20px;
+  border-radius: var(--mbt-radius-pill);
+  min-width: 18px;
   text-align: center;
 }
 
@@ -1776,60 +1910,60 @@ body {
   justify-content: center;
   width: 22px;
   height: 22px;
-  background: transparent;
-  border: 1px solid var(--mbt-border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0));
+  border: 1px solid var(--mbt-edge);
   border-radius: 6px;
-  color: var(--mbt-subtext);
+  color: var(--mbt-text-lo);
   cursor: pointer;
-  transition: all var(--mbt-transition);
+  transition: color 0.14s, background 0.14s, border-color 0.14s,
+    transform 0.12s var(--mbt-ease-out);
 }
 
 .mbt-playlist__btn:hover {
-  border-color: var(--mbt-accent);
-  color: var(--mbt-accent);
-  background: var(--mbt-accent-soft);
+  color: var(--mbt-text-hi);
+  border-color: var(--mbt-edge-hi);
+  transform: translateY(-1px);
 }
 
 .mbt-playlist__btn--active {
-  border-color: var(--mbt-accent);
   color: var(--mbt-accent);
-  background: var(--mbt-accent-soft);
+  border-color: rgba(var(--mbt-accent-rgb), 0.42);
+  background: linear-gradient(180deg, rgba(var(--mbt-accent-rgb), 0.14),
+    rgba(var(--mbt-accent-rgb), 0.04));
+}
+
+.mbt-playlist__btn--active:hover {
+  color: var(--mbt-accent);
 }
 
 .mbt-playlist__btn--play:hover {
-  border-color: var(--mbt-success);
   color: var(--mbt-success);
-  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.42);
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.14),
+    rgba(34, 197, 94, 0.04));
 }
 
-.mbt-playlist__btn--stop:hover {
-  border-color: var(--mbt-danger);
-  color: var(--mbt-danger);
-  background: rgba(239, 68, 68, 0.08);
-}
-
+.mbt-playlist__btn--stop:hover,
 .mbt-playlist__btn--clear:hover {
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.08);
+  color: var(--mbt-danger);
+  border-color: rgba(239, 68, 68, 0.42);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.14),
+    rgba(239, 68, 68, 0.04));
 }
 
-.mbt-playlist__empty {
-  font-size: 11px;
-  color: var(--mbt-subtext);
-  opacity: 0.4;
-  text-align: center;
-  padding: 8px 0;
-  font-style: italic;
-}
-
+/* the list IS the recessed tray — matches .mbt-quickbind__slots */
 .mbt-playlist__list {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 120px;
+  gap: 5px;
+  max-height: 132px;
   overflow-y: auto;
-  padding-right: 4px;
+  padding: 9px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0.15));
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.40);
 }
 
 .mbt-playlist__list::-webkit-scrollbar {
@@ -1837,44 +1971,54 @@ body {
 }
 
 .mbt-playlist__list::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
+  background: transparent;
 }
 
 .mbt-playlist__list::-webkit-scrollbar-thumb {
-  background: var(--mbt-border-hover);
-  border-radius: 10px;
+  background: var(--mbt-edge-hi);
+  border-radius: var(--mbt-radius-pill);
 }
 
 .mbt-playlist__item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: var(--mbt-radius-sm);
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--mbt-border);
-  transition: all var(--mbt-transition);
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.013) 60%, rgba(255, 255, 255, 0));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  transition: border-color 0.14s, background 0.14s,
+    transform 0.12s var(--mbt-ease-out);
   position: relative;
 }
 
 .mbt-playlist__item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: var(--mbt-border-hover);
+  border-color: var(--mbt-edge-hi);
+  transform: translateY(-1px);
 }
 
 .mbt-playlist__item--active {
-  border-color: var(--mbt-accent);
-  background: var(--mbt-accent-soft);
-  box-shadow: 0 0 10px var(--mbt-accent-glow);
+  border-color: rgba(var(--mbt-accent-rgb), 0.42);
+  background: linear-gradient(180deg, rgba(var(--mbt-accent-rgb), 0.12),
+    rgba(var(--mbt-accent-rgb), 0.03));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 0 14px rgba(var(--mbt-accent-rgb), 0.10);
 }
 
 .mbt-playlist__idx {
   font-family: var(--mbt-font-mono);
   font-size: 9px;
   font-weight: 700;
+  color: var(--mbt-text-faint);
+  min-width: 14px;
+  text-align: center;
+}
+
+.mbt-playlist__item--active .mbt-playlist__idx {
   color: var(--mbt-accent);
-  opacity: 0.6;
-  min-width: 16px;
 }
 
 .mbt-playlist__name {
@@ -1882,7 +2026,7 @@ body {
   min-width: 0;
   font-size: 11px;
   font-weight: 600;
-  color: var(--mbt-text);
+  color: var(--mbt-text-hi);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1891,9 +2035,17 @@ body {
 .mbt-playlist__dur {
   font-family: var(--mbt-font-mono);
   font-size: 9px;
-  font-weight: 500;
-  color: var(--mbt-subtext);
-  opacity: 0.6;
+  font-weight: 600;
+  color: var(--mbt-text-lo);
+  flex-shrink: 0;
+}
+
+.mbt-playlist__item-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
   flex-shrink: 0;
 }
 
@@ -1904,33 +2056,34 @@ body {
   justify-content: center;
   width: 18px;
   height: 18px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--mbt-border);
+  background: transparent;
+  border: none;
   border-radius: 4px;
-  color: var(--mbt-subtext);
+  color: var(--mbt-text-lo);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.14s, background 0.14s;
 }
 
 .mbt-playlist__move:hover {
-  color: #fff;
-  border-color: var(--mbt-border-hover);
+  color: var(--mbt-text-hi);
   background: rgba(255, 255, 255, 0.08);
 }
 
 .mbt-playlist__remove:hover {
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.3);
-  background: rgba(239, 68, 68, 0.1);
+  color: var(--mbt-danger);
+  background: rgba(239, 68, 68, 0.12);
 }
 
-.mbt-playlist__item-actions {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 3px;
-  margin-left: auto;
-  flex-shrink: 0;
+.mbt-playlist__empty {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--mbt-text-faint);
+  text-align: center;
+  padding: 14px 9px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0.15));
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.40);
 }
 
 /* Drag reorder wrapper */
@@ -1951,13 +2104,20 @@ body {
   z-index: 5;
 }
 
+/* keyboard-nav focus — same soft-white language as hover, plus a
+   1px accent ring so the focused row reads on a busy scene. */
 .mbt-card--focused {
-  border-color: var(--mbt-accent) !important;
-  box-shadow: 0 0 0 2px var(--mbt-accent-glow), 0 6px 20px rgba(0, 0, 0, 0.35) !important;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.062),
+    rgba(255, 255, 255, 0.018) 55%, rgba(255, 255, 255, 0)) !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.085),
+    0 14px 32px rgba(0, 0, 0, 0.50),
+    0 0 0 1px rgba(var(--mbt-accent-rgb), 0.30) !important;
 }
 
 .mbt-card--focused .mbt-card__name {
-  color: var(--mbt-accent);
+  color: var(--mbt-text-hi);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1967,13 +2127,13 @@ body {
 .mbt-modal-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85); /* Slightly darker to compensate for loss of blur */
+  background: rgba(5, 8, 6, 0.78); /* opaque scrim — no blur in CEF */
   border-radius: var(--mbt-radius);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 50;
-  animation: mbt-modal-in 0.18s ease;
+  animation: mbt-modal-in 0.18s var(--mbt-ease-out);
 }
 
 @keyframes mbt-modal-in {
@@ -1983,28 +2143,54 @@ body {
 
 .mbt-modal {
   width: calc(100% - 32px);
-  background: var(--mbt-bg-glass);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, var(--mbt-surface-3), var(--mbt-surface-1));
+  border: 1px solid var(--mbt-edge-hi);
   border-radius: var(--mbt-radius);
   padding: 18px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-  animation: mbt-menu-enter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 var(--mbt-edge);
+  animation: mbt-menu-enter 0.2s var(--mbt-ease-out);
 }
 
 .mbt-modal__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
 }
 
 .mbt-modal__title {
   font-size: 13px;
   font-weight: 700;
-  color: var(--mbt-text);
-  letter-spacing: -0.1px;
+  color: var(--mbt-text-hi);
+  letter-spacing: 0.2px;
+}
+
+/* compact ghost close button for small modals */
+.mbt-modal__btn-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 6px;
+  border: 1px solid var(--mbt-edge);
+  background: transparent;
+  color: var(--mbt-text-lo);
+  cursor: pointer;
+  transition: color 0.16s, border-color 0.16s, background 0.16s;
+}
+
+.mbt-modal__btn-close:hover {
+  color: var(--mbt-text-hi);
+  border-color: var(--mbt-edge-hi);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .mbt-modal__desc {
@@ -2059,36 +2245,51 @@ body {
 
 .mbt-modal__btn--cancel {
   background: transparent;
-  border-color: var(--mbt-border);
-  color: var(--mbt-subtext);
+  border-color: var(--mbt-edge);
+  color: var(--mbt-text-mid);
 }
 
 .mbt-modal__btn--cancel:hover {
-  border-color: var(--mbt-border-hover);
-  color: var(--mbt-text);
+  border-color: var(--mbt-edge-hi);
+  color: var(--mbt-text-hi);
 }
 
+/* refined accent button — matches the restraint of .mbt-hero__play:
+   solid accent fill, dark ink, soft accent shadow, subtle lift. */
 .mbt-modal__btn--confirm {
-  background: var(--mbt-accent-g);
-  border-color: var(--mbt-accent);
-  color: #fff;
+  border: none;
+  color: #04140c;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  background: var(--mbt-accent);
+  box-shadow: 0 8px 22px rgba(var(--mbt-accent-rgb), 0.28);
+  transition: transform 0.14s var(--mbt-ease-out), box-shadow 0.18s, opacity 0.16s;
 }
 
-.mbt-modal__btn--confirm:hover {
-  opacity: 0.85;
+.mbt-modal__btn--confirm:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 11px 26px rgba(var(--mbt-accent-rgb), 0.4);
+}
+
+.mbt-modal__btn--confirm:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* ── Partner Finder ────────────────────────────────────────── */
 .mbt-partner {
   position: absolute;
   right: calc(100% + 15px); /* Positioned to the left of the menu with 15px gap */
-  width: 250px;
-  background: var(--mbt-bg);
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius);
-  padding: 10px;
+  width: 264px;
+  background: linear-gradient(180deg, #141a16, #0c100d);
+  border: 1px solid var(--mbt-edge-hi);
+  border-radius: 13px;
+  overflow: hidden;
   z-index: 120;
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.4);
+  box-shadow:
+    0 22px 48px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   animation: mbt-partner-enter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   pointer-events: all;
 }
@@ -2107,41 +2308,53 @@ body {
 .mbt-partner__header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  color: var(--mbt-accent);
+  gap: 8px;
+  padding: 12px 13px;
+  border-bottom: 1px solid var(--mbt-edge-lo);
+}
+
+.mbt-partner__header > svg {
+  width: 13px;
+  height: 13px;
+  color: var(--mbt-text-lo);
+  flex-shrink: 0;
 }
 
 .mbt-partner__title {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1.3px;
+  color: var(--mbt-text-mid);
 }
 
 .mbt-partner__emote {
-  margin-left: auto;
   font-size: 10px;
-  color: var(--mbt-subtext);
-  background: rgba(255, 255, 255, 0.04);
-  padding: 2px 6px;
-  border-radius: var(--mbt-radius-sm);
+  font-weight: 600;
+  color: var(--mbt-accent);
+  background: rgba(var(--mbt-accent-rgb), 0.10);
+  padding: 3px 7px;
+  border-radius: 5px;
 }
 
 .mbt-partner__close {
-  background: none;
-  border: none;
-  color: var(--mbt-subtext);
-  cursor: pointer;
-  padding: 2px;
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
-  margin-left: 4px;
-  transition: color var(--mbt-transition);
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--mbt-text-faint);
+  cursor: pointer;
+  transition: color var(--mbt-transition), background var(--mbt-transition);
 }
 
 .mbt-partner__close:hover {
-  color: var(--mbt-text);
+  color: var(--mbt-text-hi);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .mbt-partner__loading,
@@ -2149,16 +2362,24 @@ body {
 .mbt-partner__sent {
   text-align: center;
   font-size: 11px;
-  color: var(--mbt-subtext);
-  padding: 12px 0;
+  color: var(--mbt-text-lo);
+  padding: 16px 12px;
+}
+
+.mbt-partner__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
 .mbt-partner__sent {
-  color: var(--mbt-success);
-  font-weight: 600;
+  color: var(--mbt-accent);
+  font-weight: 700;
 }
 
 .mbt-partner__list {
+  padding: 8px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -2167,24 +2388,38 @@ body {
 .mbt-partner__player {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: var(--mbt-radius-sm);
-  font-size: 11px;
+  gap: 8px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0));
+  border: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+.mbt-partner__avatar {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--mbt-text-lo);
 }
 
 .mbt-partner__name {
   flex: 1;
-  color: var(--mbt-text);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mbt-text-hi);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .mbt-partner__dist {
-  color: var(--mbt-subtext);
   font-size: 10px;
+  color: var(--mbt-text-lo);
   flex-shrink: 0;
 }
 
@@ -2192,23 +2427,25 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  margin-top: 6px;
-  width: 100%;
-  padding: 6px 0;
-  background: var(--mbt-accent-g);
-  border: 1px solid var(--mbt-accent);
-  border-radius: var(--mbt-radius-sm);
-  color: #fff;
-  font-size: 11px;
-  font-weight: 600;
+  gap: 7px;
+  margin: 4px 0 2px;
+  height: 36px;
+  border: none;
+  border-radius: 9px;
+  background: var(--mbt-accent);
+  color: #04140c;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
   font-family: inherit;
   cursor: pointer;
-  transition: opacity var(--mbt-transition);
+  box-shadow: 0 6px 16px rgba(var(--mbt-accent-rgb), 0.28);
+  transition: background var(--mbt-transition), transform 0.14s var(--mbt-ease-out);
 }
 
 .mbt-partner__send:hover {
-  opacity: 0.85;
+  background: var(--mbt-accent-strong);
 }
 
 .mbt-partner__refresh,
@@ -2217,22 +2454,23 @@ body {
   align-items: center;
   justify-content: center;
   gap: 4px;
-  background: none;
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius-sm);
-  color: var(--mbt-subtext);
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid var(--mbt-edge-hi);
+  border-radius: 8px;
+  color: var(--mbt-text-mid);
   font-size: 10px;
+  font-weight: 600;
   font-family: inherit;
   cursor: pointer;
-  padding: 4px 8px;
-  margin-top: 4px;
-  transition: all var(--mbt-transition);
+  padding: 6px 10px;
+  margin-top: 2px;
+  transition: background var(--mbt-transition), color var(--mbt-transition);
 }
 
 .mbt-partner__refresh:hover,
 .mbt-partner__refresh-btn:hover {
-  border-color: var(--mbt-border-hover);
-  color: var(--mbt-text);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--mbt-text-hi);
 }
 
 /* ── Job-Locked Emotes ─────────────────────────────────────── */
@@ -2256,112 +2494,177 @@ body {
   margin-right: 4px;
 }
 
-/* ── Quick Bind Bar ────────────────────────────────────────── */
+/* ── Quick Bind dock — v7. Same recessed-tray language as the card
+   drawer, so the dock belongs to the menu. Keycaps press IN when a
+   slot is filled. No glass (CEF-unsafe). Shared base, both layouts. */
 .mbt-quickbind {
-  background: rgba(0, 0, 0, 0.25);
-  border-top: 1px solid var(--mbt-border);
-  border-radius: 4px;
-  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 13px 16px 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
   margin-top: auto;
 }
 
 .mbt-quickbind__header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   color: var(--mbt-accent);
-  opacity: 0.8;
 }
 
-.mbt-quickbind__header span {
-  font-size: 10px;
-  font-weight: 800;
+.mbt-quickbind__header > span:not(.mbt-quickbind__hint) {
+  font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 1.6px;
 }
 
+/* right-aligned hint — quiet, lowercase, sits opposite the title */
+.mbt-quickbind__hint {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: none;
+  color: var(--mbt-text-faint);
+}
+
+/* the slots grid IS the recessed tray */
 .mbt-quickbind__slots {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 7px;
+  padding: 11px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.32), rgba(0, 0, 0, 0.15));
+  border: 1px solid rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.40);
 }
 
 .mbt-quickbind__slot {
+  height: 56px;
+  padding: 8px 4px;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius-sm);
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.013) 60%, rgba(255, 255, 255, 0));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055);
   cursor: pointer;
-  transition: all var(--mbt-transition);
   position: relative;
-  min-height: 44px;
   overflow: hidden;
+  transition: border-color 0.14s, box-shadow 0.14s, background 0.14s,
+    transform 0.12s var(--mbt-ease-out);
 }
 
+/* keycap — physical key visual */
 .mbt-quickbind__key {
-  font-family: var(--mbt-font-mono);
-  font-size: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 5px;
+  font-size: 9px;
   font-weight: 700;
-  color: var(--mbt-accent);
-  opacity: 0.6;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+  color: var(--mbt-text-lo);
+  background: linear-gradient(180deg, #2a3137, #181d22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+  transition: color 0.14s, background 0.14s, border-color 0.14s,
+    box-shadow 0.14s, transform 0.12s var(--mbt-ease-out);
 }
 
 .mbt-quickbind__name {
-  font-size: 10px;
+  display: block;
+  align-self: stretch;
+  font-size: 10.5px;
   font-weight: 600;
-  color: var(--mbt-text);
+  color: var(--mbt-text-lo);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  width: 100%;
+  text-align: center;
 }
 
 .mbt-quickbind__empty {
-  font-size: 11px;
-  color: var(--mbt-subtext);
-  opacity: 0.3;
+  display: block;
+  width: 11px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: var(--mbt-edge);
+  font-size: 0;
+  color: transparent;
 }
 
+/* filled — slot lifts, keycap presses IN */
 .mbt-quickbind__slot--filled {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(var(--mbt-accent-rgb), 0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 0 14px rgba(var(--mbt-accent-rgb), 0.07);
+}
+
+.mbt-quickbind__slot--filled .mbt-quickbind__key {
+  color: var(--mbt-accent);
+  background: linear-gradient(180deg, #15211a, #0f1813);
+  border-color: rgba(var(--mbt-accent-rgb), 0.42);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.6),
+    0 0 11px rgba(var(--mbt-accent-rgb), 0.14);
+  transform: translateY(2px);
+}
+
+.mbt-quickbind__slot--filled .mbt-quickbind__name {
+  color: var(--mbt-text-mid);
 }
 
 .mbt-quickbind__slot:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--mbt-border-hover);
+  border-color: rgba(255, 255, 255, 0.14);
   transform: translateY(-1px);
 }
 
+.mbt-quickbind__slot:hover .mbt-quickbind__key {
+  color: var(--mbt-text-hi);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
 .mbt-quickbind__slot--dragover {
-  background: var(--mbt-accent-soft) !important;
-  border-color: var(--mbt-accent) !important;
-  box-shadow: 0 0 15px var(--mbt-accent-glow) !important;
+  border-color: rgba(var(--mbt-accent-rgb), 0.55) !important;
+  background: linear-gradient(180deg, rgba(var(--mbt-accent-rgb), 0.10),
+    rgba(255, 255, 255, 0.013) 60%, rgba(255, 255, 255, 0)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 0 14px rgba(var(--mbt-accent-rgb), 0.18) !important;
 }
 
 .mbt-quickbind__clear {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 3px;
+  right: 3px;
   width: 16px;
   height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 77, 77, 0.1);
-  border: 1px solid rgba(255, 77, 77, 0.2);
+  background: transparent;
+  border: none;
   border-radius: 4px;
-  color: #ff4d4d;
+  color: var(--mbt-text-lo);
   cursor: pointer;
   opacity: 0;
-  transition: all var(--mbt-transition);
+  transition: color 0.14s, background 0.14s, opacity 0.14s;
 }
 
 .mbt-quickbind__slot:hover .mbt-quickbind__clear {
@@ -2369,14 +2672,17 @@ body {
 }
 
 .mbt-quickbind__clear:hover {
-  background: #ff4d4d;
-  color: #fff;
+  color: var(--mbt-text-hi);
+  background: rgba(255, 255, 255, 0.08);
 }
 
-/* Active Walk/Expression Card */
+/* Active Walk/Expression Card — the one card that earns the accent */
 .mbt-card--active-style {
-  border-color: var(--mbt-accent) !important;
-  box-shadow: 0 0 0 1px var(--mbt-accent), 0 0 12px var(--mbt-accent-glow);
+  border-color: rgba(var(--mbt-accent-rgb), 0.55) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.085),
+    0 0 0 1px rgba(var(--mbt-accent-rgb), 0.30),
+    0 0 16px rgba(var(--mbt-accent-rgb), 0.12) !important;
 }
 
 .mbt-card--active-style .mbt-card__name {
@@ -2421,279 +2727,235 @@ body {
   border-color: var(--mbt-accent);
 }
 
-/* ── Custom Lists Bar ──────────────────────────────────────── */
-.mbt-lists-bar {
-  display: flex;
-  gap: 4px;
-  padding: 4px 16px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  flex-shrink: 0;
-}
-
-.mbt-lists-bar::-webkit-scrollbar { display: none; }
-
-.mbt-list-chip {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid var(--mbt-border);
-  border-radius: 12px;
-  color: var(--mbt-subtext);
-  font-size: 10px;
-  font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all var(--mbt-transition);
-}
-
-.mbt-list-chip:hover { border-color: var(--mbt-border-hover); color: var(--mbt-text); }
-
-.mbt-list-chip--active {
-  border-color: var(--chip-color, var(--mbt-accent));
-  color: var(--mbt-text);
-  background: rgba(255,255,255,0.06);
-}
-
-.mbt-list-chip--add {
-  color: var(--mbt-accent);
-  border-style: dashed;
-  font-weight: 700;
-}
-
-.mbt-list-chip__dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.mbt-list-chip__count {
-  opacity: 0.5;
-  font-size: 9px;
-}
-
-/* ── Context Menu (right-click) ────────────────────────────── */
-.mbt-context-menu {
-  position: fixed;
-  z-index: 200;
-  background: var(--mbt-surface);
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius);
-  padding: 6px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  animation: mbt-fade-in 0.1s ease;
-  min-width: 160px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.mbt-context-menu__section {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--mbt-accent);
-  padding: 4px 6px 2px;
-  margin-top: 4px;
-}
-
-.mbt-context-menu__section:first-child { margin-top: 0; }
-
-.mbt-context-menu__item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  padding: 4px 6px;
-  background: none;
-  border: none;
-  border-radius: var(--mbt-radius-sm);
-  color: var(--mbt-text);
-  font-size: 11px;
-  font-family: inherit;
-  cursor: pointer;
-  text-align: left;
-  transition: background var(--mbt-transition);
-}
-
-.mbt-context-menu__item:hover { background: rgba(255,255,255,0.05); }
-
 /* ── List Creator ──────────────────────────────────────────── */
-.mbt-modal--small { max-width: 240px; }
+.mbt-modal--small { max-width: 268px; }
 
 .mbt-list-creator {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px 0 0;
+  gap: 10px;
 }
 
 .mbt-list-creator__input {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid var(--mbt-border);
+  background: var(--mbt-surface-1);
+  border: 1px solid var(--mbt-edge);
   border-radius: var(--mbt-radius-sm);
-  padding: 6px 10px;
-  color: var(--mbt-text);
-  font-size: 12px;
+  padding: 9px 11px;
+  color: var(--mbt-text-hi);
+  font-size: 12.5px;
+  font-weight: 500;
   font-family: inherit;
   outline: none;
+  transition: border-color 0.16s;
 }
 
+.mbt-list-creator__input::placeholder { color: var(--mbt-text-faint); }
 .mbt-list-creator__input:focus { border-color: var(--mbt-accent); }
 
-.mbt-list-creator__colors {
-  display: flex;
+.mbt-list-creator__label {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--mbt-text-lo);
+  margin-top: 1px;
+}
+
+/* icon picker — a tidy 6-col grid of selectable icon tiles */
+.mbt-list-creator__icons {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
   gap: 6px;
-  flex-wrap: wrap;
 }
 
-.mbt-list-creator__color {
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  border: 2px solid transparent;
+.mbt-list-creator__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  padding: 0;
+  border-radius: var(--mbt-radius-sm);
+  border: 1px solid var(--mbt-edge);
+  background: var(--mbt-surface-1);
+  color: var(--mbt-text-lo);
   cursor: pointer;
-  transition: border-color var(--mbt-transition);
+  transition: color 0.16s, border-color 0.16s, background 0.16s, transform 0.14s var(--mbt-ease-out);
 }
 
-.mbt-list-creator__color--active { border-color: #fff; }
+.mbt-list-creator__icon:hover {
+  color: var(--mbt-text-hi);
+  border-color: var(--mbt-edge-hi);
+  background: var(--mbt-surface-3);
+}
+
+.mbt-list-creator__icon--active {
+  color: var(--mbt-accent);
+  border-color: rgba(var(--mbt-accent-rgb), 0.55);
+  background: var(--mbt-accent-soft);
+}
+
+.mbt-list-creator__icon--active svg {
+  animation: mbt-icon-pop 0.42s var(--mbt-ease-out);
+}
 
 /* ── Emote Wheel (hold-to-peek) ────────────────────────────── */
+/* ── Emote Wheel (v7) ────────────────────────────────────────
+ * Centred HUD shown while the wheel key is held: slot strip up top,
+ * the active slot in a recessed display tray, hint below. A category-
+ * tinted disc carries the emote silhouette. Single shared style. */
 .mbt-wheel {
   position: fixed;
   bottom: 32px;
   right: 32px;
   z-index: 9999;
   pointer-events: none;
+  width: 250px;
+  padding: 14px 16px 13px;
+  border-radius: 16px;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.06), transparent 64%),
+    linear-gradient(180deg, var(--mbt-surface-2) 0%, #0C100E 55%, #090C0A 100%);
+  border: 1px solid var(--mbt-edge-hi);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
   animation: mbt-fade-in 0.12s ease;
 }
 
 .mbt-wheel__indicator {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
 }
 
 .mbt-wheel__dots {
   display: flex;
-  gap: 4px;
+  justify-content: center;
+  gap: 7px;
+  padding-bottom: 11px;
 }
 
 .mbt-wheel__dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
-  transition: all 0.12s ease;
-}
-
-.mbt-wheel__dot--active {
-  background: var(--mbt-accent);
-  box-shadow: 0 0 6px rgba(var(--mbt-accent-rgb), 0.5);
-  transform: scale(1.4);
+  background: rgba(255, 255, 255, 0.40);
+  transition: width 0.16s var(--mbt-ease-out),
+              background 0.16s var(--mbt-ease-out);
 }
 
 .mbt-wheel__dot--empty {
-  opacity: 0.3;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.mbt-wheel__dot--active {
+  width: 18px;
+  border-radius: 3px;
+  background: var(--mbt-accent);
+  box-shadow: 0 0 9px rgba(var(--mbt-accent-rgb), 0.55);
 }
 
 .mbt-wheel__slot {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(12, 14, 20, 0.95); /* darker without blur */
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 6px;
-  padding: 8px 14px;
+  gap: 11px;
+  padding: 10px;
+  border-radius: 11px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.34), rgba(0, 0, 0, 0.16));
+  box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.42);
 }
 
-.mbt-wheel__num {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--mbt-accent);
-  min-width: 14px;
-  text-align: center;
+.mbt-wheel__disc {
+  /* The mbt-card--cat-* class on this element sets --mbt-card-cat-rgb;
+     compose it into a colour here (those classes don't set --mbt-card-cat
+     themselves — that's done on .mbt-card). Falls back to neutral. */
+  --mbt-cat: rgb(var(--mbt-card-cat-rgb, 154, 160, 166));
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mbt-cat);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.018));
+  border: 1px solid var(--mbt-edge);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Empty / removed disc — dashed placeholder with a faint plus. */
+.mbt-wheel__slot--empty .mbt-wheel__disc,
+.mbt-wheel__slot--removed .mbt-wheel__disc {
+  color: var(--mbt-text-faint);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+}
+
+.mbt-wheel__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .mbt-wheel__label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #e8e8ee;
-  white-space: nowrap;
-}
-
-.mbt-wheel__hint {
-  font-size: 9px;
-  color: rgba(255, 255, 255, 0.3);
-  text-align: right;
-}
-
-/* ── Wheel Slot Picker (context menu) ──────────────────────── */
-.mbt-wheel-picker {
-  position: fixed;
-  z-index: 200;
-  background: var(--mbt-surface);
-  border: 1px solid var(--mbt-border);
-  border-radius: var(--mbt-radius);
-  padding: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  animation: mbt-fade-in 0.1s ease;
-  min-width: 160px;
-}
-
-.mbt-wheel-picker__title {
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--mbt-accent);
-  padding: 2px 4px 6px;
-}
-
-.mbt-wheel-picker__grid {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.mbt-wheel-picker__slot {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--mbt-radius-sm);
-  cursor: pointer;
-  font-family: inherit;
-  transition: all var(--mbt-transition);
-  text-align: left;
-}
-
-.mbt-wheel-picker__slot:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--mbt-border);
-}
-
-.mbt-wheel-picker__slot--used .mbt-wheel-picker__name {
-  color: var(--mbt-subtext);
-}
-
-.mbt-wheel-picker__slot .mbt-wheel-picker__num {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--mbt-accent);
-  min-width: 14px;
-}
-
-.mbt-wheel-picker__slot .mbt-wheel-picker__name {
-  font-size: 11px;
-  color: var(--mbt-text);
+  letter-spacing: 0.2px;
+  color: var(--mbt-text-hi);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.mbt-wheel__label--empty {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-wheel__slotrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.mbt-wheel__slotlabel {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--mbt-text-faint);
+}
+
+/* Slot index → v7 keycap. */
+.mbt-wheel__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--mbt-text-mid);
+  background: linear-gradient(180deg, #2a3137, #181d22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+.mbt-wheel__hint {
+  display: block;
+  text-align: center;
+  padding-top: 9px;
+  font-size: 9.5px;
+  letter-spacing: 0.4px;
+  color: var(--mbt-text-lo);
 }
 
 /* 🔔 Toast Notifications 🔔 */
@@ -2704,46 +2966,51 @@ body {
   z-index: 10000;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: flex-end;
+  gap: 8px;
   pointer-events: none;
-  max-width: 280px;
+  max-width: 290px;
 }
 
+/* v7 toast — the type is carried by the coloured dot, not a side-border. */
 .mbt-toast {
+  --mbt-toast-c: var(--mbt-info);
   pointer-events: all;
-  padding: 8px 14px;
-  border-radius: var(--mbt-radius-sm, 8px);
-  font-size: 11px;
-  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 290px;
+  padding: 10px 13px;
+  border-radius: 10px;
   font-family: inherit;
-  color: #e8e8ee;
-  background: rgba(15, 20, 30, 0.98); /* Fallback solid-ish bg for toast */
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(180deg, #161c18, #0e120f);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 12px 26px rgba(0, 0, 0, 0.5);
   cursor: pointer;
   animation: mbt-toast-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mbt-toast__dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--mbt-toast-c);
+  box-shadow: 0 0 9px var(--mbt-toast-c);
+}
+
+.mbt-toast__text {
+  font-size: 12px;
+  font-weight: 500;
   line-height: 1.4;
+  color: var(--mbt-text-hi);
 }
 
-.mbt-toast--info {
-  background: rgba(96, 165, 250, 0.15);
-  border-left: 3px solid #60a5fa;
-}
-
-.mbt-toast--success {
-  background: rgba(34, 197, 94, 0.15);
-  border-left: 3px solid #22c55e;
-}
-
-.mbt-toast--warning {
-  background: rgba(251, 140, 0, 0.15);
-  border-left: 3px solid #fb8c00;
-}
-
-.mbt-toast--error {
-  background: rgba(239, 68, 68, 0.15);
-  border-left: 3px solid #ef4444;
-}
+.mbt-toast--info    { --mbt-toast-c: var(--mbt-info); }
+.mbt-toast--success { --mbt-toast-c: var(--mbt-accent); }
+.mbt-toast--warning { --mbt-toast-c: var(--mbt-warning); }
+.mbt-toast--error   { --mbt-toast-c: var(--mbt-danger); }
 
 .mbt-toast--exit {
   animation: mbt-toast-out 0.2s ease forwards;
@@ -2762,30 +3029,63 @@ body {
    CINEMATIC BORDERLESS LAYOUT (Theme Switcher Mode)
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Overlay Vignette: Progressive dark depth for AAA cinematic feel */
+/* Overlay vignette — the 7-stop gradient bleeds the menu into the
+   game scene (mockup _mockup-cinematic.html .overlay). The base
+   .mbt-overlay is a transparent pointer passthrough; the cinematic
+   shell re-captures pointer events so the vignette itself is clickable
+   (click-on-backdrop-to-close). */
 .layout-cinematic.mbt-overlay--right {
-  background:linear-gradient(to left, rgba(0, 4, 10, 0.98) 0%, rgba(5, 11, 20, 0.85) 400px, rgba(5, 11, 20, 0.4) 650px, transparent 100%) !important;
+  pointer-events: all;
+  background: linear-gradient(to left,
+    #060A09 0%,
+    rgba(6, 10, 9, 0.985) 16%,
+    rgba(8, 13, 12, 0.92) 30%,
+    rgba(8, 13, 12, 0.62) 48%,
+    rgba(8, 13, 12, 0.28) 66%,
+    rgba(8, 13, 12, 0.08) 80%,
+    transparent 92%) !important;
   padding-right: 0;
 }
 
 .layout-cinematic.mbt-overlay--left {
-  background: linear-gradient(to right, rgba(0, 4, 10, 0.98) 0%, rgba(5, 11, 20, 0.85) 400px, rgba(5, 11, 20, 0.4) 650px, transparent 100%) !important;
+  pointer-events: all;
+  background: linear-gradient(to right,
+    #060A09 0%,
+    rgba(6, 10, 9, 0.985) 16%,
+    rgba(8, 13, 12, 0.92) 30%,
+    rgba(8, 13, 12, 0.62) 48%,
+    rgba(8, 13, 12, 0.28) 66%,
+    rgba(8, 13, 12, 0.08) 80%,
+    transparent 92%) !important;
   padding-left: 0;
 }
 
-/* Menu Container becomes invisible */
+/* Cinematic menu — a transparent, edge-docked, full-height panel that
+   sits ON the vignette (mockup .menu). No own surface/border/shadow:
+   the vignette IS the surface. Edge-docked by concept — no safe
+   margin. */
 .layout-cinematic .mbt-menu {
-  width: 450px;
+  --mbt-cinematic-pad: 30px;
+  width: 468px;
   height: 100vh;
+  max-height: none;
+  max-width: 468px;
+  padding: 0 var(--mbt-cinematic-pad);
   background: transparent !important;
   border: none;
   border-radius: 0;
   box-shadow: none;
   animation: mbt-cinematic-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: visible;
+  isolation: isolate;
 }
 
-.layout-cinematic .mbt-menu::before {
-  display: none; /* remove top glow line */
+/* The mockup .menu is fully transparent — the .overlay vignette IS
+   the surface. So the cinematic menu carries no ::before glow line
+   and no ::after darkening panel; both pseudo-elements are disabled. */
+.layout-cinematic .mbt-menu::before,
+.layout-cinematic .mbt-menu::after {
+  display: none;
 }
 
 @keyframes mbt-cinematic-enter {
@@ -2793,292 +3093,93 @@ body {
   to { opacity: 1; transform: translateX(0); }
 }
 
-/* Header Tweaks */
+/* Header Tweaks — left padding zeroed so the MBT wordmark flushes to
+   the menu's 30px inset, aligned with the search / tabs / cards below
+   (the gold-standard group rule already zeroes padding-right). */
 .layout-cinematic .mbt-header {
   cursor: default;
-  padding: 40px 30px 20px;
+  padding: 38px var(--mbt-cinematic-pad) 16px 0;
 }
-.layout-cinematic .mbt-header__title {
-  font-size: 18px;
-  letter-spacing: 6px;
-  opacity: 0.9;
-}
+/* No cinematic override of the header title — it uses the shared v7
+   base (delicate, tracked, muted). The old 18px / 6px-tracked style
+   is intentionally gone. */
 
-/* Cinematic: override base search padding entirely (30px matches Gold Standard) */
+/* Search — the v7 minimal field (magnifier + underline) is shared
+   base. The cinematic shell only flushes it to the left edge; the
+   30px right pad comes from the gold-standard group rule. */
 .layout-cinematic .mbt-search {
-  padding: 0px 0px 12px !important;
-}
-
-/* Search Tweaks */
-.layout-cinematic.mbt-overlay--right .mbt-search {
-  text-align: left; /* force left alignment to match cards below */
-  margin-left: 0;
-  max-width: 100%; /* let it breathe */
-}
-.layout-cinematic.mbt-overlay--left .mbt-search {
-  text-align: left;
-  margin-right: auto;
-  max-width: 100%;
-}
-.layout-cinematic .mbt-search__input {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   padding-left: 0;
-  padding-right: 0;
-  font-size: 14px; /* Slightly smaller for premium look */
-  text-transform: uppercase;
-  letter-spacing: 2px;
-  border-radius: 0;
-  text-align: inherit; /* inherit from .mbt-search */
-}
-.layout-cinematic .mbt-search__input:focus {
-  box-shadow: none;
-  border-bottom: 1px solid var(--mbt-accent);
-}
-.layout-cinematic .mbt-search__icon {
-  display: none; /* Minimalist: hide icon */
 }
 
-/* Enforce 30px 'Gold Standard' Padding on EVERY element */
+/* The cinematic .mbt-menu owns the 30px side inset (padding: 0 30px,
+   mockup .menu). So its direct children flush to that edge — their own
+   horizontal padding is zeroed, only vertical padding kept. */
 .layout-cinematic .mbt-header,
 .layout-cinematic .mbt-search,
 .layout-cinematic .mbt-tabs,
 .layout-cinematic .mbt-categories,
 .layout-cinematic .mbt-grid,
-.layout-cinematic .mbt-filters,
+.layout-cinematic .mbt-resultbar,
 .layout-cinematic .mbt-quickbind,
 .layout-cinematic .mbt-statusbar {
-  padding-right: 30px !important;
+  padding-right: 0 !important;
 }
 
-/* Specific rule for the Filters row to distribute A-Z perfectly */
-.layout-cinematic .mbt-filters {
-  justify-content: space-between;
-  padding-left: 30px;
-  padding-right: 30px;
+/* Result bar — flush to the menu's 30px inset on both sides. */
+.layout-cinematic .mbt-resultbar {
+  padding-left: 0;
+  padding-right: 0 !important;
 }
 
-/* Horizontal Scroll & VisFade Mask for Tabs and Categories */
+/* Tabs / categories — the v7 lens strip + category rail are shared
+   base components (see TABS and CATEGORY RAIL blocks above). The lens
+   strip wraps 4-per-row from the shared base; the cinematic shell only
+   zeroes the left padding so it flushes to the menu inset. */
 .layout-cinematic .mbt-tabs,
 .layout-cinematic .mbt-categories {
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  scrollbar-width: none; /* Firefox */
-  gap: 4px; /* maintain gap even when scrolling */
-  /* Fade out right edge to fix harsh cutoff */
-  -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
-  mask-image: linear-gradient(to right, black 85%, transparent 100%);
-  padding: 12px 0px 10px;
-}
-.layout-cinematic .mbt-tabs::-webkit-scrollbar,
-.layout-cinematic .mbt-categories::-webkit-scrollbar {
-  display: none; /* Chrome/Safari */
+  padding-left: 0;
 }
 
-/* Tab Divider for Playlists */
-.layout-cinematic .mbt-tab-divider {
-  width: 1px;
-  height: 20px;
-  background: rgba(255,255,255,0.1);
-  margin: 0 4px;
-  flex-shrink: 0;
-}
-.layout-cinematic .mbt-tab__dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  display: inline-block;
-}
-.layout-cinematic .mbt-tab--add {
-  border: 1px dashed rgba(255,255,255,0.2);
-  background: transparent;
-  opacity: 0.6;
-}
-.layout-cinematic .mbt-tab--add:hover {
-  background: rgba(255,255,255,0.05);
-  border-color: rgba(255,255,255,0.4);
-  opacity: 1;
+/* Result bar — the "Sort & filter" button picks up the cinematic
+   darker surface tint to match the lens strip / category rail. The
+   popover itself stays the shared opaque base. */
+.layout-cinematic .mbt-sortbtn,
+.layout-cinematic .mbt-randbtn {
+  background: rgba(2, 6, 10, 0.48);
+  border-color: rgba(255, 255, 255, 0.075);
 }
 
-.layout-cinematic .mbt-tab {
-  flex: 0 1 auto;
-  border-bottom: none;
-  opacity: 0.6;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 2.5px;
-  padding: 6px 14px;
-  margin-right: 6px;
-  background: rgba(0, 0, 0, 0.4); /* Dark glass */
-  border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.02);
-  transition: all 0.2s ease;
-  /* Fix the "1001" line wrap breaking height */
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-}
-.layout-cinematic .mbt-tab--active {
-  background: rgba(0, 0, 0, 0.7);
-  box-shadow: inset 0 0 0 1px var(--mbt-accent);
-  color: #fff;
-  opacity: 1;
-  animation: mbt-glow-pulse 2s infinite ease-in-out;
-}
+/* Category rail — the v7 pill + colour dot is shared base (see the
+   CATEGORY RAIL block). The cinematic shell adds no pill overrides. */
 
-@keyframes mbt-glow-pulse {
-  0%, 100% { box-shadow: inset 0 0 0 1px var(--mbt-accent), 0 0 5px var(--mbt-accent-glow); }
-  50% { box-shadow: inset 0 0 0 1px var(--mbt-accent), 0 0 15px var(--mbt-accent-glow); }
-}
-
-/* Filters */
-.layout-cinematic .mbt-filters {
-  border-top: none;
-  margin-top: 10px; /* extra breathing room */
-  gap: 6px;
-}
-.layout-cinematic .mbt-chip {
-  border: none;
-  opacity: 0.6;
-  font-size: 10px;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  background: rgba(0, 0, 0, 0.4); /* Dark glass */
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.02);
-  padding: 4px 12px;
-  margin-right: 6px;
-  transition: all 0.2s ease;
-}
-.layout-cinematic .mbt-chip--active {
-  box-shadow: none;
-  background: rgba(0, 0, 0, 0.7);
-  box-shadow: inset 0 0 0 1px var(--mbt-accent);
-  color: #fff;
-  opacity: 1;
-}
-
-/* Grid & Cards (Ultra Clean Alignment & Fixed Overlap) */
+/* Grid & Cards (Ultra Clean Alignment & Fixed Overlap) — the menu
+   provides the 30px side inset, so the grid is flush (0 horizontal). */
 .layout-cinematic .mbt-grid {
-  padding-top: 10px !important;
-  padding-bottom: 80px !important; /* Breathe space for quickbind */
-  gap: 8px !important;
+  padding: 8px 0 92px !important;
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 12px, black calc(100% - 12px), transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, black 12px, black calc(100% - 12px), transparent 100%);
 }
 
-.layout-cinematic .mbt-card {
-  border-bottom: none;
-  min-height: 54px !important; /* Fixed: restored height for text clarity */
-  padding: 12px 16px !important;
-  background: rgba(255, 255, 255, 0.03) !important; 
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
-  margin-bottom: 6px !important;
-  border-radius: 6px !important;
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: visible !important; /* allow drawer to breathe */
-}
+/* gap stays the shared-base 6px so the virtual-grid rowHeight (74)
+   resolves identically in both shells — no cinematic override. */
 
-/* Fix Card Quickbind Overlay */
-.layout-cinematic .mbt-card__drawer {
-  background: rgba(0, 0, 0, 0.4) !important;
-  border-radius: 0 0 6px 6px !important;
-  margin-top: 4px !important;
-  padding: 12px !important;
-  border-top: 1px solid rgba(255, 255, 255, 0.05) !important;
-}
+/* ── Card / drawer / quickbind — the v7 component language is the
+   SHARED BASE (see EMOTE CARD, CARD VARIANTS, QUICK BIND blocks
+   above). It is layout-agnostic and renders v7-correct in both
+   shells. The cinematic shell adds only edge-flush margin tweaks. */
+
 .layout-cinematic.mbt-overlay--right .mbt-card__name {
   text-align: left;
-  letter-spacing: 1px;
 }
 
-.layout-cinematic .mbt-card:hover,
-.layout-cinematic .mbt-card--focused {
-  background: rgba(255, 255, 255, 0.07); /* Targeted light splash */
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-}
-
-.layout-cinematic .mbt-card__name {
-  opacity: 0.7;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-  color: #fff;
-  transition: all 0.2s ease;
-}
-
-.layout-cinematic .mbt-card:hover .mbt-card__name,
-.layout-cinematic .mbt-card--focused .mbt-card__name,
-.layout-cinematic .mbt-card--active-style .mbt-card__name {
-  opacity: 1;
-  color: var(--mbt-accent); /* Use accent on hover for clarity */
-}
-
-/* Emissive Hover Indicators */
-.layout-cinematic.mbt-overlay--right .mbt-card {
-  border-right: 3px solid transparent; 
-}
-/* Quickbind Feedback: Emissive pulse when dragging over */
-.mbt-quickbind__slot--dragover {
-  border-color: var(--mbt-accent) !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  box-shadow: 0 0 15px var(--mbt-accent-soft), inset 0 0 10px var(--mbt-accent-soft) !important;
-  transform: scale(1.05);
-  animation: mbt-slot-pulse 1.5s infinite;
-}
-
-@keyframes mbt-slot-pulse {
-  0%, 100% { box-shadow: 0 0 15px var(--mbt-accent-soft), inset 0 0 5px var(--mbt-accent-soft); }
-  50% { box-shadow: 0 0 25px var(--mbt-accent-soft), inset 0 0 15px var(--mbt-accent-soft); }
-}
-
-/* Lighter card for cinematic mode */
-.layout-cinematic .mbt-card {
-  background: rgba(0, 0, 0, 0.3); /* Lighter glass */
-}
-
-.layout-cinematic.mbt-overlay--left .mbt-card {
-  border-left: 3px solid transparent;
-}
-.layout-cinematic.mbt-overlay--left .mbt-card:hover,
-.layout-cinematic.mbt-overlay--left .mbt-card--focused {
-  border-left: 3px solid var(--mbt-accent);
-  background: linear-gradient(-90deg, transparent, rgba(255,255,255,0.06));
-}
-
-/* Quickbind Cinematic Refinements */
+/* quickbind dock sits flush to the menu's left edge in cinematic;
+   the 30px right pad comes from the gold-standard group rule above. */
 .layout-cinematic .mbt-quickbind {
-  border-top: none;
-  margin-top: 8px;
-}
-.layout-cinematic .mbt-quickbind__header {
-  opacity: 0.3; /* very subtle */
-}
-.layout-cinematic .mbt-quickbind__slot {
-  border: none;
-  border-bottom: 2px solid rgba(255,255,255,0.05); /* just an underline */
-  border-radius: 0;
-}
-.layout-cinematic .mbt-quickbind__key {
-  color: rgba(255,255,255,0.3); /* desaturated grey */
-  transition: color 0.2s ease;
-}
-.layout-cinematic .mbt-quickbind__slot:hover,
-.layout-cinematic .mbt-quickbind__slot--filled {
-  border-bottom: 2px solid var(--mbt-accent);
-  background: transparent;
-}
-.layout-cinematic .mbt-quickbind__slot:hover .mbt-quickbind__key,
-.layout-cinematic .mbt-quickbind__slot--filled .mbt-quickbind__key {
-  color: var(--mbt-accent); /* glow only when filled or hovered */
+  margin: 0 0 8px;
+  padding-left: 0;
 }
 
-.layout-cinematic .mbt-statusbar { border-top: none; }@keyframes mbt-variants-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.layout-cinematic .mbt-statusbar { border-top: none; }
 
 /* ?? Flying Emote Particle ?? */
 .mbt-flying-emote {
@@ -3126,14 +3227,14 @@ body {
   z-index: 8500;
   pointer-events: none;
   background: radial-gradient(
-    ellipse at center,
+    ellipse 70% 70% at center,
     transparent 0%,
-    transparent 35%,
-    rgba(0, 0, 0, 0.55) 90%,
-    rgba(0, 0, 0, 0.85) 100%
+    transparent 42%,
+    rgba(0, 0, 0, 0.42) 82%,
+    rgba(0, 0, 0, 0.78) 100%
   );
   opacity: 0;
-  transition: opacity 500ms ease;
+  transition: opacity 500ms var(--mbt-ease-out);
 }
 
 .mbt-preview-vignette--on {
@@ -3141,8 +3242,10 @@ body {
 }
 
 /* ── Preview Mode badge ─────────────────────────────────────
- * Top-center pill that signals the player they are inside the preview
- * scripted camera (camera will return to gameplay on stopPreview).
+ * Top-center v7 pill that signals the player they are inside the preview
+ * scripted camera (camera returns to gameplay on stopPreview). Styled like
+ * the Open Join pill — dark surface gradient, hairline border, soft shadow.
+ * Layout-agnostic: one shared style (the `layout-*` class is harmless).
  */
 .mbt-preview-badge {
   position: fixed;
@@ -3153,12 +3256,16 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px;
-  border-radius: 999px;
-  border: 1px solid var(--mbt-accent);
-  box-shadow: 0 0 18px rgba(var(--mbt-accent-rgb), 0.18),
-              0 6px 20px rgba(0, 0, 0, 0.45);
-  color: var(--mbt-accent);
+  padding: 8px 14px;
+  border-radius: var(--mbt-radius-pill);
+  background:
+    radial-gradient(110% 200% at 0% 0%, rgba(var(--mbt-accent-rgb), 0.10), transparent 60%),
+    linear-gradient(180deg, #161d18, #0d120f);
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.22);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: var(--mbt-text-hi);
   font-family: inherit;
   font-size: 11px;
   font-weight: 600;
@@ -3166,25 +3273,12 @@ body {
   text-transform: uppercase;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 400ms ease, transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 400ms ease, transform 400ms var(--mbt-ease-out);
 }
 
-/* Default layout — match .mbt-menu radial gradient palette. */
-.mbt-preview-badge.layout-default {
-  background: radial-gradient(
-    circle at center center,
-    rgba(15, 30, 55, 0.85) 0%,
-    rgba(5, 12, 25, 0.95) 100%
-  );
-}
-
-/* Cinematic layout — match the dark blue-black gradient of the overlay. */
-.mbt-preview-badge.layout-cinematic {
-  background: linear-gradient(
-    180deg,
-    rgba(0, 4, 10, 0.98) 0%,
-    rgba(5, 11, 20, 0.92) 100%
-  );
+.mbt-preview-badge svg {
+  color: var(--mbt-accent);
+  flex-shrink: 0;
 }
 
 .mbt-preview-badge--on {
@@ -3210,17 +3304,21 @@ body {
   z-index: 9100;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 12px 7px 11px;
-  border-radius: 999px;
-  border: 1px solid var(--mbt-accent);
-  box-shadow: 0 0 14px rgba(var(--mbt-accent-rgb), 0.12),
-              0 4px 14px rgba(0, 0, 0, 0.4);
-  color: var(--mbt-text);
+  gap: 9px;
+  padding: 9px 11px 9px 13px;
+  border-radius: 11px;
+  background:
+    radial-gradient(110% 200% at 0% 0%, rgba(var(--mbt-accent-rgb), 0.10), transparent 60%),
+    linear-gradient(180deg, #161d18, #0d120f);
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.22);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: var(--mbt-text-hi);
   font-family: inherit;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
   opacity: 0;
   pointer-events: none;
   transform: translate(var(--mbt-pill-tx, 0), var(--mbt-pill-ty, -8px)) scale(0.94);
@@ -3233,28 +3331,15 @@ body {
   content: '';
   position: absolute;
   inset: -1px;
-  border-radius: 999px;
+  border-radius: 12px;
   border: 1px solid var(--mbt-accent);
   opacity: 0;
   pointer-events: none;
   transform-origin: center;
 }
 
-/* Layout variants — match the menu's chrome. */
-.mbt-openjoin.layout-default {
-  background: radial-gradient(
-    circle at center center,
-    rgba(15, 30, 55, 0.88) 0%,
-    rgba(5, 12, 25, 0.95) 100%
-  );
-}
-.mbt-openjoin.layout-cinematic {
-  background: linear-gradient(
-    180deg,
-    rgba(0, 4, 10, 0.96) 0%,
-    rgba(5, 11, 20, 0.92) 100%
-  );
-}
+/* Layout-agnostic — one shared v7 style; the `layout-*` class no longer
+   branches the appearance. */
 
 /* Position origins — each class sets the X/Y baseline that the keyframes
    interpolate to. +8px from bottom = "rises into place"; -8px from top
@@ -3311,6 +3396,8 @@ body {
 }
 
 .mbt-openjoin__icon {
+  width: 13px;
+  height: 13px;
   color: var(--mbt-accent);
   flex-shrink: 0;
 }
@@ -3322,22 +3409,31 @@ body {
   text-overflow: ellipsis;
 }
 
+.mbt-openjoin__text b {
+  color: var(--mbt-accent);
+  font-weight: 700;
+}
+
+/* v7 keycap. */
 .mbt-openjoin__key {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 20px;
-  height: 18px;
-  padding: 0 5px;
+  height: 21px;
+  padding: 0 7px;
   margin-left: 2px;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--mbt-accent);
-  background: rgba(var(--mbt-accent-rgb), 0.08);
-  border: 1px solid var(--mbt-accent);
-  border-radius: 4px;
-  letter-spacing: 0.04em;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--mbt-text-mid);
+  background: linear-gradient(180deg, #2a3137, #181d22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
 /* ── What's That Emote? floating bubble ──────────────────────
@@ -3363,16 +3459,18 @@ body {
   );
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--mbt-accent);
-  box-shadow: 0 0 12px rgba(var(--mbt-accent-rgb), 0.14),
-              0 3px 10px rgba(0, 0, 0, 0.35);
-  color: var(--mbt-text);
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #1b231d, #10150f);
+  border: 1px solid var(--mbt-edge-hi);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: var(--mbt-text-hi);
   font-family: inherit;
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 11.5px;
+  font-weight: 600;
   letter-spacing: 0.03em;
   font-variant-numeric: tabular-nums;
   pointer-events: none;
@@ -3390,7 +3488,7 @@ body {
   content: '';
   position: absolute;
   inset: -1px;
-  border-radius: 999px;
+  border-radius: 11px;
   border: 1px solid var(--mbt-accent);
   opacity: 0;
   pointer-events: none;
@@ -3403,30 +3501,17 @@ body {
   content: '';
   position: absolute;
   left: 50%;
-  bottom: -4px;
-  width: 6px;
-  height: 6px;
-  background: inherit;
-  border-right: 1px solid var(--mbt-accent);
-  border-bottom: 1px solid var(--mbt-accent);
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  background: #10150f;
+  border-right: 1px solid var(--mbt-edge-hi);
+  border-bottom: 1px solid var(--mbt-edge-hi);
   transform: translateX(-50%) rotate(45deg);
   opacity: 0;
 }
 
-.mbt-whatsthat.layout-default {
-  background: radial-gradient(
-    circle at center center,
-    rgba(15, 30, 55, 0.92) 0%,
-    rgba(5, 12, 25, 0.96) 100%
-  );
-}
-.mbt-whatsthat.layout-cinematic {
-  background: linear-gradient(
-    180deg,
-    rgba(0, 4, 10, 0.96) 0%,
-    rgba(5, 11, 20, 0.92) 100%
-  );
-}
+/* Layout-agnostic — one shared v7 style. */
 
 .mbt-whatsthat--on {
   opacity: 1;
@@ -3447,36 +3532,46 @@ body {
 }
 
 .mbt-whatsthat__icon {
-  color: var(--mbt-accent);
+  width: 12px;
+  height: 12px;
+  color: var(--mbt-cat-shared);
   flex-shrink: 0;
 }
 
 .mbt-whatsthat__label {
-  color: var(--mbt-text);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--mbt-text-hi);
 }
 
+/* v7 keycap. */
 .mbt-whatsthat__key {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 16px;
-  padding: 0 4px;
+  min-width: 20px;
+  height: 21px;
+  padding: 0 7px;
   margin-left: 2px;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--mbt-accent);
-  background: rgba(var(--mbt-accent-rgb), 0.08);
-  border: 1px solid var(--mbt-accent);
-  border-radius: 3px;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--mbt-text-mid);
+  background: linear-gradient(180deg, #2a3137, #181d22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
 .mbt-whatsthat__try {
-  color: var(--mbt-subtext);
+  color: var(--mbt-text-faint);
   font-size: 9px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 1px;
 }
 
 /* ── Nearby Section ──────────────────────────────────────────
@@ -3489,56 +3584,22 @@ body {
  * warm-green wash (sits over the radial blue-violet menu); `.layout-cinematic`
  * cools the gradient to align with the colder dark-blue-to-black chrome.
  */
+/* ── Nearby ribbon (v7) ──────────────────────────────────────
+ * Recessed tray above the category pills surfacing top shared emotes
+ * whenever a player is in proximity. Single shared style — no layout
+ * fork. Driven by `nearbyCountUpdate` NUI events. */
 .mbt-nearby {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin: 8px 12px 10px;
-  padding: 11px 13px 12px;
-  border-radius: var(--mbt-radius);
-  border: 1px solid var(--mbt-accent);
-  background: linear-gradient(
-    180deg,
-    rgba(var(--mbt-accent-rgb), 0.12) 0%,
-    rgba(var(--mbt-accent-rgb), 0.04) 35%,
-    rgba(8, 18, 36, 0.55) 100%
-  );
-  box-shadow:
-    0 0 18px rgba(var(--mbt-accent-rgb), 0.18),
-    0 4px 14px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(var(--mbt-accent-rgb), 0.18);
+  gap: 9px;
+  margin: 6px 14px 9px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--mbt-edge-lo);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.30), rgba(0, 0, 0, 0.13));
+  box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.4);
   animation: mbt-nearby-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
-  overflow: hidden;
-}
-
-/* Cinematic layout — cooler, deeper backdrop so the ribbon stops fighting
-   the colder menu chrome. Border + glow stay accent for "alive" feel. */
-.mbt-nearby.layout-cinematic {
-  background: linear-gradient(
-    180deg,
-    rgba(var(--mbt-accent-rgb), 0.08) 0%,
-    rgba(5, 11, 20, 0.7) 60%,
-    rgba(0, 4, 10, 0.85) 100%
-  );
-  box-shadow:
-    0 0 16px rgba(var(--mbt-accent-rgb), 0.15),
-    0 4px 14px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(var(--mbt-accent-rgb), 0.12);
-}
-
-/* Subtle accent glow strip along the top edge — feels "alive". */
-.mbt-nearby::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(var(--mbt-accent-rgb), 0.6) 50%,
-    transparent 100%
-  );
 }
 
 @keyframes mbt-nearby-in {
@@ -3549,61 +3610,53 @@ body {
 .mbt-nearby__header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  gap: 7px;
 }
 
-.mbt-nearby__header-icon {
+.mbt-nearby__hicon {
+  width: 12px;
+  height: 12px;
   color: var(--mbt-accent);
-  filter: drop-shadow(0 0 6px rgba(var(--mbt-accent-rgb), 0.55));
 }
 
 .mbt-nearby__title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   color: var(--mbt-accent);
-  text-shadow: 0 0 8px rgba(var(--mbt-accent-rgb), 0.25);
-}
-
-/* Visual separator between title and count badge — 2px dot stops them from
-   competing on the same axis. */
-.mbt-nearby__header-sep {
-  width: 2px;
-  height: 2px;
-  border-radius: 50%;
-  background: rgba(232, 232, 238, 0.35);
-  flex-shrink: 0;
 }
 
 .mbt-nearby__count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 6px;
-  font-size: 10px;
+  min-width: 17px;
+  height: 16px;
+  padding: 0 5px;
+  font-size: 9px;
   font-weight: 700;
-  color: var(--mbt-bg);
-  background: var(--mbt-accent);
+  color: var(--mbt-accent);
+  background: rgba(var(--mbt-accent-rgb), 0.12);
   border-radius: 999px;
   letter-spacing: 0;
-  box-shadow: 0 0 10px rgba(var(--mbt-accent-rgb), 0.45);
 }
 
-/* `--mbt-subtext` (#6B7280) on tinted-green ribbon failed AA. Body text at
-   reduced opacity sits above 4.5:1 on both default and cinematic backgrounds. */
 .mbt-nearby__hint {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   margin-left: auto;
-  color: rgba(232, 232, 238, 0.78);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.05em;
+  color: var(--mbt-text-faint);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
   text-transform: none;
+}
+
+.mbt-nearby__hint svg {
+  width: 11px;
+  height: 11px;
 }
 
 .mbt-nearby__chips {
@@ -3616,15 +3669,15 @@ body {
   display: inline-flex;
   align-items: center;
   max-width: 18ch;
-  padding: 5px 11px;
+  padding: 7px 11px;
   border-radius: 999px;
-  border: 1px solid rgba(var(--mbt-accent-rgb), 0.18);
-  background: rgba(8, 18, 36, 0.55);
-  color: var(--mbt-text);
+  border: 1px solid var(--mbt-edge-lo);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--mbt-text-mid);
   font-family: inherit;
-  font-size: 10.5px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
@@ -3654,51 +3707,41 @@ body {
 }
 
 .mbt-nearby__chip:hover {
-  border-color: var(--mbt-accent);
-  background: var(--mbt-accent);
-  color: var(--mbt-bg);
-  box-shadow: 0 0 12px rgba(var(--mbt-accent-rgb), 0.35);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--mbt-text-hi);
 }
 
 .mbt-nearby__chip:active {
-  transform: translateY(0);
-  box-shadow: 0 0 6px rgba(var(--mbt-accent-rgb), 0.5);
+  transform: translateY(1px);
 }
 
 /* "Featured" chip — the player's most-played shared emote leads the row.
-   Filled with accent so the eye lands on it immediately. */
+   Accent-tinted so the eye lands on it immediately. */
 .mbt-nearby__chip--featured {
-  background: var(--mbt-accent);
-  border-color: var(--mbt-accent);
-  color: var(--mbt-bg);
-  font-weight: 600;
-  box-shadow: 0 0 14px rgba(var(--mbt-accent-rgb), 0.38),
-              0 2px 6px rgba(0, 0, 0, 0.25);
+  background: rgba(var(--mbt-accent-rgb), 0.12);
+  border-color: rgba(var(--mbt-accent-rgb), 0.34);
+  color: var(--mbt-accent);
 }
 
 .mbt-nearby__chip--featured:hover {
-  background: var(--mbt-accent-strong);
-  border-color: var(--mbt-accent-strong);
-  transform: translateY(-1px);
-  box-shadow: 0 0 16px rgba(var(--mbt-accent-rgb), 0.5),
-              0 3px 8px rgba(0, 0, 0, 0.3);
+  background: rgba(var(--mbt-accent-rgb), 0.18);
+  color: var(--mbt-accent);
 }
 
-/* "+N more" overflow chip — solid subtle chip with a chevron. Reads as
-   "more, click to expand", not "placeholder" (which is what dashed implies). */
+/* "+N more" overflow chip — subtle chip with a chevron. Reads as
+   "more, click to expand". */
 .mbt-nearby__more {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 5px 9px 5px 11px;
+  gap: 3px;
+  padding: 7px 9px 7px 11px;
   border-radius: 999px;
-  border: 1px solid rgba(var(--mbt-accent-rgb), 0.28);
-  background: rgba(var(--mbt-accent-rgb), 0.06);
-  color: var(--mbt-accent);
+  border: 1px solid var(--mbt-edge-lo);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--mbt-text-lo);
   font-family: inherit;
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
   transition: background var(--mbt-transition),
@@ -3710,20 +3753,22 @@ body {
 }
 
 .mbt-nearby__more:hover {
-  background: var(--mbt-accent);
-  border-color: var(--mbt-accent);
-  color: var(--mbt-bg);
-  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--mbt-text-hi);
 }
 
 .mbt-nearby__more-icon {
-  margin-top: 1px;
+  width: 12px;
+  height: 12px;
 }
 
 /* ── Placement Overlay ──────────────────────────────────────
- * Shown while rpemotes-reborn placement is active. Sits at bottom-center
- * with backdrop blur, accent green highlights. Replaces the GTA help text
- * suppressed via { suppressHelpText = true } on the rpemotes side.
+ * Control-hints bar shown while rpemotes-reborn placement is active. Sits at
+ * top-center as a clean v7 panel — dark surface gradient, hairline border,
+ * soft shadow. Replaces the GTA help text suppressed via
+ * { suppressHelpText = true } on the rpemotes side.
+ *
+ * Layout-agnostic: one shared v7 style (the `layout-*` class is harmless).
  */
 .mbt-placement {
   position: fixed;
@@ -3733,37 +3778,20 @@ body {
   z-index: 9000;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 22px;
-  color: var(--mbt-text);
+  gap: 11px;
+  padding: 14px 20px;
+  color: var(--mbt-text-mid);
   font-family: inherit;
   pointer-events: none;
-  animation: mbt-placement-in 180ms ease-out;
-}
-
-/* Default layout — match .mbt-menu radial gradient and card chrome. */
-.mbt-placement.layout-default {
-  background: radial-gradient(
-    circle at center center,
-    rgba(15, 30, 55, 0.8) 0%,
-    rgba(5, 12, 25, 0.95) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background:
+    radial-gradient(120% 200% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.07), transparent 62%),
+    linear-gradient(180deg, var(--mbt-surface-2), #0d120f);
+  border: 1px solid var(--mbt-edge-hi);
   border-radius: var(--mbt-radius);
-  box-shadow: var(--mbt-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.03);
-}
-
-/* Cinematic layout — match the dark blue-black gradient of
-   .layout-cinematic.mbt-overlay--right / mbt-overlay--left. */
-.mbt-placement.layout-cinematic {
-  background: linear-gradient(
-    180deg,
-    rgba(0, 4, 10, 0.98) 0%,
-    rgba(5, 11, 20, 0.92) 100%
-  );
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 22px 48px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: mbt-placement-in 180ms var(--mbt-ease-out);
 }
 
 @keyframes mbt-placement-in {
@@ -3775,19 +3803,19 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
   color: var(--mbt-accent);
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--mbt-border);
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--mbt-edge);
 }
 
 .mbt-placement__keys {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
@@ -3802,22 +3830,26 @@ body {
   gap: 3px;
 }
 
+/* v7 physical keycap — matches .mbt-quickbind__key / _mockup-extras .key */
 .mbt-placement__kbd {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 22px;
   height: 22px;
-  padding: 0 6px;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--mbt-text);
-  background: var(--mbt-card);
-  border: 1px solid var(--mbt-border);
-  border-bottom-width: 2px;
-  border-radius: 4px;
+  padding: 0 7px;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
   line-height: 1;
+  color: var(--mbt-text-mid);
+  background: linear-gradient(180deg, #2a3137, #181d22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }
 
 .mbt-placement__label {
@@ -3825,26 +3857,32 @@ body {
   align-items: center;
   gap: 5px;
   font-size: 11px;
-  color: var(--mbt-subtext);
+  color: var(--mbt-text-lo);
 }
 
+/* Confirm hint — accent-tinted keycap + label */
 .mbt-placement__hint--confirm .mbt-placement__kbd {
   color: var(--mbt-accent);
-  border-color: var(--mbt-accent);
-  box-shadow: 0 0 8px rgba(var(--mbt-accent-rgb), 0.2);
+  background: linear-gradient(180deg, #15211a, #0f1813);
+  border-color: rgba(var(--mbt-accent-rgb), 0.42);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(var(--mbt-accent-rgb), 0.12);
 }
 
 .mbt-placement__hint--confirm .mbt-placement__label {
   color: var(--mbt-accent);
 }
 
+/* Cancel hint — danger-red-tinted keycap + label */
 .mbt-placement__hint--cancel .mbt-placement__kbd {
-  color: #ff5a6e;
-  border-color: rgba(255, 90, 110, 0.4);
+  color: var(--mbt-danger);
+  background: linear-gradient(180deg, #2c1f1d, #1a1413);
+  border-color: rgba(229, 96, 78, 0.42);
 }
 
 .mbt-placement__hint--cancel .mbt-placement__label {
-  color: #ff8a98;
+  color: var(--mbt-danger);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -4058,19 +4096,6 @@ body {
   font-weight: 500;
 }
 
-.mbt-wheel__empty-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--mbt-accent);
-  animation: mbt-wheel-empty-pulse 1.8s ease-in-out infinite;
-}
-
-@keyframes mbt-wheel-empty-pulse {
-  0%, 100% { transform: scale(1);    opacity: 0.6; }
-  50%      { transform: scale(1.12); opacity: 1;   }
-}
-
 /* ── Reduced motion guard ────────────────────────────────────
  * Honor OS-level "reduce motion" by stripping animations the polish layer
  * introduced. Keeps a short opacity fade (not vestibular) and forces the
@@ -4089,8 +4114,7 @@ body {
   .mbt-tab--just-created,
   .mbt-grid__virtual--filter-changed,
   .mbt-empty__icon-wrap,
-  .mbt-empty__arrow,
-  .mbt-wheel__empty-icon {
+  .mbt-empty__arrow {
     animation: none !important;
     transition: opacity 120ms ease !important;
   }
@@ -4110,4 +4134,3 @@ body {
     animation: none !important;
   }
 }
-

@@ -21,11 +21,7 @@ RegisterLocale('it', {
     ['tab_recent']          = 'Recenti',
 
     -- Actions
-    ['play_emote']          = 'Gioca',
     ['cancel_emote']        = 'Stop',
-    ['add_favorite']        = 'Aggiungi ai Preferiti',
-    ['remove_favorite']     = 'Rimuovi dai Preferiti',
-    ['set_keybind']         = 'Assegna Tasto',
 
     -- Shared Emotes
     ['shared_request']      = 'vuole giocare',
@@ -35,7 +31,6 @@ RegisterLocale('it', {
     -- Filters
     ['filter_all']          = 'Tutte',
     ['filter_props']        = 'Con Oggetti',
-    ['filter_solo']         = 'Solo',
     ['filter_shared']       = 'Condivise',
 
     -- Status
@@ -48,10 +43,11 @@ RegisterLocale('it', {
     ['no_emotes_hint']      = 'Prova una ricerca diversa o azzera i filtri',
     ['no_emotes_arrow']     = 'Cerca in alto',
     ['partner_hint']        = 'Avvicinati a un giocatore per invitarlo',
-    ['wheel_empty_hint']    = 'Trascina qui un\'emote',
+    ['wheel_empty_hint']    = 'Slot vuoto',
 
     -- Quick Bind
     ['quickbind_title']     = 'Tasti Rapidi',
+    ['quickbind_hint']      = 'Premi un tasto del tastierino in gioco',
     ['quickbind_empty']     = 'Trascina emote qui',
 
     -- Emote Wheel
@@ -73,12 +69,7 @@ RegisterLocale('it', {
     ['playlist_loop_on']    = 'Loop attivo',
     ['playlist_loop_off']   = 'Loop disattivo',
 
-    -- Ecosystem
-    ['eco_meta_clothes']    = 'MBT Meta Clothes',
-    ['eco_wearable_props']  = 'MBT Wearable Props',
-
     -- Buttons
-    ['btn_new']                    = 'Nuovo',
     ['btn_create']                 = 'Crea',
     ['btn_cancel']                 = 'Annulla',
     ['btn_done']                   = 'Fatto',
@@ -93,8 +84,6 @@ RegisterLocale('it', {
     -- Tooltips
     ['tooltip_new_list']           = 'Nuova lista custom',
     ['tooltip_stop_animation']     = 'Ferma animazione',
-    ['tooltip_sort_change']        = 'Cambia ordinamento',
-    ['tooltip_random_emote']       = 'Emote casuale',
     ['tooltip_export_favorites']   = 'Esporta preferiti',
     ['tooltip_import_favorites']   = 'Importa preferiti',
     ['tooltip_preview_start']      = 'Anteprima (solo per te)',
@@ -131,6 +120,10 @@ RegisterLocale('it', {
     ['nearby_hint']                = 'prova un duetto',
     ['nearby_more']                = 'Mostra tutte le emote condivise',
 
+    -- Trending hero
+    ['trending_kicker']            = 'Di tendenza questa settimana',
+    ['trending_sub']               = '%s · %s riproduzioni questa settimana',
+
     -- Modals
     ['modal_new_list']             = 'Nuova lista',
     ['modal_list_name_placeholder']= 'Nome lista...',
@@ -149,7 +142,11 @@ RegisterLocale('it', {
     ['drawer_textures']            = 'Texture',
     ['drawer_custom_lists']        = 'Liste custom',
     ['drawer_quick_bind']          = 'Quick Bind',
+    ['drawer_quick_bind_hint']     = 'Tasto tastierino',
     ['drawer_wheel_slot']          = 'Slot Wheel',
+    ['drawer_wheel_slot_hint']     = 'Menu radiale',
+    ['drawer_bind_key']            = 'NUM %s',
+    ['variant_count']              = '%s varianti',
 
     -- Misc labels
     ['playlist_label']             = 'Playlist',
@@ -161,12 +158,25 @@ RegisterLocale('it', {
     ['badge_prop']                 = 'Prop',
     ['badge_dance']                = 'Dance',
 
+    -- Result bar & sort
+    ['sort_az']               = 'A-Z',
+    ['sort_za']               = 'Z-A',
+    ['sort_cat']              = 'Categoria',
+    ['sortpop_sort_by']       = 'Ordina per',
+    ['sortpop_filter']        = 'Filtra',
+    ['resultbar_emotes']      = 'emote',
+    ['btn_random']            = 'Emote casuale',
+    ['btn_sort_filter']       = 'Ordina e filtra',
+    ['tooltip_sort_filter']   = 'Ordina e filtra',
+    ['tooltip_more']          = 'Altro',
+    ['wheel_slot_label']      = 'Slot',
+    ['modal_list_icon_label'] = 'Icona',
+
     -- Toasts
     ['toast_walk_reset']           = 'Walk style resettato',
     ['toast_expression_reset']     = 'Expression resettata',
     ['toast_emote_restricted']     = 'Emote riservato a job specifici',
     ['toast_wheel_assigned']       = 'Assegnato %s a NUM%s',
-    ['toast_list_created']         = 'Lista "%s" creata',
     ['toast_list_deleted']         = 'Lista "%s" eliminata',
     ['toast_list_already_in']      = 'Gia in "%s"',
     ['toast_list_added']           = 'Aggiunto a "%s"',

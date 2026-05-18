@@ -1,4 +1,4 @@
-import { Search, Square, PlusSquare } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useLocale } from '../utils/locale'
 import { AnimatedNumber } from './AnimatedNumber'
 
@@ -7,11 +7,11 @@ interface SearchBarProps {
   onChange: (value: string) => void
   resultCount: number
   totalCount: number
-  onCancel: () => void
-  onAddList: () => void
 }
 
-export function SearchBar({ value, onChange, resultCount, totalCount, onCancel, onAddList }: SearchBarProps) {
+// v7 minimal search — just the field. "New list" lives on the lens "+" tab,
+// "Stop" lives in the header. See EmoteMenu.
+export function SearchBar({ value, onChange, resultCount, totalCount }: SearchBarProps) {
   const t = useLocale()
 
   return (
@@ -31,26 +31,6 @@ export function SearchBar({ value, onChange, resultCount, totalCount, onCancel, 
             <AnimatedNumber value={resultCount} duration={250} />/{totalCount}
           </span>
         )}
-      </div>
-      
-      <div className="mbt-search__actions">
-        <button
-          className="mbt-search__btn mbt-search__btn--add"
-          onClick={onAddList}
-          title={t.tooltip_new_list || 'New custom list'}
-        >
-          <PlusSquare size={13} strokeWidth={2.5} />
-          <span>{t.btn_new || 'New'}</span>
-        </button>
-
-        <button
-          className="mbt-search__btn mbt-search__btn--stop"
-          onClick={onCancel}
-          title={t.tooltip_stop_animation || 'Stop animation'}
-        >
-          <Square size={12} fill="currentColor" />
-          <span>{t.btn_stop || 'Stop'}</span>
-        </button>
       </div>
     </div>
   )

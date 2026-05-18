@@ -10,18 +10,12 @@ let _enabled = false
 export function setDebugEnabled(enabled: boolean) {
   _enabled = enabled
   if (_enabled) {
-    console.log('%c[MBT NUI] Debug mode enabled', 'color: #00fb8a; font-weight: bold')
+    console.log('%c[MBT NUI] Debug mode enabled', 'color: #00e676; font-weight: bold')
   }
 }
 
 /** Log a debug message (only when MBT.Debug = true) */
 export function mbtDebug(message: string, ...args: unknown[]) {
   if (!_enabled) return
-  console.log(`%c[MBT NUI]%c ${message}`, 'color: #00fb8a; font-weight: bold', 'color: inherit', ...args)
-}
-
-/** Log a debug warning (only when MBT.Debug = true) */
-export function mbtDebugWarn(message: string, ...args: unknown[]) {
-  if (!_enabled) return
-  console.warn(`[MBT NUI] ${message}`, ...args)
+  console.log(`%c[MBT NUI]%c ${message}`, 'color: #00e676; font-weight: bold', 'color: inherit', ...args)
 }

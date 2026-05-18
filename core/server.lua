@@ -374,7 +374,7 @@ local function DetectFramework()
     end
 
     detectedFramework = 'standalone'
-    print('^3[mbt_emote_menu] Job Permissions: standalone mode (no framework detected)^0')
+    Utils.MbtDebugger('Job Permissions: standalone mode (no framework detected)')
     return 'standalone'
 end
 

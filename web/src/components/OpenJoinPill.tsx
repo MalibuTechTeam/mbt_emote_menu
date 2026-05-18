@@ -74,9 +74,9 @@ export function OpenJoinPill({ visible, emoteLabel, joinKey, position, layout = 
       aria-live="polite"
       className={`mbt-openjoin layout-${layout} pos-${position} ${stageClass}`}
     >
-      <Users size={12} className="mbt-openjoin__icon" aria-hidden="true" />
+      <Users size={13} className="mbt-openjoin__icon" aria-hidden="true" />
       <span className="mbt-openjoin__text">
-        {(t.openjoin_label || 'Join') + ': ' + emoteLabel}
+        <b>{t.openjoin_label || 'Join'}</b>: {emoteLabel}
       </span>
       <kbd className="mbt-openjoin__key" aria-label={`Press ${joinKey} to join`}>{joinKey}</kbd>
     </div>

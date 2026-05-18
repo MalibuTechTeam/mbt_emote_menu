@@ -71,15 +71,6 @@ export interface SharedRequest {
   fromId: number
 }
 
-export interface PlayerState {
-  playing: boolean
-  crouched: boolean
-  prone: boolean
-  pointing: boolean
-  handsUp: boolean
-  walkstyle: string | null
-}
-
 /** Map of emote name → list of allowed job names */
 export type JobPermissions = Record<string, string[]>
 
@@ -87,6 +78,10 @@ export type JobPermissions = Record<string, string[]>
 export interface CustomList {
   id: string
   name: string
-  color: string
+  /** Legacy: colour-swatch lists saved before v7. Kept optional so old
+   *  KVP-persisted lists still load; new lists use `icon` instead. */
+  color?: string
+  /** Lucide icon key (see LIST_ICONS registry) chosen for the list. */
+  icon?: string
   emotes: string[] // emote names
 }
