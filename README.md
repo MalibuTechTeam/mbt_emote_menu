@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src=".github/release-assets/v1.4.0-cinematic.png" alt="MBT Emote Menu — Cinematic Layout" />
+   <img src="https://r2.fivemanage.com/dPa5OqQoEubnwFkRaIgUq/ScreenShot/thumb_mbt_rpemotes.png" alt="FiveM Ready" />
 </p>
 
 **mbt_emote_menu** is a premium NUI overlay that completely replaces the default rpemotes-reborn menu with a modern, responsive, and feature-rich interface built with React + TypeScript. Designed for serious RP servers that demand a polished player experience.
@@ -80,7 +80,7 @@
 - **Job-locked emotes** — restrict specific emotes to certain jobs (police, mechanic, medic, etc.)
 - **Banned emotes blacklist** — server owners can blocklist specific emote names server-side; both the catalog and the social broadcast layer filter them out
 - **Per-source rate limiting** — every NetEvent the menu accepts is throttled per server ID (catalog request, job lookup, ecosystem status, social broadcast). Prevents a malicious or buggy client from flooding the server
-- **Anti-spam cooldown** — client-side cooldown between back-to-back emote plays (`MBT.AntiSpam.CooldownMs`, default 250ms), with a separate cooldown on social broadcasts (default 5s per source)
+- **Anti-spam cooldown** — client-side cooldown between back-to-back emote plays (`MBT.AntiSpam.CooldownMs`, default 250ms), with a separate cooldown on social broadcasts (default 3s per source)
 - **Large-server safety** — Open Join announcements cap at the N closest recipients (`MBT.OpenJoin.MaxRecipients`, default 30) so a 1000-player server doesn't fan-out into a network storm at busy zones
 - **Anti-spoofing** — server validates the initiator's replicated `mbtCurrentEmote` state bag against the announced emote before relaying, blocking clients that try to advertise an emote they aren't actually playing
 - **Multi-framework support** — auto-detects ESX, QBox, QBCore, or standalone
@@ -154,13 +154,18 @@ MBT.Menu = {
 
 ```lua
 MBT.Features = {
-    Favorites    = true,
-    RecentEmotes = true,
-    MaxRecent    = 12,
-    QuickBind    = true,
-    SharedPopup  = true,
-    PreviewPed   = true,
-    EmoteWheel   = true,
+    Favorites      = true,
+    RecentEmotes   = true,
+    MaxRecent      = 12,
+    QuickBind      = true,
+    SharedPopup    = true,
+    PreviewPed     = true,
+    EmoteWheel     = true,
+    EmotePlacement = true,    -- "Place in world" button (needs rpemotes-reborn placement export)
+    OpenJoin       = true,    -- anonymous proximity group emotes
+    WhatsThat      = false,   -- peek-and-copy bubble above nearby emoting players (opt-in)
+    AdultEmotes    = false,   -- include 18+ emotes in the catalog
+    AbusableEmotes = false,   -- include movement-exploit walk styles
 }
 ```
 
@@ -168,9 +173,20 @@ MBT.Features = {
 
 ```lua
 MBT.EmoteWheel = {
-    Key       = 'H',   -- Hold to open
+    Key       = 'K',   -- Hold to open
     Slots     = 8,     -- Max 8 slots
     RemoveKey = 'X',   -- Remove emote from current slot while wheel is open
+}
+```
+
+### Trending
+
+```lua
+MBT.Trending = {
+    Enabled             = true,  -- Server-wide "Trending this week" hero card
+    WindowDays          = 7,     -- Rolling window length, in days
+    MinPlays            = 10,    -- Minimum window score for an emote to qualify
+    SaveIntervalMinutes = 10,    -- How often counts are flushed to KVP
 }
 ```
 
@@ -232,9 +248,9 @@ The notification function in `config.lua` supports presets for **ox_lib**, **ESX
 | Key | Action |
 |---|---|
 | `F4` | Open / close emote menu |
-| `H` (hold) | Open emote wheel |
-| `Mouse Wheel` | Scroll wheel slots (while holding H) |
-| `X` | Remove emote from wheel slot (while holding H) |
+| `K` (hold) | Open emote wheel |
+| `Mouse Wheel` | Scroll wheel slots (while holding K) |
+| `X` | Remove emote from wheel slot (while holding K) |
 | `NUM1` — `NUM6` | Play quick-bound emote |
 | `Right Click` | Open quick bind / wheel slot drawer on a card |
 | `Arrow Keys` | Navigate emote list |
