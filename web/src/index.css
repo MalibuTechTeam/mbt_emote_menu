@@ -1084,11 +1084,25 @@ body {
   gap: 7px;
 }
 
-.mbt-card__category-text {
+/* Raw rpemotes emote name — the chat-command argument. It IS the card's
+   sub-line (replaces the redundant category word — category is already
+   read from the tinted disc + the inline tag). Mono so players can read
+   / type it directly; ellipsises if a prop name runs long. */
+.mbt-card__cmd {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-family: var(--mbt-font-mono);
+  font-size: 10px;
+  color: var(--mbt-text-lo);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
+  transition: color 0.16s;
+}
+
+.mbt-card:hover .mbt-card__cmd,
+.mbt-card--focused .mbt-card__cmd {
+  color: var(--mbt-text-mid);
 }
 
 .mbt-card:hover .mbt-card__category,
@@ -2703,42 +2717,69 @@ body {
   color: var(--mbt-accent);
 }
 
-/* Active Walk/Expression Banner */
+/* ── Active Walk / Expression banner — v7. A slim status row above the
+   grid: leading accent dot, tracked label, the active value in accent,
+   reset on the right. Flush to the menu inset (no own horizontal
+   margin) so it lines up with the cards in both layouts. */
 .mbt-active-banner {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 16px;
-  background: var(--mbt-accent-soft);
-  font-size: 11px;
+  gap: 9px;
+  margin: 2px 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--mbt-radius-sm);
+  background: rgba(var(--mbt-accent-rgb), 0.07);
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.2);
+  font-size: 10px;
+  animation: mbt-fade-in 0.16s ease;
+}
+
+/* leading accent dot — signals "a style is active" */
+.mbt-active-banner::before {
+  content: '';
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mbt-accent);
+  box-shadow: 0 0 8px rgba(var(--mbt-accent-rgb), 0.55);
 }
 
 .mbt-active-banner__label {
-  color: var(--mbt-subtext);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-weight: 700;
+  color: var(--mbt-text-lo);
 }
 
 .mbt-active-banner__value {
   color: var(--mbt-accent);
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.2px;
   text-transform: capitalize;
 }
 
 .mbt-active-banner__reset {
   margin-left: auto;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--mbt-border);
-  color: var(--mbt-text);
-  font-size: 10px;
-  padding: 2px 10px;
-  border-radius: 4px;
+  height: 22px;
+  padding: 0 10px;
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--mbt-text-mid);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--mbt-edge);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.16s, background 0.16s, border-color 0.16s;
 }
 
 .mbt-active-banner__reset:hover {
-  background: var(--mbt-accent);
-  color: #fff;
-  border-color: var(--mbt-accent);
+  color: var(--mbt-text-hi);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--mbt-edge-hi);
 }
 
 /* ── List Creator ──────────────────────────────────────────── */
@@ -3052,12 +3093,10 @@ body {
   pointer-events: all;
   background: linear-gradient(to left,
     #060A09 0%,
-    rgba(6, 10, 9, 0.985) 16%,
-    rgba(8, 13, 12, 0.92) 30%,
-    rgba(8, 13, 12, 0.62) 48%,
-    rgba(8, 13, 12, 0.28) 66%,
-    rgba(8, 13, 12, 0.08) 80%,
-    transparent 92%) !important;
+    rgba(6, 10, 9, 0.97) 23%,
+    rgba(8, 13, 12, 0.32) 35%,
+    rgba(8, 13, 12, 0.08) 46%,
+    transparent 56%) !important;
   padding-right: 0;
 }
 
@@ -3065,12 +3104,10 @@ body {
   pointer-events: all;
   background: linear-gradient(to right,
     #060A09 0%,
-    rgba(6, 10, 9, 0.985) 16%,
-    rgba(8, 13, 12, 0.92) 30%,
-    rgba(8, 13, 12, 0.62) 48%,
-    rgba(8, 13, 12, 0.28) 66%,
-    rgba(8, 13, 12, 0.08) 80%,
-    transparent 92%) !important;
+    rgba(6, 10, 9, 0.97) 23%,
+    rgba(8, 13, 12, 0.32) 35%,
+    rgba(8, 13, 12, 0.08) 46%,
+    transparent 56%) !important;
   padding-left: 0;
 }
 
@@ -3243,9 +3280,9 @@ body {
   background: radial-gradient(
     ellipse 70% 70% at center,
     transparent 0%,
-    transparent 42%,
-    rgba(0, 0, 0, 0.42) 82%,
-    rgba(0, 0, 0, 0.78) 100%
+    transparent 46%,
+    rgba(0, 0, 0, 0.30) 82%,
+    rgba(0, 0, 0, 0.58) 100%
   );
   opacity: 0;
   transition: opacity 500ms var(--mbt-ease-out);

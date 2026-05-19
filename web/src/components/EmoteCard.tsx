@@ -154,7 +154,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
           <span className="mbt-card__text">
             <span className="mbt-card__label">{emote.label}</span>
             <span className="mbt-card__category mbt-card__sub">
-              <span className="mbt-card__category-text">{emote.category}</span>
+              <span className="mbt-card__cmd" title={emote.name}>{emote.name}</span>
               {categoryBadge()}
               {hasVariants && (
                 <span
