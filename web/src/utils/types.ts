@@ -18,6 +18,10 @@ export interface Emote {
   prop?: string; propBone?: number; propPlace?: number[]
   prop2?: string; prop2Bone?: number; prop2Place?: number[]
   playDuration?: number
+  /** MBT emoji reaction (Emojis category) — renders a glyph above the head
+   *  instead of an rpemotes animation. `emoji` holds the actual character. */
+  isEmoji?: boolean
+  emoji?: string
 }
 
 export interface CategoryConfig {

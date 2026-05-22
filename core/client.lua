@@ -48,6 +48,16 @@ function Core.PlayEmoteRaw(emoteName, emoteType, variation)
     local safeType = SanitizeName(emoteType)
     variation = tonumber(variation) or 1
 
+    -- Emoji reactions are MBT's own feature, not an rpemotes animation —
+    -- route them straight to the emoji module (floats a glyph overhead).
+    if safeType == 'Emojis' then
+        if MBT.Emoji and MBT.Emoji.Enabled and Emoji and Emoji.Play then
+            Emoji.Play(safeName)
+            Core.IncrementPlayCount(safeName)
+        end
+        return
+    end
+
     if safeType == 'Shared' then
         ExecuteCommand('nearby ' .. safeName)
     elseif safeType == 'Expressions' then

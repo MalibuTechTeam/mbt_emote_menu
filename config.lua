@@ -163,6 +163,45 @@ MBT.Trending = {
     SaveIntervalMinutes = 10,    -- how often the in-memory state is flushed to KVP
 }
 
+-- Emoji Reactions: floats an emoji glyph above the player's head, visible to
+-- nearby players. Shown in the menu's "Emojis" category and (optionally) via
+-- chat commands like /smile, /cry, /laught. Fully self-contained — no extra
+-- resource required (this replaces the standalone mbt_emoji resource).
+MBT.Emoji = {
+    Enabled       = true,   -- master toggle for the whole emoji feature
+    Commands      = true,   -- register chat commands (/smile, /cry, ...) for each emoji
+    DisplayTimeMs = 5000,   -- how long the emoji floats above the head
+    Scale         = 0.22,   -- size of the floating emoji glyph (lower = smaller)
+    MaxDistance   = 60.0,   -- max distance (m) at which the emoji is drawn for other players
+    ThrottleMs    = 1500,   -- server-side per-player cooldown between emoji broadcasts
+
+    -- The emoji catalog. 'id' is the chat command + internal name, 'char' is
+    -- the rendered glyph, 'label' is the menu card title. Add or remove rows
+    -- freely — both the menu cards and the chat commands follow this list.
+    List = {
+        { id = 'smile',     char = '😀', label = 'Smile' },
+        { id = 'sad',       char = '🙁', label = 'Sad' },
+        { id = 'tear',      char = '😥', label = 'Tear' },
+        { id = 'cry',       char = '😭', label = 'Cry' },
+        { id = 'blush',     char = '😊', label = 'Blush' },
+        { id = 'shy',       char = '😳', label = 'Shy' },
+        { id = 'surprised', char = '😲', label = 'Surprised' },
+        { id = 'sick',      char = '🤢', label = 'Sick' },
+        { id = 'pissedoff', char = '😠', label = 'Pissed Off' },
+        { id = 'anger',     char = '😡', label = 'Anger' },
+        { id = 'laught',    char = '😂', label = 'Laugh' },
+        { id = 'laught2',   char = '🤣', label = 'Laugh Hard' },
+        { id = 'dizzy',     char = '😵', label = 'Dizzy' },
+        { id = 'angel',     char = '😇', label = 'Angel' },
+        { id = 'demon',     char = '😈', label = 'Demon' },
+        { id = 'thumbeup',  char = '👍', label = 'Thumbs Up' },
+        { id = 'thumbdown', char = '👎', label = 'Thumbs Down' },
+        { id = 'vomit',     char = '🤮', label = 'Vomit' },
+        { id = 'tongue',    char = '😜', label = 'Tongue' },
+        { id = 'fear',      char = '😱', label = 'Fear' },
+    },
+}
+
 -------------------------------------------------------------------------------
 -- [ SECTION 4: CATEGORIES ] --
 -------------------------------------------------------------------------------

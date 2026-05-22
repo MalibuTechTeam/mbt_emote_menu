@@ -296,6 +296,20 @@ export const EmoteSilhouette = memo(function EmoteSilhouette({
   size = 20,
   className = '',
 }: EmoteSilhouetteProps) {
+  // Emoji reactions render their actual colour glyph instead of a geometric
+  // figure — the glyph IS the emote's identity, a silhouette would be noise.
+  if (emote.isEmoji && emote.emoji) {
+    return (
+      <span
+        className={`mbt-silhouette mbt-silhouette--emoji ${className}`}
+        style={{ fontSize: size * 0.92 }}
+        aria-hidden="true"
+      >
+        {emote.emoji}
+      </span>
+    )
+  }
+
   const type = getSilhouetteType(emote)
 
   return (

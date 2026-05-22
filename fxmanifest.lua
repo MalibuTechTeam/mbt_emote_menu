@@ -28,6 +28,7 @@ server_scripts {
     'modules/bridges/qbox.lua',
     'modules/openjoin/server.lua',
     'modules/trending/server.lua',
+    'modules/emoji/server.lua',
 }
 
 client_scripts {
@@ -40,6 +41,7 @@ client_scripts {
     'modules/trending/client.lua',
     'modules/whatsthat/client.lua',
     'modules/nearby/client.lua',
+    'modules/emoji/client.lua',
     'core/client.lua',
 }
 

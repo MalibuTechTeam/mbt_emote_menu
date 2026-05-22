@@ -273,6 +273,24 @@ local function LoadAnimationList()
         end
     end
 
+    -- Inject MBT's own emoji reactions into the Emojis category. These don't
+    -- come from rpemotes — they're rendered as a floating glyph above the
+    -- player's head (see modules/emoji). isEmoji/emoji flag them for the
+    -- client play-routing and the NUI card rendering.
+    if MBT.Emoji and MBT.Emoji.Enabled and MBT.Emoji.List then
+        for _, e in ipairs(MBT.Emoji.List) do
+            if type(e) == 'table' and type(e.id) == 'string' and type(e.char) == 'string' then
+                catalog[#catalog + 1] = {
+                    name     = e.id,
+                    label    = e.label or FormatEmoteName(e.id),
+                    category = 'Emojis',
+                    isEmoji  = true,
+                    emoji    = e.char,
+                }
+            end
+        end
+    end
+
     table.sort(catalog, function(a, b)
         return (a.label or ''):lower() < (b.label or ''):lower()
     end)
