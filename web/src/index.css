@@ -3717,6 +3717,90 @@ body {
   letter-spacing: 1px;
 }
 
+/* ── RP Text pills (/me, /do) ────────────────────────────────
+ * Floating roleplay-action pill above a player's head. World-to-screen
+ * x/y come from Lua (modules/rptext) via the rpTextUpdate NUI event,
+ * same projection pattern as the WhatsThat bubble. Multiple pills can be
+ * on screen at once; each is positioned independently. */
+.mbt-rptext {
+  position: fixed;
+  z-index: 8900;
+  left: 0;
+  top: 0;
+  transform: translate3d(
+    calc(var(--mbt-x, 0.5) * 100vw - 50%),
+    calc(var(--mbt-y, 0.5) * 100vh - 100% - 12px),
+    0
+  );
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 360px;
+  padding: 9px 14px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #181c22, #0e1116);
+  border: 1px solid var(--mbt-edge-hi);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  font-family: inherit;
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+  /* 60ms transform smooths the per-frame NUI updates; opacity fades soft. */
+  transition: transform 60ms linear, opacity 200ms ease;
+}
+
+.mbt-rptext--on {
+  opacity: 1;
+}
+
+/* Anchor tail pointing down to the player's head. */
+.mbt-rptext::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  width: 10px;
+  height: 10px;
+  background: #0e1116;
+  border-right: 1px solid var(--mbt-edge-hi);
+  border-bottom: 1px solid var(--mbt-edge-hi);
+  transform: translateX(-50%) rotate(45deg);
+}
+
+/* Channel tag chip — ME / DO. Dark chip with accent-coloured text:
+   restrained, reads as part of the MBT design system rather than a loud
+   solid block. Accent comes from config (MBT.RpText.Channels[].color),
+   set inline by RpTextLayer, with a per-channel CSS fallback below. */
+.mbt-rptext__tag {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 1px;
+  padding: 3px 7px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--mbt-rptext-accent, #7fa8c9);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mbt-rptext__body {
+  color: var(--mbt-text-hi);
+  word-break: break-word;
+}
+
+/* Per-channel accent fallback — used only when a channel has no `color`
+   in config. Tuned to the MBT palette (brand green for /me). */
+.mbt-rptext--me  { --mbt-rptext-accent: #00e676; }
+.mbt-rptext--do  { --mbt-rptext-accent: #7fa8c9; }
+.mbt-rptext--med { --mbt-rptext-accent: #e0654f; }
+
 /* ── Nearby Section ──────────────────────────────────────────
  * Card-style ribbon above the category pills that surfaces shared/duet
  * emotes whenever at least one other player is within proximity. Premium
@@ -4263,6 +4347,7 @@ body {
   .mbt-whatsthat,
   .mbt-whatsthat::before,
   .mbt-whatsthat::after,
+  .mbt-rptext,
   .mbt-tab--just-created,
   .mbt-grid__virtual--filter-changed,
   .mbt-empty__icon-wrap,

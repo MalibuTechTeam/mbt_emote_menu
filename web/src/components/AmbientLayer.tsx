@@ -3,6 +3,7 @@ import { PlacementOverlay } from './PlacementOverlay'
 import { PreviewVignette } from './PreviewVignette'
 import { OpenJoinPill, type OpenJoinPosition } from './OpenJoinPill'
 import { WhatsThatBubble } from './WhatsThatBubble'
+import { RpTextLayer } from './RpTextLayer'
 import { Toast, useToasts, setToastListener } from './Toast'
 
 interface AmbientLayerProps {
@@ -129,6 +130,7 @@ export function AmbientLayer({ layout }: AmbientLayerProps) {
         y={whatsThat.y}
         layout={layout}
       />
+      <RpTextLayer layout={layout} />
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </>
   )

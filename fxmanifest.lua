@@ -29,6 +29,7 @@ server_scripts {
     'modules/openjoin/server.lua',
     'modules/trending/server.lua',
     'modules/emoji/server.lua',
+    'modules/rptext/server.lua',
 }
 
 client_scripts {
@@ -42,6 +43,7 @@ client_scripts {
     'modules/whatsthat/client.lua',
     'modules/nearby/client.lua',
     'modules/emoji/client.lua',
+    'modules/rptext/client.lua',
     'core/client.lua',
 }
 

@@ -202,6 +202,31 @@ MBT.Emoji = {
     },
 }
 
+-- RP Text: /me and /do roleplay commands. Floats a styled pill above the
+-- player's head describing an action, visible to nearby players. Fully
+-- self-contained — no extra resource required (this replaces the standalone
+-- mbt_me resource). This is NOT a menu feature: it's purely the chat commands
+-- plus the floating pill.
+MBT.RpText = {
+    Enabled    = true,   -- master toggle for the RP text feature
+    MaxLength  = 110,    -- max characters per message (clamped server-side)
+    DurationMs = 6500,   -- how long the pill stays visible
+    ThrottleMs = 1000,   -- per-player cooldown between messages
+    HeadOffset = 0.25,   -- metres above the head the pill floats (tune to taste)
+
+    -- Roleplay channels. Each row = one chat command + its pill style.
+    -- 'command' is the chat command name — RENAME it (or remove the row) if
+    -- another resource on your server already owns /me or /do. 'range' is the
+    -- visibility distance in metres. 'label' is the tag shown on the pill.
+    -- 'color' is the tag accent (hex, no '#') — tint it to match your suite.
+    Channels = {
+        { id = 'me', command = 'me', label = 'ME', range = 16.0, color = '00e676' },
+        { id = 'do', command = 'do', label = 'DO', range = 16.0, color = '7fa8c9' },
+        -- Medical RP channel — uncomment to enable /med (wider range):
+        -- { id = 'med', command = 'med', label = 'MED', range = 24.0, color = 'e0654f' },
+    },
+}
+
 -------------------------------------------------------------------------------
 -- [ SECTION 4: CATEGORIES ] --
 -------------------------------------------------------------------------------
