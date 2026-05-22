@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/FiveM-Ready-00e676?style=for-the-badge&logo=fivem&logoColor=white" alt="FiveM Ready" />
   <img src="https://img.shields.io/badge/Framework-ESX%20%7C%20QBox%20%7C%20QBCore%20%7C%20Standalone-blue?style=for-the-badge" alt="Framework" />
-  <img src="https://img.shields.io/badge/Version-1.4.1-informational?style=for-the-badge" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-1.5.0-informational?style=for-the-badge" alt="Version" />
   <img src="https://img.shields.io/badge/Lua-5.4-purple?style=for-the-badge&logo=lua" alt="Lua 5.4" />
   <img src="https://img.shields.io/badge/React-TypeScript-61DAFB?style=for-the-badge&logo=react" alt="React + TS" />
   <img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue?style=for-the-badge" alt="PolyForm Noncommercial 1.0.0" />
@@ -69,6 +69,11 @@
 - **Nearby ribbon** — when at least one player is in proximity, a dedicated ribbon surfaces above the category pills with your most-played shared / duet emotes, ranked by personal play count. One-click to start a duet with the closest player via the Partner Finder
 - **Premium motion language** — entry / exit animations on every social surface (slide + scale-up + accent ring pulse on arrival, snappy 150ms scale-down on exit), tail anchors on the floating bubble, smooth tab transitions via the View Transitions API. Respects `prefers-reduced-motion`
 
+### Roleplay & Expression *(new in 1.5)*
+
+- **Emoji Reactions** — 20 emoji that float above your head for nearby players to see. Browse them as cards in the **Emojis** category, or fire them instantly with chat commands (`/smile`, `/cry`, `/laught`, ...). Fully self-contained — no extra resource required. Size, duration, and visibility distance are tunable via `MBT.Emoji`
+- **RP Text** — `/me` and `/do` commands that float a styled pill above your head describing an action, visible to nearby players. Configurable channels with per-channel command name, range, and color. Server-side length clamp, sanitization, and throttle. Fully toggleable via `MBT.RpText.Enabled`
+
 ### Reliability
 
 - **Auto-close on death** — the menu closes itself if the player ped dies while it is open, avoiding stuck UI during the respawn / death camera
@@ -83,6 +88,7 @@
 - **Anti-spam cooldown** — client-side cooldown between back-to-back emote plays (`MBT.AntiSpam.CooldownMs`, default 250ms), with a separate cooldown on social broadcasts (default 3s per source)
 - **Large-server safety** — Open Join announcements cap at the N closest recipients (`MBT.OpenJoin.MaxRecipients`, default 30) so a 1000-player server doesn't fan-out into a network storm at busy zones
 - **Anti-spoofing** — server validates the initiator's replicated `mbtCurrentEmote` state bag against the announced emote before relaying, blocking clients that try to advertise an emote they aren't actually playing
+- **Hardened roleplay text** — `/me` and `/do` messages are sanitized and length-clamped server-side, then rendered as escaped text (never raw HTML), so a player cannot inject markup onto other players' screens. Emoji reactions resolve their glyph from a server-side whitelist; both broadcasts are distance-filtered and per-player throttled
 - **Multi-framework support** — auto-detects ESX, QBox, QBCore, or standalone
 
 ### Ecosystem
@@ -187,6 +193,36 @@ MBT.Trending = {
     WindowDays          = 7,     -- Rolling window length, in days
     MinPlays            = 10,    -- Minimum window score for an emote to qualify
     SaveIntervalMinutes = 10,    -- How often counts are flushed to KVP
+}
+```
+
+### Emoji Reactions
+
+```lua
+MBT.Emoji = {
+    Enabled       = true,   -- Master toggle
+    Commands      = true,   -- Register /smile, /cry, ... chat commands
+    DisplayTimeMs = 5000,   -- How long the emoji stays up
+    Scale         = 0.22,   -- Glyph size (lower = smaller)
+    MaxDistance   = 60.0,   -- Max distance (m) at which others see it
+    ThrottleMs    = 1500,   -- Per-player cooldown between emojis
+    List          = { --[[ 20 emoji: id / char / label — add or remove freely ]] },
+}
+```
+
+### RP Text
+
+```lua
+MBT.RpText = {
+    Enabled    = true,   -- Master toggle
+    MaxLength  = 110,    -- Max characters per message
+    DurationMs = 6500,   -- How long the pill stays up
+    ThrottleMs = 1000,   -- Per-player cooldown between messages
+    HeadOffset = 0.25,   -- Pill height above the head, in meters
+    Channels = {         -- Rename a command to avoid clashing with another /me system
+        { id = 'me', command = 'me', label = 'ME', range = 16.0, color = '00e676' },
+        { id = 'do', command = 'do', label = 'DO', range = 16.0, color = '7fa8c9' },
+    },
 }
 ```
 
