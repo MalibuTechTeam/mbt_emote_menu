@@ -41,6 +41,19 @@ export function AnimatedNumber({
     const to = value
     if (from === to) return undefined
 
+    // Honour reduced-motion — snap straight to the value, no count-up.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplay(to)
+      return undefined
+    }
+
+    // Trivial deltas (±2) snap instantly — a 400ms count-up on every
+    // single-result-count tick during search reads as noise, not feedback.
+    if (Math.abs(to - from) <= 2) {
+      setDisplay(to)
+      return undefined
+    }
+
     const start = performance.now()
     let raf = 0
     const tick = (now: number) => {

@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import { useRef, type ReactNode, type CSSProperties } from 'react'
 import { useDrag, useDrop } from 'react-dnd'
 import type { Emote } from '../utils/types'
 
@@ -28,6 +28,7 @@ interface FavoriteDraggableProps {
   enabled: boolean
   onReorder: (fromIdx: number, toIdx: number) => void
   className?: string
+  style?: CSSProperties
   children: ReactNode
 }
 
@@ -51,6 +52,7 @@ export function FavoriteDraggable({
   enabled,
   onReorder,
   className = '',
+  style,
   children,
 }: FavoriteDraggableProps) {
   const ref = useRef<HTMLDivElement>(null)
@@ -85,6 +87,7 @@ export function FavoriteDraggable({
   return (
     <div
       ref={ref}
+      style={style}
       className={
         className +
         (isOver ? ' mbt-card-wrap--dragover' : '') +

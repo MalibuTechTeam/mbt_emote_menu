@@ -11,19 +11,28 @@ interface SharedEmotePopupProps {
 
 export function SharedEmotePopup({ request, onDismiss }: SharedEmotePopupProps) {
   const [visible, setVisible] = useState(true)
+  const [exiting, setExiting] = useState(false)
   const t = useLocale()
+
+  // Play the exit animation, then actually unmount. ~160ms matches the
+  // mbt-popup-out keyframe (Toast.tsx's ToastItem uses the same pattern).
+  const close = useCallback(() => {
+    setExiting(true)
+    setTimeout(() => {
+      setVisible(false)
+      onDismiss()
+    }, 160)
+  }, [onDismiss])
 
   const handleAccept = useCallback(async () => {
     await useNui('acceptSharedEmote', { emoteName: request.emoteName })
-    setVisible(false)
-    onDismiss()
-  }, [request.emoteName, onDismiss])
+    close()
+  }, [request.emoteName, close])
 
   const handleDecline = useCallback(async () => {
     await useNui('declineSharedEmote', {})
-    setVisible(false)
-    onDismiss()
-  }, [onDismiss])
+    close()
+  }, [close])
 
   // Auto-decline after 10 seconds (matches rpemotes timer)
   useEffect(() => {
@@ -36,7 +45,7 @@ export function SharedEmotePopup({ request, onDismiss }: SharedEmotePopupProps) 
   if (!visible) return null
 
   return (
-    <div className="mbt-shared-popup">
+    <div className={`mbt-shared-popup ${exiting ? 'mbt-shared-popup--closing' : ''}`}>
       <div className="mbt-shared-popup__header">
         <Users className="mbt-shared-popup__icon" size={16} />
         <span className="mbt-shared-popup__title">

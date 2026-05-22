@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════════
-   MBT rpemotes UI — Premium Glassmorphism Theme
+   MBT rpemotes UI — Premium Cinematic Theme
    by Malibù Tech Team
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -218,7 +218,7 @@ body {
 }
 
 .mbt-menu-exit {
-  animation: mbt-menu-exit 0.2s ease-in forwards;
+  animation: mbt-menu-exit 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 @keyframes mbt-menu-exit {
@@ -288,7 +288,7 @@ body {
   color: var(--mbt-subtext);
   font-size: 14px;
   cursor: pointer;
-  transition: all var(--mbt-transition);
+  transition: color var(--mbt-transition), background var(--mbt-transition), border-color var(--mbt-transition);
 }
 
 .mbt-header__new:hover,
@@ -440,6 +440,9 @@ body {
 /* underline on the active lens */
 .mbt-tab--active::after {
   content: '';
+  /* Named so the View Transition in handleTabChange morphs the underline
+     between tabs — it glides instead of teleporting. */
+  view-transition-name: mbt-tab-underline;
   position: absolute;
   left: 0;
   right: 0;
@@ -696,6 +699,16 @@ body {
   text-overflow: ellipsis;
   cursor: pointer;
   transition: background 0.16s, border-color 0.16s, color 0.16s;
+  /* Staggered entrance. The 120ms base delay lets the menu's own slide-in
+     settle first, so the cascade plays on a (near-)stationary panel and
+     is actually visible instead of masked by the bigger motion. */
+  animation: mbt-cat-pill-in 0.34s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(120ms + var(--i, 0) * 38ms);
+}
+
+@keyframes mbt-cat-pill-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 /* the category colour dot */
@@ -813,6 +826,19 @@ body {
   transition: transform 0.2s ease, opacity 0.18s ease;
 }
 
+/* One-shot staggered card entrance. Gated by `.mbt-grid--entering` (set
+   for ~850ms after the menu opens) so cards cascade in on open but never
+   replay as they mount/unmount during scroll. */
+.mbt-grid--entering .mbt-card-wrap {
+  animation: mbt-card-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+
+@keyframes mbt-card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .mbt-card-wrap--dragover {
   transform: translateY(-4px);
   z-index: 5;
@@ -849,6 +875,22 @@ body {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 20px 46px rgba(0, 0, 0, 0.52);
+  transition: transform 0.16s var(--mbt-ease-out), box-shadow 0.18s;
+  /* entrance runs once on mount — no `forwards` fill, so the resting
+     state is the CSS rule and the :hover transform isn't fought */
+  animation: mbt-hero-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mbt-hero:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 26px 54px rgba(0, 0, 0, 0.58);
+}
+
+@keyframes mbt-hero-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .mbt-hero__disc {
@@ -982,7 +1024,6 @@ body {
   -webkit-user-drag: element;
   pointer-events: auto;
   user-select: none;
-  will-change: transform;
 }
 
 /* ── Category palette → per-card disc-glyph tint (un-prefixed = shared base) */
@@ -1017,7 +1058,8 @@ body {
 }
 
 .mbt-card:active {
-  transform: translateY(0);
+  transform: scale(0.988);
+  transition: transform 0.1s ease;
 }
 
 .mbt-card__name {
@@ -1190,6 +1232,16 @@ body {
   color: var(--mbt-card-cat);
 }
 
+/* Emoji reactions render the actual glyph — a <span>, not the <svg>.
+   Flex-centre it in the disc and let the colour emoji font carry its own
+   colour (no currentColor tint). */
+.mbt-silhouette--emoji {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 .mbt-card:hover .mbt-silhouette {
   animation: mbt-icon-pop 0.42s var(--mbt-ease-out);
 }
@@ -1337,6 +1389,19 @@ body {
   }
 }
 
+/* Exit: fast fade + slight drop. Shorter than the enter so dismissal
+   reads as decisive. */
+.mbt-shared-popup--closing {
+  animation: mbt-popup-out 0.15s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes mbt-popup-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
 .mbt-shared-popup__header {
   display: flex;
   align-items: flex-start;
@@ -1419,15 +1484,18 @@ body {
 }
 
 .mbt-shared-popup__timer-bar {
+  width: 100%;
   height: 100%;
+  transform-origin: left;
   background: var(--mbt-accent);
   box-shadow: 0 0 8px rgba(var(--mbt-accent-rgb), 0.5);
   animation: mbt-timer-shrink 10s linear forwards;
 }
 
+/* scaleX (compositor-only) instead of animating width — no 10s of reflow */
 @keyframes mbt-timer-shrink {
-  from { width: 100%; }
-  to { width: 0%; }
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -1854,7 +1922,7 @@ body {
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--mbt-transition);
+  transition: color var(--mbt-transition), background var(--mbt-transition), border-color var(--mbt-transition);
   --list-color: var(--mbt-accent);
 }
 
@@ -2169,6 +2237,25 @@ body {
   to { opacity: 1; }
 }
 
+/* Exit: fast fade-out + slight settle. Kept shorter than the enter so
+   dismissal feels decisive. The .mbt-modal child rides the overlay's
+   opacity and adds its own scale-down. */
+.mbt-modal-overlay--closing {
+  animation: mbt-modal-out 0.15s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.mbt-modal-overlay--closing .mbt-modal {
+  animation: mbt-modal-child-out 0.15s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes mbt-modal-out {
+  to { opacity: 0; }
+}
+
+@keyframes mbt-modal-child-out {
+  to { opacity: 0; transform: translateY(6px) scale(0.97); }
+}
+
 .mbt-modal {
   width: calc(100% - 32px);
   background: linear-gradient(180deg, var(--mbt-surface-3), var(--mbt-surface-1));
@@ -2268,7 +2355,7 @@ body {
   font-family: inherit;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all var(--mbt-transition);
+  transition: color var(--mbt-transition), background var(--mbt-transition), border-color var(--mbt-transition), transform var(--mbt-transition);
 }
 
 .mbt-modal__btn--cancel {
@@ -3235,6 +3322,8 @@ body {
 /* ?? Flying Emote Particle ?? */
 .mbt-flying-emote {
   position: fixed;
+  left: var(--start-x);
+  top: var(--start-y);
   z-index: 9999;
   background: var(--mbt-accent);
   color: #000;
@@ -3249,10 +3338,10 @@ body {
   animation: mbt-fly-particle 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
+/* Travel via transform (compositor-only). The element is pinned at the
+   start point; the keyframe translates by the end-minus-start delta. */
 @keyframes mbt-fly-particle {
   0% {
-    left: var(--start-x);
-    top: var(--start-y);
     transform: translate(-50%, -50%) scale(1);
     opacity: 1;
   }
@@ -3260,9 +3349,12 @@ body {
     transform: translate(-50%, -50%) scale(1.2) rotate(5deg);
   }
   100% {
-    left: var(--end-x);
-    top: var(--end-y);
-    transform: translate(-50%, -50%) scale(0.3) rotate(-15deg);
+    transform:
+      translate(
+        calc(-50% + (var(--end-x) - var(--start-x))),
+        calc(-50% + (var(--end-y) - var(--start-y)))
+      )
+      scale(0.3) rotate(-15deg);
     opacity: 0;
   }
 }
@@ -3970,18 +4062,18 @@ body {
  * container via reflow-restart trick so the keyframe replays on every
  * filter change. NO motion wrapper — the .mbt-grid ref stays stable.
  *
- * Animates only opacity + filter to leave the inline `transform` (used by
- * the virtual scroller for the slice offset) untouched. We can't touch
- * transform without re-implementing the virtual offset. Filter brightness
- * gives the morph a subtle "settle in" feel beyond pure opacity.
+ * Animates only opacity to leave the inline `transform` (used by the
+ * virtual scroller for the slice offset) untouched. We can't touch
+ * transform without re-implementing the virtual offset. `filter` is
+ * paint-bound in CEF, so the morph is a pure opacity fade.
  */
 .mbt-grid__virtual--filter-changed {
   animation: mbt-grid-filter-fade 300ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes mbt-grid-filter-fade {
-  from { opacity: 0;   filter: brightness(1.15); }
-  to   { opacity: 1;   filter: brightness(1);    }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 /* ── Tab content View Transitions ────────────────────────────
@@ -4154,6 +4246,15 @@ body {
  * the slide/scale/pulse drama.
  */
 @media (prefers-reduced-motion: reduce) {
+  /* Broad fallback — near-instant motion everywhere. The targeted rules
+     below have higher specificity and keep a short opacity fade for the
+     few surfaces that must stay legible appearing / disappearing. */
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
   .mbt-nearby,
   .mbt-nearby__chip,
   .mbt-nearby__more,
@@ -4181,7 +4282,9 @@ body {
 
   /* View Transitions snapshot animations off. */
   ::view-transition-old(mbt-grid-content),
-  ::view-transition-new(mbt-grid-content) {
+  ::view-transition-new(mbt-grid-content),
+  ::view-transition-old(mbt-tab-underline),
+  ::view-transition-new(mbt-tab-underline) {
     animation: none !important;
   }
 }

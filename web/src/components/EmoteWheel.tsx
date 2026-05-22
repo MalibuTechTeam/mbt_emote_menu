@@ -2,6 +2,7 @@ import { memo, useState, useEffect, useCallback } from 'react'
 import { Plus } from 'lucide-react'
 import { EmoteSilhouette } from './EmoteSilhouette'
 import { useLocale } from '../utils/locale'
+import { categorySlug } from '../utils/categorySlug'
 import type { Emote } from '../utils/types'
 
 interface EmoteWheelProps {
@@ -46,7 +47,7 @@ export const EmoteWheel = memo(function EmoteWheel({
   // Category-tinted disc — same slug derivation EmoteCard uses, so the
   // silhouette picks up the matching --mbt-card-cat colour.
   const catClass = currentEmote
-    ? `mbt-card--cat-${currentEmote.category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+    ? `mbt-card--cat-${categorySlug(currentEmote.category)}`
     : ''
 
   return (

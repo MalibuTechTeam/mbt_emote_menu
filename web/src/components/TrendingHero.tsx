@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { Flame, Play } from 'lucide-react'
 import { EmoteSilhouette } from './EmoteSilhouette'
 import { useLocale, tFormat } from '../utils/locale'
+import { categorySlug } from '../utils/categorySlug'
 import type { Emote } from '../utils/types'
 
 // Category → RGB triplet. Mirrors EmoteMenu's pillCatVar / CATEGORY_COLOR_VAR
@@ -23,8 +24,7 @@ const CATEGORY_COLOR_VAR: Record<string, string> = {
 }
 
 function catVar(type: string): string {
-  const slug = type.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-  return CATEGORY_COLOR_VAR[slug] || '154, 160, 166'
+  return CATEGORY_COLOR_VAR[categorySlug(type)] || '154, 160, 166'
 }
 
 export interface TrendingEmote {

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useDeferredValue, useEffect, useRef } from "react";
 import {
   X,
   Square,
@@ -103,6 +103,17 @@ type Tab = "all" | "favorites" | "recent" | "top" | "list";
 type Filter = "all" | "props" | "shared";
 type SortOrder = "az" | "za" | "cat";
 
+/** Duration of the close animation (ms) -- must match CSS mbt-menu-exit */
+const CLOSE_ANIM_MS = 200;
+
+// Horizontal ordering for the tab directional slide via View Transitions API.
+// Custom-list pseudo-tabs all sit to the right of "top" — selecting any
+// list reads as "going further right". The direction is set on the root
+// as `--vt-direction` so the CSS keyframes can pick it up.
+const TAB_ORDER: Record<Tab, number> = {
+  all: 0, favorites: 1, recent: 2, top: 3, list: 4,
+};
+
 export function EmoteMenu({
   catalog,
   config,
@@ -165,6 +176,10 @@ export function EmoteMenu({
   const [importExportMode, setImportExportMode] = useState<
     "hidden" | "export" | "import"
   >("hidden");
+  // Exit-animation flags — surface stays mounted for ~160ms after the
+  // close handler fires so the fade-out keyframe can run (Toast pattern).
+  const [importExportClosing, setImportExportClosing] = useState(false);
+  const [listCreatorClosing, setListCreatorClosing] = useState(false);
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState("");
   const [previewingEmote, setPreviewingEmote] = useState<string | null>(null);
@@ -194,6 +209,23 @@ export function EmoteMenu({
   const gridRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  // Staggered card entrance. `--entering` sits on the grid for ~850ms
+  // after a trigger, so cards cascade in on menu-open and on category /
+  // filter change, but never re-animate as they mount during scroll.
+  const [gridEntering, setGridEntering] = useState(true);
+  const gridEnterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const triggerGridEntrance = useCallback(() => {
+    setGridEntering(true);
+    if (gridEnterTimerRef.current) clearTimeout(gridEnterTimerRef.current);
+    gridEnterTimerRef.current = setTimeout(() => setGridEntering(false), 850);
+  }, []);
+  useEffect(() => {
+    triggerGridEntrance();
+    return () => {
+      if (gridEnterTimerRef.current) clearTimeout(gridEnterTimerRef.current);
+    };
+  }, [triggerGridEntrance]);
+
   // Draggable menu position (persisted in localStorage)
   const [menuPosition, setMenuPosition] = useState<{
     x: number;
@@ -222,9 +254,6 @@ export function EmoteMenu({
       }
     }
   }, []);
-
-  /** Duration of the close animation (ms) -- must match CSS mbt-menu-exit */
-  const CLOSE_ANIM_MS = 200;
 
   const handleClose = useCallback(() => {
     if (closing) return;
@@ -286,8 +315,10 @@ export function EmoteMenu({
         return prev;
       });
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    // Passive: the drag handlers never call preventDefault, so flag them
+    // so CEF can fast-path them off the main-thread scroll/gesture chain.
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
+    window.addEventListener("mouseup", handleMouseUp, { passive: true });
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
@@ -349,6 +380,9 @@ export function EmoteMenu({
   // the menu, wheel and ambient overlays all share one accent.
 
   // ── Filter + sort pipeline ──
+  // Search is deferred: a keystroke updates the <input> instantly while the
+  // ~1800-item filter recomputes at lower priority, so typing never janks.
+  const deferredSearch = useDeferredValue(search);
   const filteredEmotes = useMemo(() => {
     let emotes: Emote[];
 
@@ -383,22 +417,23 @@ export function EmoteMenu({
       emotes = catalog;
     }
 
-    if (activeCategory) {
-      emotes = emotes.filter((e) => e.category === activeCategory);
-    }
-
-    if (activeFilter === "props") {
-      emotes = emotes.filter((e) => e.hasProp);
-    } else if (activeFilter === "shared") {
-      emotes = emotes.filter((e) => e.isShared);
-    }
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      emotes = emotes.filter(
-        (e) =>
-          e.name.toLowerCase().includes(q) || e.label.toLowerCase().includes(q),
-      );
+    // Category, prop/shared filter and search collapsed into one pass —
+    // one array allocation instead of three.
+    const q = deferredSearch.trim().toLowerCase();
+    if (activeCategory || activeFilter !== "all" || q) {
+      emotes = emotes.filter((e) => {
+        if (activeCategory && e.category !== activeCategory) return false;
+        if (activeFilter === "props" && !e.hasProp) return false;
+        if (activeFilter === "shared" && !e.isShared) return false;
+        if (
+          q &&
+          !e.name.toLowerCase().includes(q) &&
+          !e.label.toLowerCase().includes(q)
+        ) {
+          return false;
+        }
+        return true;
+      });
     }
 
     if (activeTab !== "favorites" && activeTab !== "top") {
@@ -425,7 +460,7 @@ export function EmoteMenu({
     activeTab,
     activeCategory,
     activeFilter,
-    search,
+    deferredSearch,
     sortOrder,
     customLists,
     activeListId,
@@ -447,6 +482,21 @@ export function EmoteMenu({
     overscan: 4,
   });
 
+  // Stable merged ref for the grid element — feeds both gridRef (scroll
+  // restore / focus scroll) and the virtual scroller's containerRef. An
+  // inline arrow here would detach/reattach the ref on every render.
+  const setGridRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      (gridRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+      (virtualRef as React.MutableRefObject<HTMLDivElement | null>).current =
+        el;
+    },
+    // gridRef is a stable useRef; virtualRef is a stable ref from
+    // useVirtualGrid — neither identity changes across renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   useEffect(() => {
     setFocusedIndex(-1);
   }, [search, activeTab, activeCategory, activeFilter, sortOrder]);
@@ -461,8 +511,28 @@ export function EmoteMenu({
   }, [focusedIndex]);
 
   // ── Keyboard navigation (+ ESC) ──
+  // The handler needs `filteredEmotes`, `focusedIndex`, `importExportMode`,
+  // `handleClose` and `handleEmotePlay` — all of which change on every search
+  // keystroke. We keep them in a ref (refreshed each render, below) so the
+  // window listener can subscribe ONCE instead of tearing down/re-adding on
+  // every keypress.
+  const kbdRef = useRef({
+    filteredEmotes,
+    focusedIndex,
+    importExportMode,
+    handleClose,
+    handleEmotePlay: (_e: Emote) => {},
+  });
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const {
+        filteredEmotes,
+        focusedIndex,
+        importExportMode,
+        handleClose,
+        handleEmotePlay,
+      } = kbdRef.current;
       if (importExportMode !== "hidden") return;
       if (e.key === "Escape") {
         handleClose();
@@ -512,15 +582,7 @@ export function EmoteMenu({
       window.removeEventListener("keydown", handler);
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     };
-  }, [handleClose, filteredEmotes, focusedIndex, importExportMode, onPlay]);
-
-  // Horizontal ordering for the tab directional slide via View Transitions API.
-  // Custom-list pseudo-tabs all sit to the right of "top" — selecting any
-  // list reads as "going further right". The direction is set on the root
-  // as `--vt-direction` so the CSS keyframes can pick it up.
-  const TAB_ORDER: Record<Tab, number> = {
-    all: 0, favorites: 1, recent: 2, top: 3, list: 4,
-  };
+  }, []);
 
   const handleTabChange = useCallback((tab: Tab) => {
     mbtDebug('Tab changed', { tab });
@@ -552,7 +614,10 @@ export function EmoteMenu({
   // trick (remove class → force layout read → add class) is the standard
   // way to restart a CSS animation without unmount.
   const virtualContainerRef = useRef<HTMLDivElement | null>(null);
-  const filterKey = `${activeCategory ?? "all"}-${activeFilter}-${search}-${sortOrder}`;
+  // Search / sort replay the quick opacity morph; category / filter get
+  // the staggered card cascade instead (triggerGridEntrance), so they are
+  // intentionally excluded here to avoid double-animating.
+  const filterKey = `${search}-${sortOrder}`;
   useEffect(() => {
     const el = virtualContainerRef.current;
     if (!el) return;
@@ -564,14 +629,25 @@ export function EmoteMenu({
   // ── Import/Export ──
   const handleExportOpen = () => {
     setImportText(JSON.stringify(favorites, null, 2));
+    setImportExportClosing(false);
     setImportExportMode("export");
     setImportError("");
   };
   const handleImportOpen = () => {
     setImportText("");
+    setImportExportClosing(false);
     setImportExportMode("import");
     setImportError("");
   };
+  // Play the exit animation, then unmount. ~160ms matches mbt-modal-out
+  // (mirrors Toast.tsx's ToastItem dismiss pattern).
+  const closeImportExport = useCallback(() => {
+    setImportExportClosing(true);
+    setTimeout(() => {
+      setImportExportMode("hidden");
+      setImportExportClosing(false);
+    }, 160);
+  }, []);
   const handleImportConfirm = () => {
     try {
       const data = JSON.parse(importText);
@@ -580,7 +656,7 @@ export function EmoteMenu({
         return;
       }
       onImportFavorites(data);
-      setImportExportMode("hidden");
+      closeImportExport();
     } catch {
       setImportError("JSON non valido — controlla la sintassi");
     }
@@ -623,7 +699,7 @@ export function EmoteMenu({
   ]);
 
   const handleEmotePlay = useCallback(
-    (emote: Emote, element?: HTMLElement) => {
+    (emote: Emote, element?: HTMLElement | null) => {
       if (isEmoteLocked(emote.name)) {
         onToast(t.toast_emote_restricted || 'Emote restricted to specific jobs', "error", 2000);
         return;
@@ -641,6 +717,16 @@ export function EmoteMenu({
     },
     [onPlay, isEmoteLocked, onToast, saveCurrentState, config.rememberState],
   );
+
+  // Refresh the keydown handler's live values each render — the window
+  // listener (subscribed once, above) reads exclusively from this ref.
+  kbdRef.current = {
+    filteredEmotes,
+    focusedIndex,
+    importExportMode,
+    handleClose,
+    handleEmotePlay,
+  };
 
   const handlePartnerSend = useCallback(
     (emoteName: string) => {
@@ -742,6 +828,15 @@ export function EmoteMenu({
   );
 
   // Custom list handlers
+  // Play the exit animation, then unmount. ~160ms matches mbt-modal-out.
+  const closeListCreator = useCallback(() => {
+    setListCreatorClosing(true);
+    setTimeout(() => {
+      setShowListCreator(false);
+      setListCreatorClosing(false);
+    }, 160);
+  }, []);
+
   const handleCreateList = useCallback(() => {
     if (!newListName.trim()) return;
     const list: CustomList = {
@@ -753,7 +848,7 @@ export function EmoteMenu({
     onSaveCustomLists([...customLists, list]);
     setNewListName("");
     setNewListIcon(DEFAULT_LIST_ICON);
-    setShowListCreator(false);
+    closeListCreator();
     setActiveListId(list.id);
     setActiveTab("list");
     // Inline outcome instead of a toast: the new chip pulses for a beat
@@ -761,7 +856,7 @@ export function EmoteMenu({
     // its tab so the next thing the user sees is their list ready.
     setRecentlyCreatedListId(list.id);
     window.setTimeout(() => setRecentlyCreatedListId(null), 1500);
-  }, [newListName, newListIcon, customLists, onSaveCustomLists]);
+  }, [newListName, newListIcon, customLists, onSaveCustomLists, closeListCreator]);
 
   const handleDeleteList = useCallback(
     (listId: string) => {
@@ -841,7 +936,10 @@ export function EmoteMenu({
           <div className="mbt-header__actions">
             <button
               className="mbt-header__new"
-              onClick={() => setShowListCreator(true)}
+              onClick={() => {
+                setListCreatorClosing(false);
+                setShowListCreator(true);
+              }}
               title={t.tooltip_new_list || "New custom list"}
             >
               <Plus size={14} />
@@ -959,18 +1057,18 @@ export function EmoteMenu({
           <div className="mbt-categories">
             <button
               className={`mbt-pill ${!activeCategory ? "mbt-pill--active" : ""}`}
-              style={{ "--mbt-pill-cat": "154, 160, 166" } as React.CSSProperties}
-              onClick={() => setActiveCategory(null)}
+              style={{ "--mbt-pill-cat": "154, 160, 166", "--i": 0 } as React.CSSProperties}
+              onClick={() => { setActiveCategory(null); triggerGridEntrance(); }}
             >
               <span className="mbt-pill__label">{t.tab_all || "All"}</span>
               <span className="mbt-pill__count">{catalog.length}</span>
             </button>
-            {visibleCategories.map((cat) => (
+            {visibleCategories.map((cat, index) => (
               <button
                 key={cat.type}
                 className={`mbt-pill ${activeCategory === cat.type ? "mbt-pill--active" : ""}`}
-                style={{ "--mbt-pill-cat": pillCatVar(cat.type) } as React.CSSProperties}
-                onClick={() => setActiveCategory(cat.type)}
+                style={{ "--mbt-pill-cat": pillCatVar(cat.type), "--i": index + 1 } as React.CSSProperties}
+                onClick={() => { setActiveCategory(cat.type); triggerGridEntrance(); }}
               >
                 <span className="mbt-pill__label">
                   {categoryShortLabel(cat.type, cat.label)}
@@ -991,7 +1089,7 @@ export function EmoteMenu({
           sortOrder={sortOrder}
           onSortChange={setSortOrder}
           activeFilter={activeFilter}
-          onFilterChange={setActiveFilter}
+          onFilterChange={(f) => { setActiveFilter(f); triggerGridEntrance(); }}
           onRandom={handleRandomPlay}
           randomDisabled={filteredEmotes.length === 0}
         />
@@ -1065,16 +1163,9 @@ export function EmoteMenu({
           </div>
         ) : (
           <div
-            className="mbt-grid"
+            className={`mbt-grid${gridEntering ? " mbt-grid--entering" : ""}`}
             style={{ viewTransitionName: "mbt-grid-content" } as React.CSSProperties}
-            ref={(el) => {
-              (
-                gridRef as React.MutableRefObject<HTMLDivElement | null>
-              ).current = el;
-              (
-                virtualRef as React.MutableRefObject<HTMLDivElement | null>
-              ).current = el;
-            }}
+            ref={setGridRef}
           >
             {/* Spacer: total scrollable height */}
             <div
@@ -1102,6 +1193,7 @@ export function EmoteMenu({
                     enabled={activeTab === "favorites"}
                     onReorder={handleReorderByIndex}
                     className="mbt-card-wrap"
+                    style={{ "--i": i } as React.CSSProperties}
                   >
                     <EmoteCard
                       emote={emote}
@@ -1126,14 +1218,7 @@ export function EmoteMenu({
                         activeTab === "top" ? playCounts[emote.name] : undefined
                       }
                       locked={isEmoteLocked(emote.name)}
-                      onPlay={(e) =>
-                        handleEmotePlay(
-                          e,
-                          (gridRef as any).current?.querySelector(
-                            `[data-card-index="${idx}"]`,
-                          ),
-                        )
-                      }
+                      onPlay={handleEmotePlay}
                       onToggleFavorite={onToggleFavorite}
                       onPreviewToggle={
                         features.PreviewPed ? handlePreviewToggle : undefined
@@ -1208,8 +1293,8 @@ export function EmoteMenu({
         {/* List Creator Mini-Modal */}
         {showListCreator && (
           <div
-            className="mbt-modal-overlay"
-            onClick={() => setShowListCreator(false)}
+            className={`mbt-modal-overlay ${listCreatorClosing ? "mbt-modal-overlay--closing" : ""}`}
+            onClick={closeListCreator}
           >
             <div
               className="mbt-modal mbt-modal--small"
@@ -1219,7 +1304,7 @@ export function EmoteMenu({
                 <span className="mbt-modal__title">{t.modal_new_list || 'New List'}</span>
                 <button
                   className="mbt-modal__btn-close"
-                  onClick={() => setShowListCreator(false)}
+                  onClick={closeListCreator}
                   title={t.btn_cancel || 'Cancel'}
                 >
                   <X size={14} />
@@ -1278,7 +1363,7 @@ export function EmoteMenu({
 
         {/* ── Import/Export Modal ── */}
         {importExportMode !== "hidden" && (
-          <div className="mbt-modal-overlay">
+          <div className={`mbt-modal-overlay ${importExportClosing ? "mbt-modal-overlay--closing" : ""}`}>
             <div className="mbt-modal">
               <div className="mbt-modal__header">
                 <span className="mbt-modal__title">
@@ -1288,7 +1373,7 @@ export function EmoteMenu({
                 </span>
                 <button
                   className="mbt-header__close"
-                  onClick={() => setImportExportMode("hidden")}
+                  onClick={closeImportExport}
                 >
                   <X size={14} />
                 </button>
@@ -1323,7 +1408,7 @@ export function EmoteMenu({
               <div className="mbt-modal__actions">
                 <button
                   className="mbt-modal__btn mbt-modal__btn--cancel"
-                  onClick={() => setImportExportMode("hidden")}
+                  onClick={closeImportExport}
                 >
                   {t.btn_cancel || 'Cancel'}
                 </button>
@@ -1337,7 +1422,7 @@ export function EmoteMenu({
                 ) : (
                   <button
                     className="mbt-modal__btn mbt-modal__btn--confirm"
-                    onClick={() => setImportExportMode("hidden")}
+                    onClick={closeImportExport}
                   >
                     {t.btn_done || 'Done'}
                   </button>

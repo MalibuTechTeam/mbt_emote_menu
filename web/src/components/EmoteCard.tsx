@@ -2,6 +2,7 @@ import { memo, useRef, useCallback, useState, useEffect } from 'react'
 import { Check, ChevronDown, Eye, EyeOff, FolderPlus, Keyboard, ListPlus, Lock, MapPin, Target } from 'lucide-react'
 import { EmoteSilhouette } from './EmoteSilhouette'
 import { useLocale, tFormat } from '../utils/locale'
+import { categorySlug } from '../utils/categorySlug'
 import type { CustomList, Emote } from '../utils/types'
 
 // Categories where "Place in world" makes sense. Walks/Expressions are continuous
@@ -20,7 +21,7 @@ interface EmoteCardProps {
   playCount?: number
   locked?: boolean
   placementEnabled?: boolean
-  onPlay: (emote: Emote) => void
+  onPlay: (emote: Emote, sourceEl?: HTMLElement | null) => void
   onToggleFavorite: (emote: Emote) => void
   onPreviewToggle?: (emote: Emote) => void
   onAddToPlaylist?: (emote: Emote) => void
@@ -39,7 +40,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
   const cardRef = useRef<HTMLDivElement>(null)
   const [drawerType, setDrawerType] = useState<'none' | 'variants' | 'actions' | 'lists'>('none')
   const rafRef = useRef<number>(0)
-  const categoryClass = `mbt-card--cat-${emote.category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+  const categoryClass = `mbt-card--cat-${categorySlug(emote.category)}`
 
   // Cancel pending RAF on unmount to prevent memory leaks
   useEffect(() => {
@@ -69,7 +70,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
     if (hasVariants) {
       setDrawerType(drawerType === 'variants' ? 'none' : 'variants')
     } else {
-      onPlay(emote)
+      onPlay(emote, cardRef.current)
     }
   }
 
@@ -96,7 +97,7 @@ export const EmoteCard = memo(function EmoteCard({ emote, isFavorite, isFocused,
   const handleVariantPick = (value: number, e: React.MouseEvent) => {
     e.stopPropagation()
     setDrawerType('none')
-    onPlay({ ...emote, variation: value })
+    onPlay({ ...emote, variation: value }, cardRef.current)
   }
 
   const handleBindPick = (slot: number, e: React.MouseEvent) => {
