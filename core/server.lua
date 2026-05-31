@@ -40,6 +40,36 @@ local function FormatEmoteName(name)
     return clean
 end
 
+-- Generic GTA/rpemotes internal tokens to drop from search keywords — they're
+-- noise (every prop is "prop_", every anim is "anim@male@...", etc.).
+local KW_NOISE = {
+    anim = true, prop = true, hand = true, male = true, female = true,
+    base = true, clip = true, idle = true, loop = true, pose = true,
+    miss = true, scenario = true, world = true, human = true, stand = true,
+    holding = true, ['for'] = true, the = true, and_ = true,
+}
+
+-- Build a clean, lowercase keyword string so a search can find an emote by its
+-- prop or animation ("radio" finds the Walkie Talkie emotes, whose prop is
+-- prop_cs_hand_radio and clips are radio_*), not just its name/label. Tokens
+-- shorter than 3 chars and generic-noise tokens are dropped.
+local function BuildKeywords(...)
+    local seen, out = {}, {}
+    for i = 1, select('#', ...) do
+        local s = select(i, ...)
+        if type(s) == 'string' then
+            for tok in s:gmatch('[%a%d]+') do
+                tok = tok:lower()
+                if #tok >= 3 and not KW_NOISE[tok] and not seen[tok] then
+                    seen[tok] = true
+                    out[#out + 1] = tok
+                end
+            end
+        end
+    end
+    return table.concat(out, ' ')
+end
+
 local function BuildSandbox()
     local sandbox = {}
 
@@ -250,6 +280,7 @@ local function LoadAnimationList()
                 catalog[#catalog + 1] = {
                     name       = emoteName,
                     label      = label or FormatEmoteName(emoteName),
+                    keywords   = BuildKeywords(emoteName, label, prop, prop2, animClip, animDict),
                     category   = category,
                     hasProp    = hasProp,
                     isShared   = isShared,

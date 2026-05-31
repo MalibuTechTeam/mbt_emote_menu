@@ -6,6 +6,9 @@ export interface EmoteVariation {
 export interface Emote {
   name: string
   label: string
+  /** Server-built lowercase search keywords (prop + anim tokens) so a search
+   *  finds an emote by its prop/animation, not just its name/label. */
+  keywords?: string
   category: string
   hasProp?: boolean
   isShared?: boolean

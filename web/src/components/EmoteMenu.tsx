@@ -429,7 +429,8 @@ export function EmoteMenu({
         if (
           q &&
           !e.name.toLowerCase().includes(q) &&
-          !e.label.toLowerCase().includes(q)
+          !e.label.toLowerCase().includes(q) &&
+          !(e.keywords && e.keywords.includes(q))
         ) {
           return false;
         }
