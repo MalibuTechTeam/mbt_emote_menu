@@ -53,9 +53,6 @@ MBT.AntiSpam = {
 }
 
 -- Personas: named loadouts bundling Quick Binds (NUM1-6) + Wheel slots.
--- Switch between them in one click. A "Default" persona is created from your
--- current setup automatically. Only the action setup is bundled — favourites
--- and custom lists are global and never change on switch.
 MBT.Personas = {
     Max = 4, -- maximum number of personas a player can create
 }
@@ -163,10 +160,7 @@ MBT.RpText = {
     },
 }
 
--- Photo Mode: a cinematic camera + framing tool opened from a button in the
--- menu. Orbit/zoom the camera, pick a filter, frame the shot, capture. The
--- MBT watermark rides on every screenshot. Optionally, the owner can wire a
--- Discord webhook so players send shots straight to a channel.
+-- Photo Mode: a cinematic camera + framing tool opened from a button in the menu.
 MBT.PhotoMode = {
     Enabled   = true,  -- master toggle (shows the camera button in the menu)
     Watermark = true,  -- show the small MBT watermark on the framing overlay

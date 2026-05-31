@@ -250,15 +250,6 @@ end)
 
 -------------------------------------------------------------------------------
 -- [ PERSONAS / LOADOUTS ] --
---
--- A persona is a named snapshot of { binds, wheel }. The active persona IS the
--- live config: editing a bind/wheel slot debounce-syncs into it; switching
--- copies another persona's binds+wheel into the live caches (which the NUM keys
--- and the wheel read at press-time, so the swap is instant).
---
--- Storage is a single KVP holding every persona + the active id. Favourites and
--- custom lists are deliberately NOT bundled — they're a global library, not a
--- per-context action setup.
 -------------------------------------------------------------------------------
 
 if MBT.Features.Personas then
@@ -279,8 +270,6 @@ if MBT.Features.Personas then
         return ('persona_%d_%d'):format(GetGameTimer(), personaSeq)
     end
 
-    -- Load personas, migrating the player's existing binds+wheel into a
-    -- non-deletable "Default" persona on first run.
     local function LoadPersonas()
         cachedPersonas = Utils.LoadKvpJson(personasKVP)
         if type(cachedPersonas) ~= 'table' or type(cachedPersonas.personas) ~= 'table'
@@ -309,7 +298,6 @@ if MBT.Features.Personas then
         return nil
     end
 
-    --- Light list for the NUI: id + name per persona, plus the active id.
     function Core.GetPersonas()
         if not cachedPersonas then LoadPersonas() end
         local list = {}
@@ -324,7 +312,6 @@ if MBT.Features.Personas then
         return byId(cachedPersonas.activeId) or cachedPersonas.personas[1]
     end
 
-    --- Write the live binds/wheel into the active persona (debounced caller).
     function Core.SyncActivePersona()
         if not cachedPersonas then return end
         local p = byId(cachedPersonas.activeId)
@@ -344,8 +331,6 @@ if MBT.Features.Personas then
         end)
     end
 
-    --- Switch active persona: copy its binds+wheel into the live caches + flat
-    --- KVPs (so a restart restores the same active setup) and return them.
     function Core.SwitchPersona(id)
         local p = byId(id)
         if not p then return nil end
@@ -358,8 +343,6 @@ if MBT.Features.Personas then
         return { binds = cachedKeybinds, wheel = cachedWheelSlots, activeId = id }
     end
 
-    --- Create a new persona by CLONING the current live setup (never blank, so
-    --- confirming can't wipe the player's binds/wheel) and make it active.
     function Core.CreatePersona(name)
         if not cachedPersonas then LoadPersonas() end
         if #cachedPersonas.personas >= MAX_PERSONAS then return nil, 'max' end
@@ -387,8 +370,6 @@ if MBT.Features.Personas then
         return true
     end
 
-    --- Delete a persona. The Default and the last remaining one are protected.
-    --- Deleting the active persona falls back to Default.
     function Core.DeletePersona(id)
         if not cachedPersonas then LoadPersonas() end
         if id == 'default' then return false end
@@ -449,7 +430,6 @@ if MBT.Features.Personas then
         })
     end)
 
-    -- Flush any pending live edits into the active persona on resource stop.
     AddEventHandler('onResourceStop', function(res)
         if res == GetCurrentResourceName() and Core.SyncActivePersona then
             Core.SyncActivePersona()

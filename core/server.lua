@@ -40,8 +40,6 @@ local function FormatEmoteName(name)
     return clean
 end
 
--- Generic GTA/rpemotes internal tokens to drop from search keywords — they're
--- noise (every prop is "prop_", every anim is "anim@male@...", etc.).
 local KW_NOISE = {
     anim = true, prop = true, hand = true, male = true, female = true,
     base = true, clip = true, idle = true, loop = true, pose = true,
@@ -49,10 +47,6 @@ local KW_NOISE = {
     holding = true, ['for'] = true, the = true, and_ = true,
 }
 
--- Build a clean, lowercase keyword string so a search can find an emote by its
--- prop or animation ("radio" finds the Walkie Talkie emotes, whose prop is
--- prop_cs_hand_radio and clips are radio_*), not just its name/label. Tokens
--- shorter than 3 chars and generic-noise tokens are dropped.
 local function BuildKeywords(...)
     local seen, out = {}, {}
     for i = 1, select('#', ...) do
@@ -304,10 +298,6 @@ local function LoadAnimationList()
         end
     end
 
-    -- Inject MBT's own emoji reactions into the Emojis category. These don't
-    -- come from rpemotes — they're rendered as a floating glyph above the
-    -- player's head (see modules/emoji). isEmoji/emoji flag them for the
-    -- client play-routing and the NUI card rendering.
     if MBT.Emoji and MBT.Emoji.Enabled and MBT.Emoji.List then
         for _, e in ipairs(MBT.Emoji.List) do
             if type(e) == 'table' and type(e.id) == 'string' and type(e.char) == 'string' then

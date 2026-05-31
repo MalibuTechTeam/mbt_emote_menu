@@ -1,17 +1,3 @@
--------------------------------------------------------------------------------
--- [ PHOTO MODE — CLIENT ]
---
--- A cinematic camera + framing tool, opened from a button in the emote menu.
--- The whole interaction is NUI-driven: the React overlay captures drag/scroll
--- and sends camera deltas here; this module is just the "engine" that moves a
--- scripted camera around the player ped, applies depth-of-field and a timecycle
--- filter, and hides the HUD for a clean shot.
---
--- Reuses the proven camera patterns from modules/preview (CreateCam, spherical
--- orbit math, SetTimecycleModifier). Unlike preview, it does NOT clone the ped
--- — the real player stays in frame holding whatever pose/emote they're in.
--------------------------------------------------------------------------------
-
 PhotoMode = PhotoMode or {}
 
 local cfg = MBT.PhotoMode or {}
@@ -21,7 +7,6 @@ if not cfg.Enabled then
     return
 end
 
--- Tunables (config-driven with sane fallbacks)
 local ORBIT_SENS = cfg.OrbitSensitivity or 0.45
 local ZOOM_SENS  = cfg.ZoomSensitivity or 0.30
 local MIN_DIST   = cfg.MinDistance or 0.7
@@ -60,7 +45,6 @@ local function targetCoords()
     return vector3(c.x, c.y, c.z + TARGET_Z)
 end
 
---- Recompute and apply the camera position from the spherical state.
 local function applyCamera()
     if not cam or not DoesCamExist(cam) then return end
     local t = targetCoords()
@@ -78,7 +62,6 @@ end
 local function applyDof()
     if not cam or not DoesCamExist(cam) then return end
     if dofOn then
-        -- Focus on the ped, blur near/far. Numbers tuned for a portrait look.
         SetCamUseShallowDofMode(cam, true)
         SetCamNearDof(cam, math.max(0.1, distance - 1.2))
         SetCamFarDof(cam, distance + 2.5)
@@ -119,16 +102,11 @@ local function enter()
     if active then return end
     active = true
 
-    -- Hand off from the emote menu: close it properly (resets state + hides the
-    -- panel), then re-assert NUI focus below so the photo overlay keeps the
-    -- cursor for drag-orbit + clickable controls.
     if Core and Core.IsMenuOpen and Core.IsMenuOpen() then
         Core.CloseMenu()
     end
 
     local ped = PlayerPedId()
-    -- Start framed in front of the player so their face is visible, matching
-    -- the direction they're facing.
     azimuth   = GetEntityHeading(ped)
     elevation = 12.0
     distance  = 2.6
@@ -142,12 +120,8 @@ local function enter()
     SetCamActive(cam, true)
     RenderScriptCams(true, true, 600, true, true)
     applyDof()
-
-    -- Re-grab the cursor for the photo overlay (Core.CloseMenu dropped it).
     SetNuiFocus(true, true)
 
-    -- Per-frame upkeep: keep the camera glued to the (possibly moving) ped,
-    -- hide HUD/radar, hold DOF, and block player movement so the shot is still.
     CreateThread(function()
         while active do
             applyCamera()
@@ -256,9 +230,6 @@ RegisterNUICallback('photoFilter', function(data, cb)
     cb({ ok = true })
 end)
 
--- Capture + send to Discord. Hides the overlay chrome for a clean frame, grabs
--- a JPEG via screenshot-basic, and hands the base64 to the server relay (which
--- holds the webhook URL). Result comes back via the net event below.
 RegisterNUICallback('photoCapture', function(_, cb)
     cb({ ok = true })
     if not active then return end
@@ -268,12 +239,10 @@ RegisterNUICallback('photoCapture', function(_, cb)
         return
     end
 
-    -- Tell the overlay to drop its chrome (grid/controls/exit) so they don't
-    -- end up in the shot; the watermark + letterbox stay.
     SendNUIMessage({ action = 'photoPrepareCapture' })
 
     CreateThread(function()
-        Wait(90) -- let the overlay repaint without chrome
+        Wait(90)
         exports['screenshot-basic']:requestScreenshot(
             { encoding = 'jpg', quality = 0.85 },
             function(dataUrl)
@@ -296,7 +265,6 @@ end)
 -- [ SAFETY ] --
 -------------------------------------------------------------------------------
 
--- Bail out cleanly if the player dies or the resource stops while framing.
 CreateThread(function()
     while true do
         Wait(500)

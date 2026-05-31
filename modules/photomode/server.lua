@@ -1,15 +1,3 @@
--------------------------------------------------------------------------------
--- [ PHOTO MODE — Server (Discord relay) ]
---
--- Optional. Only active when MBT.PhotoMode.Discord.Enabled is true and a
--- webhook URL is set. Receives a captured JPEG (base64) from a client and
--- posts it to the configured Discord channel.
---
--- SECURITY: the webhook URL lives ONLY here, server-side — it is never sent to
--- any client, so a tampered client can't extract and spam it. Uploads are
--- size-capped and throttled per player.
--------------------------------------------------------------------------------
-
 local cfg = MBT.PhotoMode or {}
 local dc  = cfg.Discord or {}
 
@@ -17,8 +5,6 @@ if not cfg.Enabled or not dc.Enabled then return end
 
 local MAX_B64   = 2000000 -- ~1.5 MB image; reject anything bigger
 local lastSend  = {}
-
--- ── base64 decode (Lua 5.4 bitwise; input is clean client-produced b64) ──
 local B64 = {}
 do
     local chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
@@ -71,8 +57,6 @@ RegisterNetEvent('mbt_emote_menu:server:photoUpload', function(b64)
         reply(src, false, 'decode-failed'); return
     end
 
-    -- Long static boundary — collision with JPEG bytes is astronomically
-    -- unlikely, and JPEG cannot contain a CRLF-delimited copy of this token.
     local boundary = '----MBTPhotoModeBoundary7f3a9c1e2b'
     local payload = json.encode({
         username = dc.Username or 'MBT Photo Mode',

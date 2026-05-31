@@ -48,8 +48,6 @@ function Core.PlayEmoteRaw(emoteName, emoteType, variation)
     local safeType = SanitizeName(emoteType)
     variation = tonumber(variation) or 1
 
-    -- Emoji reactions are MBT's own feature, not an rpemotes animation —
-    -- route them straight to the emoji module (floats a glyph overhead).
     if safeType == 'Emojis' then
         if MBT.Emoji and MBT.Emoji.Enabled and Emoji and Emoji.Play then
             Emoji.Play(safeName)
@@ -260,8 +258,6 @@ function Core.OpenMenu()
     SendNUIMessage(payload)
     SetNuiFocus(true, true)
 
-    -- Ask the server for the current "Trending this week" emote. The reply
-    -- arrives async via mbt_emote_menu:client:receiveTrending → SendNUIMessage.
     if Trending and Trending.Request then
         Trending.Request()
     end
@@ -408,10 +404,6 @@ if MBT.Features.EmoteWheel then
     local wheelRemoveCmdName = 'mbt_wheel_remove'
     local maxSlots = MBT.EmoteWheel.Slots or 8
     local wheelMode = (MBT.EmoteWheel.Mode == 'linear') and 'linear' or 'radial'
-
-    -- Radial pointer tuning. Pointer accumulates from look input each frame and
-    -- stays where you flick it; magnitude is clamped to a unit circle with a
-    -- centre deadzone (below which no slot is selected).
     local POINTER_SENS = MBT.EmoteWheel.PointerSensitivity or 2.8
     local POINTER_DEADZONE = 0.28
     local TWO_PI = math.pi * 2
@@ -438,9 +430,6 @@ if MBT.Features.EmoteWheel then
                 if wheelMode == 'radial' then
                     DisableControlAction(0, 1, true) -- look LR
                     DisableControlAction(0, 2, true) -- look UD
-
-                    -- Accumulate the look delta into a screen-space pointer
-                    -- (+x right, +y down) and clamp it to the unit circle.
                     px = px + GetDisabledControlNormal(0, 1) * POINTER_SENS
                     py = py + GetDisabledControlNormal(0, 2) * POINTER_SENS
                     local mag = math.sqrt(px * px + py * py)
@@ -448,7 +437,6 @@ if MBT.Features.EmoteWheel then
 
                     local activePtr = mag >= POINTER_DEADZONE
                     if activePtr then
-                        -- Angle from "up", clockwise; slot 1 sits at the top.
                         local ang = math.atan(px, -py)
                         if ang < 0 then ang = ang + TWO_PI end
                         local sector = math.floor((ang / TWO_PI) * maxSlots + 0.5) % maxSlots + 1
@@ -461,7 +449,6 @@ if MBT.Features.EmoteWheel then
                     SendNUIMessage({ action = 'wheelPointer', x = px, y = py, active = activePtr })
                 end
 
-                -- Scroll still cycles slots in both modes (radial fallback).
                 if IsDisabledControlJustPressed(0, 17) then
                     wheelIndex = wheelIndex - 1
                     if wheelIndex < 1 then wheelIndex = maxSlots end
