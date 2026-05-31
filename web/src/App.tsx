@@ -33,6 +33,8 @@ function App() {
   const [wheelMaxSlots, setWheelMaxSlots] = useState(8)
   const [wheelMode, setWheelMode] = useState<'radial' | 'linear'>('radial')
   const [wheelPointer, setWheelPointer] = useState<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false })
+  const [personas, setPersonas] = useState<{ id: string; name: string; locked?: boolean }[]>([])
+  const [activePersonaId, setActivePersonaId] = useState<string>('default')
   const [activeWalk, setActiveWalk] = useState<string | null>(null)
   const [activeExpression, setActiveExpression] = useState<string | null>(null)
   const [savedMenuState, setSavedMenuState] = useState<{
@@ -71,6 +73,10 @@ function App() {
           if (data.playerJob !== undefined) setPlayerJob(data.playerJob)
           if (data.jobPermissions) setJobPermissions(data.jobPermissions)
           if (data.customLists) setCustomLists(data.customLists)
+          if (data.personas && Array.isArray(data.personas.personas)) {
+            setPersonas(data.personas.personas)
+            setActivePersonaId(data.personas.activeId || 'default')
+          }
           if (data.activeWalk !== undefined) setActiveWalk(data.activeWalk || null)
           if (data.activeExpr !== undefined) setActiveExpression(data.activeExpr || null)
           setVisible(true)
@@ -286,6 +292,39 @@ function App() {
     await useNui('setWheelSlot', { slot, emote })
   }, [])
 
+  // ── Personas / loadouts ──
+  const handleSwitchPersona = useCallback(async (id: string) => {
+    const r = await useNui<{ ok?: boolean; binds?: Record<string, Emote>; wheel?: Record<string, Emote>; activeId?: string }>('switchPersona', { id })
+    if (r?.ok) {
+      setKeybinds(r.binds || {})
+      setWheelSlots(r.wheel || {})
+      setActivePersonaId(r.activeId || id)
+    }
+  }, [])
+
+  const handleCreatePersona = useCallback(async (name: string) => {
+    const r = await useNui<{ ok?: boolean; data?: { activeId: string; personas: { id: string; name: string; locked?: boolean }[] } }>('createPersona', { name })
+    if (r?.ok && r.data) {
+      setPersonas(r.data.personas)
+      setActivePersonaId(r.data.activeId)
+    }
+  }, [])
+
+  const handleRenamePersona = useCallback(async (id: string, name: string) => {
+    const r = await useNui<{ ok?: boolean; data?: { activeId: string; personas: { id: string; name: string; locked?: boolean }[] } }>('renamePersona', { id, name })
+    if (r?.ok && r.data) setPersonas(r.data.personas)
+  }, [])
+
+  const handleDeletePersona = useCallback(async (id: string) => {
+    const r = await useNui<{ ok?: boolean; data?: { activeId: string; personas: { id: string; name: string; locked?: boolean }[] }; binds?: Record<string, Emote>; wheel?: Record<string, Emote> }>('deletePersona', { id })
+    if (r?.ok && r.data) {
+      setPersonas(r.data.personas)
+      setActivePersonaId(r.data.activeId)
+      if (r.binds) setKeybinds(r.binds)
+      if (r.wheel) setWheelSlots(r.wheel)
+    }
+  }, [])
+
   // Wheel index is now driven by Lua (game-side scroll detection), no JS handler needed
 
   // Track whether close was triggered by ESC (manual) vs play (auto)
@@ -344,6 +383,12 @@ function App() {
         onPlayPlaylist={handlePlayPlaylist}
         onStopPlaylist={handleStopPlaylist}
         onClearPlaylist={handleClearPlaylist}
+        personas={personas}
+        activePersonaId={activePersonaId}
+        onSwitchPersona={handleSwitchPersona}
+        onCreatePersona={handleCreatePersona}
+        onRenamePersona={handleRenamePersona}
+        onDeletePersona={handleDeletePersona}
         playerJob={playerJob}
         jobPermissions={jobPermissions}
         customLists={customLists}

@@ -4,12 +4,21 @@ import { Keyboard, X } from 'lucide-react'
 import { useLocale } from '../utils/locale'
 import { useNui } from '../utils/useNui'
 import { DND_EMOTE_CARD, type EmoteCardDragItem } from './FavoriteDraggable'
+import { PersonaBar, type PersonaItem } from './PersonaBar'
 import type { Emote } from '../utils/types'
 
 interface QuickBindBarProps {
   keybinds: Record<string, Emote>
   onPlay: (emote: Emote) => void
   onUpdate: (keybinds: Record<string, Emote>) => void
+  /** Persona switcher, rendered as the loadout row inside this block. Undefined
+   *  when the Personas feature is off. */
+  personas?: PersonaItem[]
+  activePersonaId?: string
+  onSwitchPersona?: (id: string) => void
+  onCreatePersona?: (name: string) => void
+  onRenamePersona?: (id: string, name: string) => void
+  onDeletePersona?: (id: string) => void
 }
 
 const SLOTS = ['1', '2', '3', '4', '5', '6']
@@ -76,7 +85,10 @@ function QuickBindSlot({ slot, emote, emptyLabel, onAssign, onPlay, onClear }: Q
   )
 }
 
-export function QuickBindBar({ keybinds, onPlay, onUpdate }: QuickBindBarProps) {
+export function QuickBindBar({
+  keybinds, onPlay, onUpdate,
+  personas, activePersonaId, onSwitchPersona, onCreatePersona, onRenamePersona, onDeletePersona,
+}: QuickBindBarProps) {
   const t = useLocale()
   const emptyLabel = t.quickbind_empty || 'Drag emote here'
 
@@ -100,6 +112,18 @@ export function QuickBindBar({ keybinds, onPlay, onUpdate }: QuickBindBarProps) 
         <span>{t.quickbind_title || 'Quick Bind'}</span>
         <span className="mbt-quickbind__hint">{t.quickbind_hint || 'Press a numpad key in game'}</span>
       </div>
+      {personas && personas.length > 0 && onSwitchPersona && (
+        <PersonaBar
+          inline
+          personas={personas}
+          activeId={activePersonaId || 'default'}
+          max={10}
+          onSwitch={onSwitchPersona}
+          onCreate={onCreatePersona || (() => {})}
+          onRename={onRenamePersona || (() => {})}
+          onDelete={onDeletePersona || (() => {})}
+        />
+      )}
       <div className="mbt-quickbind__slots">
         {SLOTS.map((slot) => (
           <QuickBindSlot

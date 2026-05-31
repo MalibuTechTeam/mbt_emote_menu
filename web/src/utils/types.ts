@@ -53,6 +53,7 @@ export interface FeaturesConfig {
   EmoteWheel?: boolean
   EmotePlacement?: boolean
   PhotoMode?: boolean
+  Personas?: boolean
   AdultEmotes?: boolean
   AbusableEmotes?: boolean
 }

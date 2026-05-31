@@ -44,6 +44,12 @@ interface EmoteMenuProps {
   playCounts: Record<string, number>;
   recent: Emote[];
   keybinds: Record<string, Emote>;
+  personas: { id: string; name: string; locked?: boolean }[];
+  activePersonaId: string;
+  onSwitchPersona: (id: string) => void;
+  onCreatePersona: (name: string) => void;
+  onRenamePersona: (id: string, name: string) => void;
+  onDeletePersona: (id: string) => void;
   sharedRequest: SharedRequest | null;
   nearbyCount: number;
   trending: TrendingEmote | null;
@@ -123,6 +129,12 @@ export function EmoteMenu({
   playCounts,
   recent,
   keybinds,
+  personas,
+  activePersonaId,
+  onSwitchPersona,
+  onCreatePersona,
+  onRenamePersona,
+  onDeletePersona,
   sharedRequest,
   nearbyCount,
   trending,
@@ -1272,6 +1284,12 @@ export function EmoteMenu({
             keybinds={keybinds}
             onPlay={onPlay}
             onUpdate={onKeybindsUpdate}
+            personas={config.features.Personas ? personas : undefined}
+            activePersonaId={activePersonaId}
+            onSwitchPersona={onSwitchPersona}
+            onCreatePersona={onCreatePersona}
+            onRenamePersona={onRenamePersona}
+            onDeletePersona={onDeletePersona}
           />
         )}
 

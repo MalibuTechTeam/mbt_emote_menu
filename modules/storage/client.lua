@@ -143,6 +143,7 @@ function Core.SetKeybind(slot, emoteData)
     if not cachedKeybinds then cachedKeybinds = Utils.LoadKvpJson(keybindKVP) or {} end
     cachedKeybinds[tostring(slot)] = emoteData
     Utils.SaveKvpJson(keybindKVP, cachedKeybinds)
+    if Core._scheduleSyncActivePersona then Core._scheduleSyncActivePersona() end
     Utils.MbtDebugger('Set keybind slot ' .. tostring(slot) .. ' = ' .. (emoteData and emoteData.name or 'nil'))
 end
 
@@ -162,6 +163,7 @@ function Core.SetWheelSlot(slot, emoteData)
     if not cachedWheelSlots then cachedWheelSlots = Utils.LoadKvpJson(wheelKVP) or {} end
     cachedWheelSlots[tostring(slot)] = emoteData
     Utils.SaveKvpJson(wheelKVP, cachedWheelSlots)
+    if Core._scheduleSyncActivePersona then Core._scheduleSyncActivePersona() end
     Utils.MbtDebugger('Wheel slot ' .. tostring(slot) .. ' = ' .. (emoteData and emoteData.name or 'nil'))
 end
 
@@ -245,3 +247,212 @@ end)
 RegisterNUICallback('getWheelSlots', function(_, cb)
     cb({ ok = true, slots = Core.GetWheelSlots() })
 end)
+
+-------------------------------------------------------------------------------
+-- [ PERSONAS / LOADOUTS ] --
+--
+-- A persona is a named snapshot of { binds, wheel }. The active persona IS the
+-- live config: editing a bind/wheel slot debounce-syncs into it; switching
+-- copies another persona's binds+wheel into the live caches (which the NUM keys
+-- and the wheel read at press-time, so the swap is instant).
+--
+-- Storage is a single KVP holding every persona + the active id. Favourites and
+-- custom lists are deliberately NOT bundled — they're a global library, not a
+-- per-context action setup.
+-------------------------------------------------------------------------------
+
+if MBT.Features.Personas then
+    local personasKVP = 'mbt_emote_menu_personas'
+    local cachedPersonas = nil
+    local MAX_PERSONAS = (MBT.Personas and MBT.Personas.Max) or 10
+    local personaSeq = 0
+
+    local function deepcopy(t)
+        if type(t) ~= 'table' then return t end
+        local out = {}
+        for k, v in pairs(t) do out[k] = (type(v) == 'table') and deepcopy(v) or v end
+        return out
+    end
+
+    local function newId()
+        personaSeq = personaSeq + 1
+        return ('persona_%d_%d'):format(GetGameTimer(), personaSeq)
+    end
+
+    -- Load personas, migrating the player's existing binds+wheel into a
+    -- non-deletable "Default" persona on first run.
+    local function LoadPersonas()
+        cachedPersonas = Utils.LoadKvpJson(personasKVP)
+        if type(cachedPersonas) ~= 'table' or type(cachedPersonas.personas) ~= 'table'
+            or #cachedPersonas.personas == 0 then
+            cachedPersonas = {
+                activeId = 'default',
+                personas = {
+                    {
+                        id    = 'default',
+                        name  = 'Default',
+                        binds = deepcopy(Core.GetKeybinds()),
+                        wheel = deepcopy(Core.GetWheelSlots()),
+                    },
+                },
+            }
+            Utils.SaveKvpJson(personasKVP, cachedPersonas)
+        end
+        return cachedPersonas
+    end
+
+    local function byId(id)
+        if not cachedPersonas then LoadPersonas() end
+        for _, p in ipairs(cachedPersonas.personas) do
+            if p.id == id then return p end
+        end
+        return nil
+    end
+
+    --- Light list for the NUI: id + name per persona, plus the active id.
+    function Core.GetPersonas()
+        if not cachedPersonas then LoadPersonas() end
+        local list = {}
+        for _, p in ipairs(cachedPersonas.personas) do
+            list[#list + 1] = { id = p.id, name = p.name, locked = (p.id == 'default') }
+        end
+        return { activeId = cachedPersonas.activeId, personas = list }
+    end
+
+    function Core.GetActivePersona()
+        if not cachedPersonas then LoadPersonas() end
+        return byId(cachedPersonas.activeId) or cachedPersonas.personas[1]
+    end
+
+    --- Write the live binds/wheel into the active persona (debounced caller).
+    function Core.SyncActivePersona()
+        if not cachedPersonas then return end
+        local p = byId(cachedPersonas.activeId)
+        if not p then return end
+        p.binds = deepcopy(cachedKeybinds or {})
+        p.wheel = deepcopy(cachedWheelSlots or {})
+        Utils.SaveKvpJson(personasKVP, cachedPersonas)
+    end
+
+    local syncScheduled = false
+    function Core._scheduleSyncActivePersona()
+        if syncScheduled then return end
+        syncScheduled = true
+        SetTimeout(500, function()
+            syncScheduled = false
+            Core.SyncActivePersona()
+        end)
+    end
+
+    --- Switch active persona: copy its binds+wheel into the live caches + flat
+    --- KVPs (so a restart restores the same active setup) and return them.
+    function Core.SwitchPersona(id)
+        local p = byId(id)
+        if not p then return nil end
+        cachedPersonas.activeId = id
+        cachedKeybinds   = deepcopy(p.binds or {})
+        cachedWheelSlots = deepcopy(p.wheel or {})
+        Utils.SaveKvpJson(keybindKVP, cachedKeybinds)
+        Utils.SaveKvpJson(wheelKVP, cachedWheelSlots)
+        Utils.SaveKvpJson(personasKVP, cachedPersonas)
+        return { binds = cachedKeybinds, wheel = cachedWheelSlots, activeId = id }
+    end
+
+    --- Create a new persona by CLONING the current live setup (never blank, so
+    --- confirming can't wipe the player's binds/wheel) and make it active.
+    function Core.CreatePersona(name)
+        if not cachedPersonas then LoadPersonas() end
+        if #cachedPersonas.personas >= MAX_PERSONAS then return nil, 'max' end
+        local id = newId()
+        local clean = (type(name) == 'string' and name:gsub('^%s*(.-)%s*$', '%1') or '')
+        if clean == '' then clean = 'Persona ' .. (#cachedPersonas.personas + 1) end
+        cachedPersonas.personas[#cachedPersonas.personas + 1] = {
+            id    = id,
+            name  = clean:sub(1, 24),
+            binds = deepcopy(Core.GetKeybinds()),
+            wheel = deepcopy(Core.GetWheelSlots()),
+        }
+        cachedPersonas.activeId = id
+        Utils.SaveKvpJson(personasKVP, cachedPersonas)
+        return { id = id, name = clean:sub(1, 24) }
+    end
+
+    function Core.RenamePersona(id, name)
+        local p = byId(id)
+        if not p then return false end
+        local clean = (type(name) == 'string' and name:gsub('^%s*(.-)%s*$', '%1') or '')
+        if clean == '' then return false end
+        p.name = clean:sub(1, 24)
+        Utils.SaveKvpJson(personasKVP, cachedPersonas)
+        return true
+    end
+
+    --- Delete a persona. The Default and the last remaining one are protected.
+    --- Deleting the active persona falls back to Default.
+    function Core.DeletePersona(id)
+        if not cachedPersonas then LoadPersonas() end
+        if id == 'default' then return false end
+        if #cachedPersonas.personas <= 1 then return false end
+        local idx
+        for i, p in ipairs(cachedPersonas.personas) do
+            if p.id == id then idx = i break end
+        end
+        if not idx then return false end
+        table.remove(cachedPersonas.personas, idx)
+        if cachedPersonas.activeId == id then
+            local fallback = byId('default') or cachedPersonas.personas[1]
+            Core.SwitchPersona(fallback.id)
+        else
+            Utils.SaveKvpJson(personasKVP, cachedPersonas)
+        end
+        return true
+    end
+
+    ---------------------------------------------------------------------------
+    -- NUI callbacks
+    ---------------------------------------------------------------------------
+
+    RegisterNUICallback('getPersonas', function(_, cb)
+        cb({ ok = true, data = Core.GetPersonas() })
+    end)
+
+    RegisterNUICallback('switchPersona', function(data, cb)
+        local r = Core.SwitchPersona(data.id)
+        if r then
+            cb({ ok = true, binds = r.binds, wheel = r.wheel, activeId = r.activeId })
+        else
+            cb({ ok = false })
+        end
+    end)
+
+    RegisterNUICallback('createPersona', function(data, cb)
+        local p, err = Core.CreatePersona(data.name)
+        if p then
+            cb({ ok = true, persona = p, data = Core.GetPersonas() })
+        else
+            cb({ ok = false, error = err })
+        end
+    end)
+
+    RegisterNUICallback('renamePersona', function(data, cb)
+        local ok = Core.RenamePersona(data.id, data.name)
+        cb({ ok = ok and true or false, data = Core.GetPersonas() })
+    end)
+
+    RegisterNUICallback('deletePersona', function(data, cb)
+        local ok = Core.DeletePersona(data.id)
+        cb({
+            ok       = ok and true or false,
+            data     = Core.GetPersonas(),
+            binds    = Core.GetKeybinds(),
+            wheel    = Core.GetWheelSlots(),
+        })
+    end)
+
+    -- Flush any pending live edits into the active persona on resource stop.
+    AddEventHandler('onResourceStop', function(res)
+        if res == GetCurrentResourceName() and Core.SyncActivePersona then
+            Core.SyncActivePersona()
+        end
+    end)
+end

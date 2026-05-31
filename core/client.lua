@@ -236,6 +236,7 @@ function Core.OpenMenu()
         playerJob      = playerJob,
         jobPermissions = jobPermissions,
         customLists    = Core.GetCustomLists(),
+        personas       = (MBT.Features.Personas and Core.GetPersonas) and Core.GetPersonas() or nil,
         activeWalk     = activeWalkStyle,
         activeExpr     = activeExpression,
         config         = BuildMenuConfig(),

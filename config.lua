@@ -38,6 +38,7 @@ MBT.Features = {
     SharedPopup    = true,  -- Inline popup for shared emote invitations
     PreviewPed     = true,  -- Animated ped preview on hover
     EmoteWheel     = true,  -- Hold-to-peek emote wheel
+    Personas       = true,  -- Saved loadouts: named Quick Bind + Wheel setups you switch between
     EmotePlacement = true,  -- "Place in world" button (needs a recent rpemotes-reborn)
     OpenJoin       = true,  -- Nearby players get a prompt to join your emote (see MBT.OpenJoin)
     WhatsThat      = false, -- Bubble over a nearby emoting player with their emote + copy hotkey
@@ -49,6 +50,14 @@ MBT.Features = {
 MBT.AntiSpam = {
     Enabled    = true,
     CooldownMs = 250, -- 250ms allows up to 4 emotes/s
+}
+
+-- Personas: named loadouts bundling Quick Binds (NUM1-6) + Wheel slots.
+-- Switch between them in one click. A "Default" persona is created from your
+-- current setup automatically. Only the action setup is bundled — favourites
+-- and custom lists are global and never change on switch.
+MBT.Personas = {
+    Max = 10, -- maximum number of personas a player can create
 }
 
 -- Emote Wheel: hold a key to open, pick a slot, release to play.

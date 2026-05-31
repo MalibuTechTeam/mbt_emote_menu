@@ -2653,6 +2653,128 @@ body {
   color: var(--mbt-text-faint);
 }
 
+/* ── Personas / loadouts switcher ───────────────────────────── */
+.mbt-personas {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 2px;
+}
+
+/* Inline variant: lives inside the Quick Bind block, as the loadout row
+   directly above the NUM slots. No lead icon, tighter spacing. */
+.mbt-personas--inline {
+  padding: 2px 0 9px;
+  gap: 0;
+}
+
+.mbt-personas__lead {
+  display: inline-flex;
+  color: var(--mbt-subtext);
+  flex-shrink: 0;
+}
+
+.mbt-personas__chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.mbt-persona {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--mbt-text-mid);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: color 130ms ease, background 130ms ease, border-color 130ms ease;
+}
+.mbt-persona:hover {
+  color: var(--mbt-text-hi);
+  background: rgba(255, 255, 255, 0.07);
+}
+/* Active = accent-tinted (border + tint + green text), not a full fill — a
+   calmer "you are here" marker that still reads clearly against the grey
+   inactive chips. */
+.mbt-persona--active {
+  color: var(--mbt-accent);
+  background: rgba(0, 230, 118, 0.10);
+  border-color: rgba(0, 230, 118, 0.45);
+  cursor: default;
+}
+.mbt-persona--active:hover {
+  background: rgba(0, 230, 118, 0.10);
+  color: var(--mbt-accent);
+}
+
+.mbt-persona__del {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: -3px;
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  color: inherit;
+  opacity: 0.55;
+  cursor: pointer;
+}
+.mbt-persona__del:hover { opacity: 1; color: #ff6b6b; background: rgba(255, 107, 107, 0.14); }
+
+.mbt-persona__input {
+  width: 88px;
+  height: 18px;
+  padding: 0 2px;
+  border: none;
+  background: transparent;
+  color: var(--mbt-text-hi);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  outline: none;
+}
+.mbt-persona--editing { border-color: var(--mbt-accent); background: rgba(0, 230, 118, 0.08); }
+
+.mbt-persona--confirm { gap: 7px; }
+.mbt-persona__confirmtext { color: var(--mbt-text-hi); }
+.mbt-persona__yes,
+.mbt-persona__no {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--mbt-text-mid);
+}
+.mbt-persona__yes:hover { color: #07120b; background: var(--mbt-accent); }
+.mbt-persona__no:hover { color: #fff; background: #ff6b6b; }
+
+.mbt-personas__add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  color: var(--mbt-accent);
+  background: rgba(0, 230, 118, 0.08);
+  border: 1px solid rgba(0, 230, 118, 0.22);
+  cursor: pointer;
+  transition: background 130ms ease, border-color 130ms ease;
+}
+.mbt-personas__add:hover { background: rgba(0, 230, 118, 0.16); }
+
 /* the slots grid IS the recessed tray */
 .mbt-quickbind__slots {
   display: grid;
