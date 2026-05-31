@@ -46,6 +46,7 @@ interface EmoteMenuProps {
   keybinds: Record<string, Emote>;
   personas: { id: string; name: string; locked?: boolean }[];
   activePersonaId: string;
+  personasMax: number;
   onSwitchPersona: (id: string) => void;
   onCreatePersona: (name: string) => void;
   onRenamePersona: (id: string, name: string) => void;
@@ -131,6 +132,7 @@ export function EmoteMenu({
   keybinds,
   personas,
   activePersonaId,
+  personasMax,
   onSwitchPersona,
   onCreatePersona,
   onRenamePersona,
@@ -1286,6 +1288,7 @@ export function EmoteMenu({
             onUpdate={onKeybindsUpdate}
             personas={config.features.Personas ? personas : undefined}
             activePersonaId={activePersonaId}
+            personasMax={personasMax}
             onSwitchPersona={onSwitchPersona}
             onCreatePersona={onCreatePersona}
             onRenamePersona={onRenamePersona}

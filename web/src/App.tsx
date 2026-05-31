@@ -35,6 +35,7 @@ function App() {
   const [wheelPointer, setWheelPointer] = useState<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false })
   const [personas, setPersonas] = useState<{ id: string; name: string; locked?: boolean }[]>([])
   const [activePersonaId, setActivePersonaId] = useState<string>('default')
+  const [personasMax, setPersonasMax] = useState(4)
   const [activeWalk, setActiveWalk] = useState<string | null>(null)
   const [activeExpression, setActiveExpression] = useState<string | null>(null)
   const [savedMenuState, setSavedMenuState] = useState<{
@@ -76,6 +77,7 @@ function App() {
           if (data.personas && Array.isArray(data.personas.personas)) {
             setPersonas(data.personas.personas)
             setActivePersonaId(data.personas.activeId || 'default')
+            if (typeof data.personas.max === 'number') setPersonasMax(data.personas.max)
           }
           if (data.activeWalk !== undefined) setActiveWalk(data.activeWalk || null)
           if (data.activeExpr !== undefined) setActiveExpression(data.activeExpr || null)
@@ -385,6 +387,7 @@ function App() {
         onClearPlaylist={handleClearPlaylist}
         personas={personas}
         activePersonaId={activePersonaId}
+        personasMax={personasMax}
         onSwitchPersona={handleSwitchPersona}
         onCreatePersona={handleCreatePersona}
         onRenamePersona={handleRenamePersona}

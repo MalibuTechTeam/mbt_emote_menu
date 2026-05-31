@@ -15,6 +15,7 @@ interface QuickBindBarProps {
    *  when the Personas feature is off. */
   personas?: PersonaItem[]
   activePersonaId?: string
+  personasMax?: number
   onSwitchPersona?: (id: string) => void
   onCreatePersona?: (name: string) => void
   onRenamePersona?: (id: string, name: string) => void
@@ -87,7 +88,7 @@ function QuickBindSlot({ slot, emote, emptyLabel, onAssign, onPlay, onClear }: Q
 
 export function QuickBindBar({
   keybinds, onPlay, onUpdate,
-  personas, activePersonaId, onSwitchPersona, onCreatePersona, onRenamePersona, onDeletePersona,
+  personas, activePersonaId, personasMax = 4, onSwitchPersona, onCreatePersona, onRenamePersona, onDeletePersona,
 }: QuickBindBarProps) {
   const t = useLocale()
   const emptyLabel = t.quickbind_empty || 'Drag emote here'
@@ -112,18 +113,6 @@ export function QuickBindBar({
         <span>{t.quickbind_title || 'Quick Bind'}</span>
         <span className="mbt-quickbind__hint">{t.quickbind_hint || 'Press a numpad key in game'}</span>
       </div>
-      {personas && personas.length > 0 && onSwitchPersona && (
-        <PersonaBar
-          inline
-          personas={personas}
-          activeId={activePersonaId || 'default'}
-          max={10}
-          onSwitch={onSwitchPersona}
-          onCreate={onCreatePersona || (() => {})}
-          onRename={onRenamePersona || (() => {})}
-          onDelete={onDeletePersona || (() => {})}
-        />
-      )}
       <div className="mbt-quickbind__slots">
         {SLOTS.map((slot) => (
           <QuickBindSlot
@@ -137,6 +126,18 @@ export function QuickBindBar({
           />
         ))}
       </div>
+      {personas && personas.length > 0 && onSwitchPersona && (
+        <PersonaBar
+          inline
+          personas={personas}
+          activeId={activePersonaId || 'default'}
+          max={personasMax}
+          onSwitch={onSwitchPersona}
+          onCreate={onCreatePersona || (() => {})}
+          onRename={onRenamePersona || (() => {})}
+          onDelete={onDeletePersona || (() => {})}
+        />
+      )}
     </div>
   )
 }

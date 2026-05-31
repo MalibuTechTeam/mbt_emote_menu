@@ -316,7 +316,7 @@ if MBT.Features.Personas then
         for _, p in ipairs(cachedPersonas.personas) do
             list[#list + 1] = { id = p.id, name = p.name, locked = (p.id == 'default') }
         end
-        return { activeId = cachedPersonas.activeId, personas = list }
+        return { activeId = cachedPersonas.activeId, personas = list, max = MAX_PERSONAS }
     end
 
     function Core.GetActivePersona()

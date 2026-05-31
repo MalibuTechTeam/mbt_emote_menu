@@ -57,7 +57,7 @@ MBT.AntiSpam = {
 -- current setup automatically. Only the action setup is bundled — favourites
 -- and custom lists are global and never change on switch.
 MBT.Personas = {
-    Max = 10, -- maximum number of personas a player can create
+    Max = 4, -- maximum number of personas a player can create
 }
 
 -- Emote Wheel: hold a key to open, pick a slot, release to play.
