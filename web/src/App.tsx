@@ -31,6 +31,8 @@ function App() {
   const [wheelSlots, setWheelSlots] = useState<Record<string, Emote>>({})
   const [wheelIndex, setWheelIndex] = useState(0)
   const [wheelMaxSlots, setWheelMaxSlots] = useState(8)
+  const [wheelMode, setWheelMode] = useState<'radial' | 'linear'>('radial')
+  const [wheelPointer, setWheelPointer] = useState<{ x: number; y: number; active: boolean }>({ x: 0, y: 0, active: false })
   const [activeWalk, setActiveWalk] = useState<string | null>(null)
   const [activeExpression, setActiveExpression] = useState<string | null>(null)
   const [savedMenuState, setSavedMenuState] = useState<{
@@ -142,11 +144,21 @@ function App() {
           setWheelSlots(data.slots || {})
           setWheelIndex(data.index ?? 0)
           setWheelMaxSlots(data.maxSlots ?? 8)
+          setWheelMode(data.mode === 'linear' ? 'linear' : 'radial')
+          setWheelPointer({ x: 0, y: 0, active: false })
           setWheelVisible(true)
           break
 
         case 'wheelIndex':
           setWheelIndex(data.index ?? 0)
+          break
+
+        case 'wheelPointer':
+          setWheelPointer({
+            x: typeof data.x === 'number' ? data.x : 0,
+            y: typeof data.y === 'number' ? data.y : 0,
+            active: !!data.active,
+          })
           break
 
         case 'closeWheel':
@@ -295,6 +307,8 @@ function App() {
             slots={wheelSlots}
             activeIndex={wheelIndex}
             maxSlots={wheelMaxSlots}
+            mode={wheelMode}
+            pointer={wheelPointer}
           />
         )}
         <AmbientLayer layout={config?.layout} />

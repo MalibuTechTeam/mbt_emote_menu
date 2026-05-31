@@ -10,10 +10,17 @@ interface EmoteWheelProps {
   slots: Record<string, Emote>
   activeIndex: number
   maxSlots: number
+  /** 'radial' = flick the mouse toward a slot · 'linear' = scroll list. */
+  mode?: 'radial' | 'linear'
+  /** Radial pointer position (-1..1 of the ring radius) + deadzone state. */
+  pointer?: { x: number; y: number; active: boolean }
 }
 
+// Ring radius for the radial layout, in px.
+const RADIUS = 98
+
 export const EmoteWheel = memo(function EmoteWheel({
-  visible, slots, activeIndex, maxSlots,
+  visible, slots, activeIndex, maxSlots, mode = 'radial', pointer,
 }: EmoteWheelProps) {
   const t = useLocale()
   const [removedSlot, setRemovedSlot] = useState<number | null>(null)
@@ -39,13 +46,85 @@ export const EmoteWheel = memo(function EmoteWheel({
   const isRemoved = removedSlot === activeIndex
   const isEmpty = !isRemoved && !currentEmote
 
+  // ─────────────────────────────────────────────────────────────────────────
+  // RADIAL — slots arranged in a circle, picked by flicking the mouse.
+  // ─────────────────────────────────────────────────────────────────────────
+  if (mode === 'radial') {
+    const hintParts = [t.wheel_hint_radial || 'Flick to pick · release to play']
+    if (currentEmote && !isRemoved) {
+      hintParts.push(t.wheel_hint_remove || 'X to remove')
+    }
+
+    return (
+      <div className="mbt-wheel mbt-wheel--radial">
+        <div className="mbt-wheel__ring">
+          {Array.from({ length: maxSlots }, (_, i) => {
+            const slotNum = i + 1
+            const a = (i / maxSlots) * Math.PI * 2 // 0 = top, clockwise
+            const x = Math.sin(a) * RADIUS
+            const y = -Math.cos(a) * RADIUS
+            const slotEmote = slots[String(slotNum)]
+            const isActive = slotNum === activeIndex
+            const justRemoved = removedSlot === slotNum
+            const cat = slotEmote ? `mbt-card--cat-${categorySlug(slotEmote.category)}` : ''
+            return (
+              <span
+                key={slotNum}
+                className={
+                  `mbt-wheel__node ${cat}` +
+                  (isActive ? ' mbt-wheel__node--active' : '') +
+                  (!slotEmote || justRemoved ? ' mbt-wheel__node--empty' : '')
+                }
+                style={{ transform: `translate(-50%, -50%) translate(${x}px, ${y}px)` }}
+              >
+                {slotEmote && !justRemoved
+                  ? <EmoteSilhouette emote={slotEmote} size={20} />
+                  : <Plus size={14} strokeWidth={2.5} />}
+                <span className="mbt-wheel__node-num">{slotNum}</span>
+              </span>
+            )
+          })}
+
+          {/* Flick pointer — only while outside the centre deadzone. */}
+          {pointer?.active && (
+            <span
+              className="mbt-wheel__pointer"
+              style={{ transform: `translate(-50%, -50%) translate(${pointer.x * RADIUS}px, ${pointer.y * RADIUS}px)` }}
+              aria-hidden="true"
+            />
+          )}
+
+          {/* Centre hub — selected emote label + slot key. */}
+          <div className="mbt-wheel__hub">
+            <span className="mbt-wheel__disc" aria-hidden="true">
+              {isEmpty || isRemoved
+                ? <Plus size={18} strokeWidth={2.5} />
+                : <EmoteSilhouette emote={currentEmote!} size={22} />}
+            </span>
+            {isEmpty ? (
+              <span className="mbt-wheel__hub-label mbt-wheel__hub-label--empty">
+                {t.wheel_empty_hint || t.wheel_empty || 'Empty slot'}
+              </span>
+            ) : (
+              <span className="mbt-wheel__hub-label">
+                {isRemoved ? (t.wheel_removed || 'Removed') : currentEmote!.label}
+              </span>
+            )}
+          </div>
+        </div>
+        <span className="mbt-wheel__hint">{hintParts.join(' · ')}</span>
+      </div>
+    )
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // LINEAR — original row-of-dots peek indicator (scroll to cycle).
+  // ─────────────────────────────────────────────────────────────────────────
   const hintParts = [t.wheel_hint || 'Scroll to change · Release to play']
   if (currentEmote && !isRemoved) {
     hintParts.push(t.wheel_hint_remove || 'X to remove')
   }
 
-  // Category-tinted disc — same slug derivation EmoteCard uses, so the
-  // silhouette picks up the matching --mbt-card-cat colour.
   const catClass = currentEmote
     ? `mbt-card--cat-${categorySlug(currentEmote.category)}`
     : ''

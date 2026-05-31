@@ -51,11 +51,13 @@ MBT.AntiSpam = {
     CooldownMs = 250, -- 250ms allows up to 4 emotes/s
 }
 
--- Emote Wheel: hold a key + scroll to pick, release to play.
+-- Emote Wheel: hold a key to open, pick a slot, release to play.
 MBT.EmoteWheel = {
-    Key       = 'K', -- Hold to open the wheel
-    Slots     = 8,   -- Number of slots (max 8)
-    RemoveKey = 'X', -- Press while open to clear the current slot
+    Key                = 'K',      -- Hold to open the wheel
+    Slots              = 8,        -- Number of slots (max 8)
+    RemoveKey          = 'X',      -- Press while open to clear the current slot
+    Mode               = 'radial', -- 'radial' = flick the mouse toward a slot · 'linear' = scroll through slots
+    PointerSensitivity = 2.8,      -- radial only: how fast the flick pointer moves (higher = faster)
 }
 
 -- Open Join: when you play an emote, nearby players see an anonymous

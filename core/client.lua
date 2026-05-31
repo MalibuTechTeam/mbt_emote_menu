@@ -397,6 +397,14 @@ if MBT.Features.EmoteWheel then
     local wheelCmdName = 'mbt_emote_wheel'
     local wheelRemoveCmdName = 'mbt_wheel_remove'
     local maxSlots = MBT.EmoteWheel.Slots or 8
+    local wheelMode = (MBT.EmoteWheel.Mode == 'linear') and 'linear' or 'radial'
+
+    -- Radial pointer tuning. Pointer accumulates from look input each frame and
+    -- stays where you flick it; magnitude is clamped to a unit circle with a
+    -- centre deadzone (below which no slot is selected).
+    local POINTER_SENS = MBT.EmoteWheel.PointerSensitivity or 2.8
+    local POINTER_DEADZONE = 0.28
+    local TWO_PI = math.pi * 2
 
     RegisterCommand('+' .. wheelCmdName, function()
         if isOpen or wheelOpen then return end
@@ -408,13 +416,42 @@ if MBT.Features.EmoteWheel then
             slots    = Core.GetWheelSlots(),
             index    = wheelIndex,
             maxSlots = maxSlots,
+            mode     = wheelMode,
         })
 
         CreateThread(function()
+            local px, py = 0.0, 0.0
             while wheelOpen do
                 DisableControlAction(0, 16, true) -- scroll down
                 DisableControlAction(0, 17, true) -- scroll up
 
+                if wheelMode == 'radial' then
+                    DisableControlAction(0, 1, true) -- look LR
+                    DisableControlAction(0, 2, true) -- look UD
+
+                    -- Accumulate the look delta into a screen-space pointer
+                    -- (+x right, +y down) and clamp it to the unit circle.
+                    px = px + GetDisabledControlNormal(0, 1) * POINTER_SENS
+                    py = py + GetDisabledControlNormal(0, 2) * POINTER_SENS
+                    local mag = math.sqrt(px * px + py * py)
+                    if mag > 1.0 then px, py, mag = px / mag, py / mag, 1.0 end
+
+                    local activePtr = mag >= POINTER_DEADZONE
+                    if activePtr then
+                        -- Angle from "up", clockwise; slot 1 sits at the top.
+                        local ang = math.atan(px, -py)
+                        if ang < 0 then ang = ang + TWO_PI end
+                        local sector = math.floor((ang / TWO_PI) * maxSlots + 0.5) % maxSlots + 1
+                        if sector ~= wheelIndex then
+                            wheelIndex = sector
+                            SendNUIMessage({ action = 'wheelIndex', index = wheelIndex })
+                        end
+                    end
+
+                    SendNUIMessage({ action = 'wheelPointer', x = px, y = py, active = activePtr })
+                end
+
+                -- Scroll still cycles slots in both modes (radial fallback).
                 if IsDisabledControlJustPressed(0, 17) then
                     wheelIndex = wheelIndex - 1
                     if wheelIndex < 1 then wheelIndex = maxSlots end
