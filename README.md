@@ -3,7 +3,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/FiveM-Ready-00e676?style=for-the-badge&logo=fivem&logoColor=white" alt="FiveM Ready" />
   <img src="https://img.shields.io/badge/Framework-ESX%20%7C%20QBox%20%7C%20QBCore%20%7C%20Standalone-blue?style=for-the-badge" alt="Framework" />
-  <img src="https://img.shields.io/badge/Version-1.5.0-informational?style=for-the-badge" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-1.6.0-informational?style=for-the-badge" alt="Version" />
   <img src="https://img.shields.io/badge/Lua-5.4-purple?style=for-the-badge&logo=lua" alt="Lua 5.4" />
   <img src="https://img.shields.io/badge/React-TypeScript-61DAFB?style=for-the-badge&logo=react" alt="React + TS" />
   <img src="https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-blue?style=for-the-badge" alt="PolyForm Noncommercial 1.0.0" />
@@ -49,8 +49,10 @@
 ### Quick Access
 
 - **Quick Bind** — assign emotes to NUM1-NUM6 keys via right-click drawer
-- **Emote Wheel** — hold-to-peek radial selector (up to 8 slots, no cursor needed)
+- **Emote Wheel** — hold-to-peek selector (up to 8 slots, no cursor needed). *(new in 1.6)* A **radial / gesture mode** lets you flick the mouse toward a slot, weapon-wheel style, instead of scrolling — switchable via `MBT.EmoteWheel.Mode`
+- **Personas / Loadouts** *(new in 1.6)* — save named loadouts (e.g. "Cop", "Party") bundling your Quick Binds and Wheel slots, and switch between them in one click. The active loadout auto-saves as you edit; a non-deletable "Default" is always there as a fallback
 - **Keyboard navigation** — arrow keys + Enter to browse and play emotes
+- **Smart search** *(new in 1.6)* — search now matches an emote's prop and animation too, not just its name, so "radio" finds the walkie-talkie emotes
 - **Random emote** button for spontaneous fun
 
 ### Playback
@@ -73,6 +75,10 @@
 
 - **Emoji Reactions** — 20 emoji that float above your head for nearby players to see. Browse them as cards in the **Emojis** category, or fire them instantly with chat commands (`/smile`, `/cry`, `/laught`, ...). Fully self-contained — no extra resource required. Size, duration, and visibility distance are tunable via `MBT.Emoji`
 - **RP Text** — `/me` and `/do` commands that float a styled pill above your head describing an action, visible to nearby players. Configurable channels with per-channel command name, range, and color. Server-side length clamp, sanitization, and throttle. Fully toggleable via `MBT.RpText.Enabled`
+
+### Creator Tools *(new in 1.6)*
+
+- **Photo Mode** — a cinematic camera opened from a button in the menu header. Drag to orbit the camera around your character, scroll to zoom, pick a look filter (cinematic, noir, warm, vibrant, cool), toggle depth-of-field and a rule-of-thirds framing grid, then capture — the MBT watermark rides on every shot. Optionally, the server owner can wire a Discord webhook so players send shots straight to a channel (the webhook URL stays server-side, captures are size-capped and throttled). Uses `screenshot-basic` when present, falls back to "hide HUD + your own screenshot key" otherwise. Fully tunable via `MBT.PhotoMode`
 
 ### Reliability
 
@@ -179,9 +185,36 @@ MBT.Features = {
 
 ```lua
 MBT.EmoteWheel = {
-    Key       = 'K',   -- Hold to open
-    Slots     = 8,     -- Max 8 slots
-    RemoveKey = 'X',   -- Remove emote from current slot while wheel is open
+    Key                = 'K',      -- Hold to open
+    Slots              = 8,        -- Max 8 slots
+    RemoveKey          = 'X',      -- Remove emote from current slot while wheel is open
+    Mode               = 'radial', -- 'radial' = flick the mouse toward a slot · 'linear' = scroll
+    PointerSensitivity = 2.8,      -- radial only: flick pointer speed
+}
+```
+
+### Personas
+
+```lua
+MBT.Features.Personas = true   -- Saved loadouts (Quick Bind + Wheel) you switch between
+MBT.Personas = {
+    Max = 4,   -- Maximum number of loadouts a player can create
+}
+```
+
+### Photo Mode
+
+```lua
+MBT.PhotoMode = {
+    Enabled   = true,   -- Camera button in the menu header
+    Watermark = true,   -- MBT watermark on the framing overlay
+    DofDefault = true,  -- Start with depth-of-field on
+    Filters = { --[[ look presets via timecycle modifiers ]] },
+    Discord = {
+        Enabled    = false, -- Owner opt-in: "Send to Discord" button
+        WebhookUrl = '',    -- Server-side only, never sent to clients
+        ThrottleMs = 30000, -- Per-player cooldown between sends
+    },
 }
 ```
 
