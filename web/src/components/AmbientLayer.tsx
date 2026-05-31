@@ -4,6 +4,7 @@ import { PreviewVignette } from './PreviewVignette'
 import { OpenJoinPill, type OpenJoinPosition } from './OpenJoinPill'
 import { WhatsThatBubble } from './WhatsThatBubble'
 import { RpTextLayer } from './RpTextLayer'
+import { PhotoModeOverlay } from './PhotoModeOverlay'
 import { Toast, useToasts, setToastListener } from './Toast'
 
 interface AmbientLayerProps {
@@ -131,6 +132,7 @@ export function AmbientLayer({ layout }: AmbientLayerProps) {
         layout={layout}
       />
       <RpTextLayer layout={layout} />
+      <PhotoModeOverlay />
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </>
   )

@@ -186,6 +186,7 @@ local function BuildMenuConfig()
     local features = {}
     for k, v in pairs(MBT.Features or {}) do features[k] = v end
     features.EmotePlacement = (MBT.Features.EmotePlacement ~= false) and placementAvailable
+    features.PhotoMode = (MBT.PhotoMode and MBT.PhotoMode.Enabled) and true or false
 
     return {
         layout        = MBT.Menu.Layout or 'default',

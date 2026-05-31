@@ -8,6 +8,7 @@ import {
   History,
   Trophy,
   SearchX,
+  Camera,
 } from "lucide-react";
 import { PlaylistPanel } from "./PlaylistPanel";
 import { PartnerFinder } from "./PartnerFinder";
@@ -951,6 +952,15 @@ export function EmoteMenu({
             >
               <Square size={12} fill="currentColor" />
             </button>
+            {features.PhotoMode && (
+              <button
+                className="mbt-header__photo"
+                onClick={() => useNui("enterPhotoMode")}
+                title={t.tooltip_photo_mode || "Photo Mode"}
+              >
+                <Camera size={14} />
+              </button>
+            )}
             {features.Favorites && (
               <HeaderMenu
                 onExport={handleExportOpen}

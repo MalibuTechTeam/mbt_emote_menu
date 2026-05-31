@@ -276,6 +276,7 @@ body {
    colour only — no filled tinted box. */
 .mbt-header__new,
 .mbt-header__stop,
+.mbt-header__photo,
 .mbt-header__close {
   display: flex;
   align-items: center;
@@ -293,10 +294,15 @@ body {
 
 .mbt-header__new:hover,
 .mbt-header__stop:hover,
+.mbt-header__photo:hover,
 .mbt-header__close:hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: var(--mbt-border-hover);
   color: var(--mbt-text);
+}
+
+.mbt-header__photo:hover {
+  color: var(--mbt-accent);
 }
 
 /* meaning lives in the glyph colour, not a box */
@@ -3800,6 +3806,218 @@ body {
 .mbt-rptext--me  { --mbt-rptext-accent: #00e676; }
 .mbt-rptext--do  { --mbt-rptext-accent: #7fa8c9; }
 .mbt-rptext--med { --mbt-rptext-accent: #e0654f; }
+
+/* ── Photo Mode overlay ──────────────────────────────────────
+ * Full-screen framing layer. The stage is a transparent drag-catcher
+ * (orbit on drag, zoom on wheel); everything else is chrome: rule-of-
+ * thirds grid, letterbox bars, watermark, and the bottom control bar. */
+.mbt-photo {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  pointer-events: none;
+  animation: mbt-photo-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes mbt-photo-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Drag-catcher fills the screen; it's the only always-interactive layer. */
+.mbt-photo__stage {
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+  cursor: grab;
+}
+.mbt-photo__stage--drag { cursor: grabbing; }
+
+/* Rule-of-thirds grid — two vertical + two horizontal hairlines. */
+.mbt-photo__grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.mbt-photo__grid span {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.16);
+}
+.mbt-photo__grid span:nth-child(1),
+.mbt-photo__grid span:nth-child(2) { top: 0; bottom: 0; width: 1px; }
+.mbt-photo__grid span:nth-child(1) { left: 33.333%; }
+.mbt-photo__grid span:nth-child(2) { left: 66.666%; }
+.mbt-photo__grid span:nth-child(3),
+.mbt-photo__grid span:nth-child(4) { left: 0; right: 0; height: 1px; }
+.mbt-photo__grid span:nth-child(3) { top: 33.333%; }
+.mbt-photo__grid span:nth-child(4) { top: 66.666%; }
+
+/* Cinematic letterbox bars. */
+.mbt-photo__bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 7vh;
+  background: linear-gradient(var(--dir, to bottom), rgba(0,0,0,0.55), rgba(0,0,0,0));
+  pointer-events: none;
+}
+.mbt-photo__bar--top    { top: 0; --dir: to bottom; }
+.mbt-photo__bar--bottom { bottom: 0; --dir: to top; }
+
+.mbt-photo__watermark {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.mbt-photo__exit {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(180deg, #181c22, #0e1116);
+  border: 1px solid var(--mbt-edge-hi);
+  color: var(--mbt-text-mid);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+.mbt-photo__exit:hover { color: #ff6b6b; border-color: rgba(255,107,107,0.4); }
+
+/* Bottom control bar. */
+.mbt-photo__controls {
+  position: absolute;
+  left: 50%;
+  bottom: max(20px, 4vh);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(20,24,30,0.92), rgba(12,14,18,0.92));
+  border: 1px solid var(--mbt-edge-hi);
+  box-shadow: 0 18px 44px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
+  pointer-events: auto;
+  animation: mbt-photo-bar-in 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes mbt-photo-bar-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.mbt-photo__filters {
+  display: flex;
+  gap: 6px;
+}
+.mbt-photo__filter {
+  padding: 7px 13px;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--mbt-text-mid);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+.mbt-photo__filter:hover {
+  color: var(--mbt-text-hi);
+  background: rgba(255, 255, 255, 0.07);
+}
+.mbt-photo__filter--active {
+  color: #07120b;
+  background: var(--mbt-accent);
+  border-color: var(--mbt-accent);
+}
+
+.mbt-photo__tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.mbt-photo__tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--mbt-text-mid);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+.mbt-photo__tool:hover { color: var(--mbt-text-hi); }
+.mbt-photo__tool--on {
+  color: var(--mbt-accent);
+  border-color: rgba(0, 230, 118, 0.4);
+  background: rgba(0, 230, 118, 0.08);
+}
+
+.mbt-photo__send {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #07120b;
+  background: var(--mbt-accent);
+  border: 1px solid var(--mbt-accent);
+  cursor: pointer;
+  transition: filter 140ms ease, opacity 140ms ease;
+}
+.mbt-photo__send:hover { filter: brightness(1.08); }
+.mbt-photo__send:disabled { cursor: default; opacity: 0.85; }
+.mbt-photo__send--confirm { background: #ffb547; border-color: #ffb547; }
+.mbt-photo__send--error   { background: #ff6b6b; border-color: #ff6b6b; color: #fff; }
+
+.mbt-photo__hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--mbt-text-faint);
+}
+
+/* During capture, hide interactive chrome so it stays out of the shot —
+   the watermark and letterbox bars are intentionally kept. */
+.mbt-photo--capturing .mbt-photo__grid,
+.mbt-photo--capturing .mbt-photo__controls,
+.mbt-photo--capturing .mbt-photo__exit {
+  opacity: 0;
+  transition: opacity 60ms ease;
+}
+
+.mbt-spin { animation: mbt-spin 0.8s linear infinite; }
+@keyframes mbt-spin { to { transform: rotate(360deg); } }
 
 /* ── Nearby Section ──────────────────────────────────────────
  * Card-style ribbon above the category pills that surfaces shared/duet

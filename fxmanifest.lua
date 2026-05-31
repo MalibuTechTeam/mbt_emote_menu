@@ -30,6 +30,7 @@ server_scripts {
     'modules/trending/server.lua',
     'modules/emoji/server.lua',
     'modules/rptext/server.lua',
+    'modules/photomode/server.lua',
 }
 
 client_scripts {
@@ -44,6 +45,7 @@ client_scripts {
     'modules/nearby/client.lua',
     'modules/emoji/client.lua',
     'modules/rptext/client.lua',
+    'modules/photomode/client.lua',
     'core/client.lua',
 }
 

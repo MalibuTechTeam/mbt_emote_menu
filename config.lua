@@ -152,6 +152,46 @@ MBT.RpText = {
     },
 }
 
+-- Photo Mode: a cinematic camera + framing tool opened from a button in the
+-- menu. Orbit/zoom the camera, pick a filter, frame the shot, capture. The
+-- MBT watermark rides on every screenshot. Optionally, the owner can wire a
+-- Discord webhook so players send shots straight to a channel.
+MBT.PhotoMode = {
+    Enabled   = true,  -- master toggle (shows the camera button in the menu)
+    Watermark = true,  -- show the small MBT watermark on the framing overlay
+
+    -- Camera feel. Sensitivities are how fast drag/scroll move the camera.
+    OrbitSensitivity = 0.45, -- drag -> rotation speed
+    ZoomSensitivity  = 0.30, -- scroll -> zoom speed
+    MinDistance      = 0.7,  -- closest the camera can get (m)
+    MaxDistance      = 7.0,  -- farthest (m)
+    DofDefault       = true, -- start with depth-of-field (background blur) on
+
+    -- Look presets, applied as GTA timecycle modifiers. 'timecycle' = nil means
+    -- no filter (clean look). These names are tunable — swap them for any
+    -- timecycle modifier you like; strength is 0.0-1.0.
+    Filters = {
+        { id = 'none',    label = 'None',      timecycle = nil },
+        { id = 'cinema',  label = 'Cinematic', timecycle = 'cinema',      strength = 0.55 },
+        { id = 'noir',    label = 'Noir',      timecycle = 'phone_cam11', strength = 1.0 },
+        { id = 'warm',    label = 'Warm',      timecycle = 'phone_cam1',  strength = 1.0 },
+        { id = 'vibrant', label = 'Vibrant',   timecycle = 'phone_cam2',  strength = 1.0 },
+        { id = 'cool',    label = 'Cool',      timecycle = 'phone_cam4',  strength = 1.0 },
+    },
+
+    -- Send-to-Discord (optional). When Enabled and a WebhookUrl is set, a
+    -- "Send to Discord" button appears; the shot is posted to that channel.
+    -- SECURITY: the webhook URL lives server-side only and is never sent to
+    -- clients. Leave Enabled = false to keep Photo Mode purely local.
+    Discord = {
+        Enabled    = false, -- owner turns this on
+        WebhookUrl = '',    -- server-side only; e.g. 'https://discord.com/api/webhooks/...'
+        Username   = 'MBT Photo Mode', -- name shown on the Discord post
+        ThrottleMs = 30000, -- per-player cooldown between sends (anti-spam)
+        Confirm    = true,  -- ask the player to confirm before sending
+    },
+}
+
 -------------------------------------------------------------------------------
 -- [ SECTION 4: CATEGORIES ] --
 -------------------------------------------------------------------------------
