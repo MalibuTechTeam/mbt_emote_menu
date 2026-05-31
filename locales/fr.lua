@@ -180,4 +180,31 @@ RegisterLocale('fr', {
     ['toast_list_deleted']         = 'Liste "%s" supprimee',
     ['toast_list_already_in']      = 'Deja dans "%s"',
     ['toast_list_added']           = 'Ajoute a "%s"',
+
+    -- Roue d'emotes (radiale)
+    ['wheel_hint_radial']          = 'Orientez pour choisir · relachez pour jouer',
+
+    -- Mode Photo
+    ['tooltip_photo_mode']         = 'Mode Photo',
+    ['photo_exit']                 = 'Quitter le Mode Photo',
+    ['photo_dof']                  = 'Profondeur de champ',
+    ['photo_dof_label']            = 'Flou',
+    ['photo_grid']                 = 'Grille',
+    ['photo_grid_label']           = 'Grille',
+    ['photo_send']                 = 'Envoyer sur Discord',
+    ['photo_send_confirm']         = 'Touchez pour confirmer',
+    ['photo_sending']              = 'Envoi...',
+    ['photo_sent']                 = 'Envoye !',
+    ['photo_send_error']           = 'Echec',
+    ['photo_capture_hint']         = 'Glissez pour pivoter · molette pour zoomer · touche capture pour photographier',
+
+    -- Profils / loadouts
+    ['persona_title']              = 'Profils',
+    ['persona_delete_q']           = 'Supprimer ?',
+    ['persona_delete']             = 'Supprimer',
+    ['persona_default_hint']       = 'Profil par defaut',
+    ['persona_switch_hint']        = 'Clic pour changer · double-clic pour renommer',
+    ['persona_name_placeholder']   = 'Nom du profil',
+    ['persona_new']                = 'Nouveau profil (clone la config actuelle)',
+    ['cancel']                     = 'Annuler',
 })

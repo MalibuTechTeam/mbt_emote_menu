@@ -153,6 +153,15 @@ local LOCALE_KEYS = {
     -- Previously defined, now shipped to the NUI
     'quickbind_hint', 'drawer_quick_bind_hint', 'drawer_wheel_slot_hint',
     'drawer_bind_key', 'variant_count',
+    -- Emote wheel (radial)
+    'wheel_hint_radial',
+    -- Photo Mode
+    'tooltip_photo_mode', 'photo_exit', 'photo_dof', 'photo_dof_label',
+    'photo_grid', 'photo_grid_label', 'photo_send', 'photo_send_confirm',
+    'photo_sending', 'photo_sent', 'photo_send_error', 'photo_capture_hint',
+    -- Personas
+    'persona_title', 'persona_delete_q', 'persona_delete', 'persona_default_hint',
+    'persona_switch_hint', 'persona_name_placeholder', 'persona_new', 'cancel',
 }
 
 local function BuildLocaleStrings()

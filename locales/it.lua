@@ -180,4 +180,31 @@ RegisterLocale('it', {
     ['toast_list_deleted']         = 'Lista "%s" eliminata',
     ['toast_list_already_in']      = 'Gia in "%s"',
     ['toast_list_added']           = 'Aggiunto a "%s"',
+
+    -- Emote Wheel (radiale)
+    ['wheel_hint_radial']          = 'Muovi per scegliere · rilascia per giocare',
+
+    -- Modalità Foto
+    ['tooltip_photo_mode']         = 'Modalità Foto',
+    ['photo_exit']                 = 'Esci dalla Modalità Foto',
+    ['photo_dof']                  = 'Profondità di campo',
+    ['photo_dof_label']            = 'Sfocato',
+    ['photo_grid']                 = 'Griglia',
+    ['photo_grid_label']           = 'Griglia',
+    ['photo_send']                 = 'Invia a Discord',
+    ['photo_send_confirm']         = 'Tocca per confermare',
+    ['photo_sending']              = 'Invio...',
+    ['photo_sent']                 = 'Inviato!',
+    ['photo_send_error']           = 'Errore',
+    ['photo_capture_hint']         = 'Trascina per orbitare · scorri per zoomare · usa il tasto screenshot per catturare',
+
+    -- Personas / loadout
+    ['persona_title']              = 'Loadout',
+    ['persona_delete_q']           = 'Eliminare?',
+    ['persona_delete']             = 'Elimina',
+    ['persona_default_hint']       = 'Loadout predefinito',
+    ['persona_switch_hint']        = 'Clic per cambiare · doppio-clic per rinominare',
+    ['persona_name_placeholder']   = 'Nome loadout',
+    ['persona_new']                = 'Nuovo loadout (clona il setup attuale)',
+    ['cancel']                     = 'Annulla',
 })

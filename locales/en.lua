@@ -180,4 +180,31 @@ RegisterLocale('en', {
     ['toast_list_deleted']         = 'List "%s" deleted',
     ['toast_list_already_in']      = 'Already in "%s"',
     ['toast_list_added']           = 'Added to "%s"',
+
+    -- Emote Wheel (radial)
+    ['wheel_hint_radial']          = 'Flick to pick · release to play',
+
+    -- Photo Mode
+    ['tooltip_photo_mode']         = 'Photo Mode',
+    ['photo_exit']                 = 'Exit Photo Mode',
+    ['photo_dof']                  = 'Depth of field',
+    ['photo_dof_label']            = 'Blur',
+    ['photo_grid']                 = 'Framing grid',
+    ['photo_grid_label']           = 'Grid',
+    ['photo_send']                 = 'Send to Discord',
+    ['photo_send_confirm']         = 'Tap to confirm',
+    ['photo_sending']              = 'Sending...',
+    ['photo_sent']                 = 'Sent!',
+    ['photo_send_error']           = 'Failed',
+    ['photo_capture_hint']         = 'Drag to orbit · scroll to zoom · use your screenshot key to capture',
+
+    -- Personas / loadouts
+    ['persona_title']              = 'Loadouts',
+    ['persona_delete_q']           = 'Delete?',
+    ['persona_delete']             = 'Delete',
+    ['persona_default_hint']       = 'Default loadout',
+    ['persona_switch_hint']        = 'Click to switch · double-click to rename',
+    ['persona_name_placeholder']   = 'Loadout name',
+    ['persona_new']                = 'New loadout (clones current setup)',
+    ['cancel']                     = 'Cancel',
 })

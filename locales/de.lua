@@ -180,4 +180,31 @@ RegisterLocale('de', {
     ['toast_list_deleted']         = 'Liste "%s" geloescht',
     ['toast_list_already_in']      = 'Bereits in "%s"',
     ['toast_list_added']           = 'Zu "%s" hinzugefuegt',
+
+    -- Emote-Rad (radial)
+    ['wheel_hint_radial']          = 'Zielen zum Waehlen · loslassen zum Abspielen',
+
+    -- Fotomodus
+    ['tooltip_photo_mode']         = 'Fotomodus',
+    ['photo_exit']                 = 'Fotomodus verlassen',
+    ['photo_dof']                  = 'Tiefenschaerfe',
+    ['photo_dof_label']            = 'Unschaerfe',
+    ['photo_grid']                 = 'Raster',
+    ['photo_grid_label']           = 'Raster',
+    ['photo_send']                 = 'An Discord senden',
+    ['photo_send_confirm']         = 'Zum Bestaetigen tippen',
+    ['photo_sending']              = 'Senden...',
+    ['photo_sent']                 = 'Gesendet!',
+    ['photo_send_error']           = 'Fehler',
+    ['photo_capture_hint']         = 'Ziehen zum Drehen · scrollen zum Zoomen · Screenshot-Taste zum Aufnehmen',
+
+    -- Profile / Loadouts
+    ['persona_title']              = 'Profile',
+    ['persona_delete_q']           = 'Loeschen?',
+    ['persona_delete']             = 'Loeschen',
+    ['persona_default_hint']       = 'Standard-Profil',
+    ['persona_switch_hint']        = 'Klick zum Wechseln · Doppelklick zum Umbenennen',
+    ['persona_name_placeholder']   = 'Profilname',
+    ['persona_new']                = 'Neues Profil (klont aktuelle Einrichtung)',
+    ['cancel']                     = 'Abbrechen',
 })
