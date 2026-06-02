@@ -239,26 +239,53 @@ RegisterNUICallback('photoCapture', function(_, cb)
         return
     end
 
-    SendNUIMessage({ action = 'photoPrepareCapture' })
-
-    CreateThread(function()
-        Wait(90)
-        exports['screenshot-basic']:requestScreenshot(
-            { encoding = 'jpg', quality = 0.85 },
-            function(dataUrl)
-                local b64 = type(dataUrl) == 'string'
-                    and dataUrl:gsub('^data:image/[^;]+;base64,', '') or nil
-                if not b64 or b64 == '' then
-                    SendNUIMessage({ action = 'photoCaptureResult', ok = false, reason = 'capture-failed' })
-                    return
-                end
-                TriggerServerEvent('mbt_emote_menu:server:photoUpload', b64)
-            end)
-    end)
+    TriggerServerEvent('mbt_emote_menu:server:photoUploadRequest')
 end)
 
 RegisterNetEvent('mbt_emote_menu:client:photoUploadResult', function(ok, reason)
     SendNUIMessage({ action = 'photoCaptureResult', ok = ok and true or false, reason = reason })
+end)
+
+RegisterNetEvent('mbt_emote_menu:client:photoUploadReady', function(uploadUrl)
+    if not active then return end
+    if type(uploadUrl) ~= 'string' or uploadUrl == '' then return end
+
+    SendNUIMessage({ action = 'photoPrepareCapture' })
+    CreateThread(function()
+        Wait(90)
+        exports['screenshot-basic']:requestScreenshotUpload(
+            uploadUrl, 'files[0]', { encoding = 'jpg', quality = 0.85 },
+            function(data)
+                local ok, messageId = true, nil
+                if type(data) == 'string' and data ~= '' then
+                    local good, decoded = pcall(json.decode, data)
+                    if good and type(decoded) == 'table' then
+                        if decoded.id then
+                            messageId = tostring(decoded.id)
+                        elseif decoded.code ~= nil or decoded.message ~= nil then
+                            ok = false
+                        end
+                    end
+                end
+                SendNUIMessage({
+                    action = 'photoCaptureResult',
+                    ok     = ok,
+                    reason = ok and 'ok' or 'discord-error',
+                })
+
+                if ok and messageId then
+                    local c = GetEntityCoords(PlayerPedId())
+                    local street = GetStreetNameFromHashKey(GetStreetNameAtCoord(c.x, c.y, c.z)) or ''
+                    local zone = GetLabelText(GetNameOfZone(c.x, c.y, c.z)) or ''
+                    local area = street
+                    if zone ~= '' and zone ~= 'NULL' and zone ~= area then
+                        area = (area ~= '') and (area .. ', ' .. zone) or zone
+                    end
+                    local gameTime = ('%02d:%02d'):format(GetClockHours(), GetClockMinutes())
+                    TriggerServerEvent('mbt_emote_menu:server:photoEnrich', messageId, area, gameTime)
+                end
+            end)
+    end)
 end)
 
 -------------------------------------------------------------------------------

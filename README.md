@@ -78,7 +78,7 @@
 
 ### Creator Tools *(new in 1.6)*
 
-- **Photo Mode** — a cinematic camera opened from a button in the menu header. Drag to orbit the camera around your character, scroll to zoom, pick a look filter (cinematic, noir, warm, vibrant, cool), toggle depth-of-field and a rule-of-thirds framing grid, then capture — the MBT watermark rides on every shot. Optionally, the server owner can wire a Discord webhook so players send shots straight to a channel (the webhook URL stays server-side, captures are size-capped and throttled). Uses `screenshot-basic` when present, falls back to "hide HUD + your own screenshot key" otherwise. Fully tunable via `MBT.PhotoMode`
+- **Photo Mode** — a cinematic camera opened from a button in the menu header. Drag to orbit the camera around your character, scroll to zoom, pick a look filter (cinematic, noir, warm, vibrant, cool), toggle depth-of-field and a rule-of-thirds framing grid, then capture — the MBT watermark rides on every shot. Optionally, the server owner can wire a Discord webhook so players send shots straight to a channel (per-player throttled; the upload runs client-side via `screenshot-basic`, so the webhook is handed to the uploading client — a write-only webhook, rotate it if abused). Uses `screenshot-basic` when present, falls back to "hide HUD + your own screenshot key" otherwise. Fully tunable via `MBT.PhotoMode`
 
 ### Reliability
 
@@ -212,7 +212,7 @@ MBT.PhotoMode = {
     Filters = { --[[ look presets via timecycle modifiers ]] },
     Discord = {
         Enabled    = false, -- Owner opt-in: "Send to Discord" button
-        WebhookUrl = '',    -- Server-side only, never sent to clients
+        WebhookUrl = '',    -- Handed to the uploading client (write-only webhook)
         ThrottleMs = 30000, -- Per-player cooldown between sends
     },
 }

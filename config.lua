@@ -165,6 +165,13 @@ MBT.PhotoMode = {
     Enabled   = true,  -- master toggle (shows the camera button in the menu)
     Watermark = true,  -- show the small MBT watermark on the framing overlay
 
+    -- Discord embed dressing (only used when Discord.Enabled below).
+    -- LogoUrl: YOUR server logo, shown as the embed thumbnail (any public URL).
+    --          Leave empty for none. The MBT mark always stays in the footer.
+    -- Caption: short flavour line under the player name (empty = none).
+    LogoUrl = '',
+    Caption = 'Captured in Photo Mode',
+
     -- Camera feel. Sensitivities are how fast drag/scroll move the camera.
     OrbitSensitivity = 0.45, -- drag -> rotation speed
     ZoomSensitivity  = 0.30, -- scroll -> zoom speed
@@ -185,15 +192,15 @@ MBT.PhotoMode = {
     },
 
     -- Send-to-Discord (optional). When Enabled and a WebhookUrl is set, a
-    -- "Send to Discord" button appears; the shot is posted to that channel.
-    -- SECURITY: the webhook URL lives server-side only and is never sent to
-    -- clients. Leave Enabled = false to keep Photo Mode purely local.
+    -- "Send to Discord" button appears and the shot posts to that channel.
     Discord = {
         Enabled    = false, -- owner turns this on
-        WebhookUrl = '',    -- server-side only; e.g. 'https://discord.com/api/webhooks/...'
-        Username   = 'MBT Photo Mode', -- name shown on the Discord post
+        WebhookUrl = '',    -- e.g. 'https://discord.com/api/webhooks/...'
         ThrottleMs = 30000, -- per-player cooldown between sends (anti-spam)
-        Confirm    = true,  -- ask the player to confirm before sending
+        -- How the post looks:
+        --   'image' = just the screenshot, nothing else
+        --   'embed' = the screenshot + a rich info card below (player, location, time, logo)
+        Style      = 'embed',
     },
 }
 

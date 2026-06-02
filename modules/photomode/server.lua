@@ -3,85 +3,80 @@ local dc  = cfg.Discord or {}
 
 if not cfg.Enabled or not dc.Enabled then return end
 
-local MAX_B64   = 2000000 -- ~1.5 MB image; reject anything bigger
-local lastSend  = {}
-local B64 = {}
-do
-    local chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-    for i = 1, 64 do B64[chars:byte(i)] = i - 1 end
+local MBT_LOGO = 'https://raw.githubusercontent.com/MalibuTechTeam/mbt_emote_menu/main/.github/release-assets/mbt-logo.png'
+local lastSend = {}
+
+-- Append ?wait=true so Discord returns the created message, letting the client
+-- confirm success. Respects a webhook URL that already has a query string.
+local function withWait(url)
+    if url:find('?', 1, true) then return url .. '&wait=true' end
+    return url .. '?wait=true'
 end
 
-local function b64decode(s)
-    s = s:gsub('[^A-Za-z0-9+/]', '')
-    local out, n = {}, #s
-    for i = 1, n, 4 do
-        local a = B64[s:byte(i)]     or 0
-        local b = B64[s:byte(i + 1)] or 0
-        local c = B64[s:byte(i + 2)]
-        local d = B64[s:byte(i + 3)]
-        local v = a * 262144 + b * 4096 + (c or 0) * 64 + (d or 0)
-        out[#out + 1] = string.char((v >> 16) & 0xFF)
-        if c then out[#out + 1] = string.char((v >> 8) & 0xFF) end
-        if d then out[#out + 1] = string.char(v & 0xFF) end
-    end
-    return table.concat(out)
-end
-
-local function reply(src, ok, reason)
-    TriggerClientEvent('mbt_emote_menu:client:photoUploadResult', src, ok, reason)
-end
-
-RegisterNetEvent('mbt_emote_menu:server:photoUpload', function(b64)
+RegisterNetEvent('mbt_emote_menu:server:photoUploadRequest', function()
     local src = source
     if not src or src <= 0 then return end
 
     if type(dc.WebhookUrl) ~= 'string' or dc.WebhookUrl == '' then
-        reply(src, false, 'not-configured'); return
-    end
-    if type(b64) ~= 'string' or #b64 < 100 then
-        reply(src, false, 'bad-data'); return
-    end
-    if #b64 > MAX_B64 then
-        reply(src, false, 'too-large'); return
+        TriggerClientEvent('mbt_emote_menu:client:photoUploadResult', src, false, 'not-configured')
+        return
     end
 
     local now = GetGameTimer()
     local throttle = dc.ThrottleMs or 30000
     if lastSend[src] and (now - lastSend[src]) < throttle then
-        reply(src, false, 'throttled'); return
+        TriggerClientEvent('mbt_emote_menu:client:photoUploadResult', src, false, 'throttled')
+        return
     end
     lastSend[src] = now
 
-    local bytes = b64decode(b64)
-    if #bytes < 64 then
-        reply(src, false, 'decode-failed'); return
+    TriggerClientEvent('mbt_emote_menu:client:photoUploadReady', src, withWait(dc.WebhookUrl))
+end)
+
+RegisterNetEvent('mbt_emote_menu:server:photoEnrich', function(messageId, area, gameTime)
+    local src = source
+    if not src or src <= 0 then return end
+    if type(dc.WebhookUrl) ~= 'string' or dc.WebhookUrl == '' then return end
+    if type(messageId) ~= 'string' or not messageId:match('^%d+$') then return end
+
+    local style = dc.Style or 'embed'
+    if style == 'image' then return end
+
+    local playerName
+    local okState, state = pcall(function() return Player(src).state end)
+    if okState and state and type(state.mbt_charname) == 'string' and state.mbt_charname ~= '' then
+        playerName = state.mbt_charname
+    else
+        playerName = GetPlayerName(src) or ('player ' .. src)
     end
 
-    local boundary = '----MBTPhotoModeBoundary7f3a9c1e2b'
-    local payload = json.encode({
-        username = dc.Username or 'MBT Photo Mode',
-        content  = ('📸 **%s**'):format(GetPlayerName(src) or ('player ' .. src)),
-    })
+    local fields = {}
+    if type(area) == 'string' and area ~= '' and area ~= 'NULL' then
+        fields[#fields + 1] = { name = 'Location', value = area:sub(1, 120), inline = true }
+    end
+    if type(gameTime) == 'string' and gameTime:match('^%d%d?:%d%d$') then
+        fields[#fields + 1] = { name = 'In-game time', value = gameTime, inline = true }
+    end
 
-    local body = table.concat({
-        '--' .. boundary,
-        'Content-Disposition: form-data; name="payload_json"',
-        'Content-Type: application/json',
-        '',
-        payload,
-        '--' .. boundary,
-        'Content-Disposition: form-data; name="files[0]"; filename="mbt_shot.jpg"',
-        'Content-Type: image/jpeg',
-        '',
-        bytes,
-        '--' .. boundary .. '--',
-        '',
-    }, '\r\n')
+    local embed = {
+        author    = { name = '📸 ' .. playerName:sub(1, 80) },
+        color     = 0x00E676,
+        fields    = fields,
+        footer    = { text = ('MBT Photo Mode · #%d'):format(src) },
+        timestamp = os.date('!%Y-%m-%dT%H:%M:%S.000Z'),
+    }
+    if type(cfg.Caption) == 'string' and cfg.Caption ~= '' then
+        embed.description = cfg.Caption:sub(1, 200)
+    end
+    if type(cfg.LogoUrl) == 'string' and cfg.LogoUrl:match('^https?://') then
+        embed.thumbnail = { url = cfg.LogoUrl }
+    end
+    embed.footer.icon_url = MBT_LOGO
+    local patchUrl = dc.WebhookUrl:gsub('%?.*$', '') .. '/messages/' .. messageId
+    local body = json.encode({ embeds = { embed } })
 
-    PerformHttpRequest(dc.WebhookUrl, function(status)
-        local ok = status and status >= 200 and status < 300
-        reply(src, ok and true or false, ok and 'ok' or ('http-' .. tostring(status)))
-    end, 'POST', body, { ['Content-Type'] = 'multipart/form-data; boundary=' .. boundary })
+    PerformHttpRequest(patchUrl, function() end, 'PATCH', body,
+        { ['Content-Type'] = 'application/json' })
 end)
 
 AddEventHandler('playerDropped', function()
