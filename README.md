@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-   <img src="https://r2.fivemanage.com/dPa5OqQoEubnwFkRaIgUq/ScreenShot/thumb_mbt_rpemotes.png" alt="FiveM Ready" />
+   <img src="https://raw.githubusercontent.com/MalibuTechTeam/mbt_emote_menu/main/.github/release-assets/hero.png" alt="MBT Emote Menu" />
 </p>
 
 **mbt_emote_menu** is a premium NUI overlay that completely replaces the default rpemotes-reborn menu with a modern, responsive, and feature-rich interface built with React + TypeScript. Designed for serious RP servers that demand a polished player experience.
