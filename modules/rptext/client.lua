@@ -152,6 +152,24 @@ if cfg.Enabled then
 end
 
 -------------------------------------------------------------------------------
+-- [ RP-TEXT OWNERSHIP HANDSHAKE ] --
+-- Permette ad altri resource dell'ecosistema (es. mbt_hud chat in RpTextMode
+-- 'auto') di sapere che noi forniamo gia' /me /do e cedere il comando invece
+-- di intercettarlo. Ritorna la mappa { command -> true } che possediamo.
+-------------------------------------------------------------------------------
+exports('ProvidesRpText', function()
+    local owned = {}
+    if cfg.Enabled then
+        for _, ch in ipairs(cfg.Channels or {}) do
+            if type(ch) == 'table' and type(ch.command) == 'string' then
+                owned[ch.command] = true
+            end
+        end
+    end
+    return owned
+end)
+
+-------------------------------------------------------------------------------
 -- [ CHAT SUGGESTIONS ] --
 -------------------------------------------------------------------------------
 

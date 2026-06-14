@@ -7,6 +7,21 @@ for _, ch in ipairs(cfg.Channels or {}) do
     end
 end
 
+-- RP-text ownership handshake (mirror del client). Server-side cosi' che i
+-- resource che gate-ano lato server (es. mbt_hud chat ACL) possano interrogarlo
+-- in modo coerente. Ritorna { command -> true } che possediamo.
+exports('ProvidesRpText', function()
+    local owned = {}
+    if cfg.Enabled then
+        for _, ch in ipairs(cfg.Channels or {}) do
+            if type(ch) == 'table' and type(ch.command) == 'string' then
+                owned[ch.command] = true
+            end
+        end
+    end
+    return owned
+end)
+
 local lastUse = {}
 
 local function clampChars(text, maxChars)
