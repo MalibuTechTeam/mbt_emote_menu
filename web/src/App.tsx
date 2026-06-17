@@ -336,6 +336,21 @@ function App() {
     setSavedMenuState(null) // ESC → reset state on next open
   }, [])
 
+  // Persist a player setting and re-apply the authoritative config + locale
+  // that Lua hands back (it merges prefs over the config defaults).
+  const handleSavePref = useCallback(async (key: string, value: unknown) => {
+    const res = await useNui<{ ok?: boolean; config?: MenuConfig; locale?: LocaleStrings }>(
+      'savePref', { key, value }
+    )
+    if (res?.ok) {
+      if (res.config) {
+        setConfig(res.config)
+        setDebugEnabled(!!res.config.debug)
+      }
+      if (res.locale) setLocale(res.locale)
+    }
+  }, [])
+
   if (!visible || !config) {
     // Menu closed (or config not yet loaded): render only the wheel, if
     // held, plus the always-on ambient layer. AmbientLayer owns the
@@ -352,7 +367,7 @@ function App() {
             pointer={wheelPointer}
           />
         )}
-        <AmbientLayer layout={config?.layout} />
+        <AmbientLayer layout={config?.layout} performanceMode={config?.performanceMode} />
       </LocaleProvider>
     )
   }
@@ -408,8 +423,9 @@ function App() {
         onToast={emitToast}
         onClose={handleManualClose}
         onPlayClose={() => setVisible(false)}
+        onSavePref={handleSavePref}
       />
-      <AmbientLayer layout={config?.layout} />
+      <AmbientLayer layout={config?.layout} performanceMode={config?.performanceMode} />
     </LocaleProvider>
   )
 }

@@ -87,6 +87,7 @@ interface EmoteMenuProps {
   ) => void;
   onClose: () => void;
   onPlayClose: () => void;
+  onSavePref: (key: string, value: unknown) => void;
   savedMenuState: {
     search: string;
     tab: string;
@@ -169,6 +170,7 @@ export function EmoteMenu({
   onToast,
   onClose,
   onPlayClose,
+  onSavePref,
   savedMenuState,
   onSaveMenuState,
 }: EmoteMenuProps) {
@@ -919,7 +921,7 @@ export function EmoteMenu({
 
   return (
     <div
-      className={`mbt-overlay mbt-overlay--${config.position} layout-${config.layout || "default"}`}
+      className={`mbt-overlay mbt-overlay--${config.position} layout-${config.layout || "default"}${config.performanceMode ? " mbt-overlay--perf" : ""}`}
       onClick={(e) => {
         if (e.target === e.currentTarget) handleClose();
       }}
@@ -976,12 +978,13 @@ export function EmoteMenu({
                 <Camera size={14} />
               </button>
             )}
-            {features.Favorites && (
-              <HeaderMenu
-                onExport={handleExportOpen}
-                onImport={handleImportOpen}
-              />
-            )}
+            <HeaderMenu
+              config={config}
+              onSavePref={onSavePref}
+              showFavoritesData={features.Favorites}
+              onExport={handleExportOpen}
+              onImport={handleImportOpen}
+            />
             <button className="mbt-header__close" onClick={handleClose}>
               <X size={14} />
             </button>
@@ -1246,7 +1249,9 @@ export function EmoteMenu({
                       onPlay={handleEmotePlay}
                       onToggleFavorite={onToggleFavorite}
                       onPreviewToggle={
-                        features.PreviewPed ? handlePreviewToggle : undefined
+                        features.PreviewPed && !config.performanceMode
+                          ? handlePreviewToggle
+                          : undefined
                       }
                       onAddToPlaylist={onAddToPlaylist}
                       placementEnabled={!!features.EmotePlacement}

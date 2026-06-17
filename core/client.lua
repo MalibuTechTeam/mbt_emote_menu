@@ -18,6 +18,9 @@ local emoteLabelByName = {}
 local pendingOpen = false
 local PENDING_OPEN_TTL_MS = 20000
 local pendingOpenAt = 0
+local integrationMode = 'auto'
+local catalogSource = 'none'
+local routeSource = 'none'
 
 Core = Core or {}
 
@@ -47,6 +50,30 @@ function Core.PlayEmoteRaw(emoteName, emoteType, variation)
 
     local safeType = SanitizeName(emoteType)
     variation = tonumber(variation) or 1
+
+    if integrationMode ~= 'fallback' then
+        local routed, exportOk = Utils.SafeExport(rpemotesExportName, 'Execute', safeName, safeType, variation)
+        if exportOk and routed ~= false then
+            if routeSource ~= 'export' then
+                routeSource = 'export'
+                Utils.MbtDebugger('[route:export] Using rpemotes Execute export')
+            end
+            Core.IncrementPlayCount(safeName)
+
+            if OpenJoin and OpenJoin.MaybeAnnounce then
+                OpenJoin.MaybeAnnounce(safeName, emoteLabelByName[safeName] or safeName, safeType)
+            end
+            if Trending and Trending.MaybeReport then
+                Trending.MaybeReport(safeName, emoteLabelByName[safeName] or safeName, safeType)
+            end
+            return
+        end
+    end
+
+    if routeSource ~= 'fallback' then
+        routeSource = 'fallback'
+        Utils.MbtDebugger('[route:fallback] Using legacy MBT routing')
+    end
 
     if safeType == 'Emojis' then
         if MBT.Emoji and MBT.Emoji.Enabled and Emoji and Emoji.Play then
@@ -160,6 +187,13 @@ local LOCALE_KEYS = {
     -- Personas
     'persona_title', 'persona_delete_q', 'persona_delete', 'persona_default_hint',
     'persona_switch_hint', 'persona_name_placeholder', 'persona_new', 'cancel',
+    -- Settings popover ("...")
+    'settings_title', 'settings_appearance', 'settings_behavior', 'settings_data',
+    'settings_layout', 'settings_layout_default', 'settings_layout_cinematic',
+    'settings_position', 'settings_position_left', 'settings_position_right',
+    'settings_performance', 'settings_performance_hint', 'settings_closeonplay',
+    'settings_language', 'settings_wheel', 'settings_wheel_radial',
+    'settings_wheel_linear', 'settings_accent',
 }
 
 local function BuildLocaleStrings()
@@ -189,24 +223,109 @@ local function BuildLocalizedCategories()
     return out
 end
 
+-- Languages offered in the per-player settings popover (must have a locales/ file).
+local SUPPORTED_LANGS = {
+    { code = 'en', label = 'English' },
+    { code = 'it', label = 'Italiano' },
+    { code = 'es', label = 'Espanol' },
+    { code = 'fr', label = 'Francais' },
+    { code = 'de', label = 'Deutsch' },
+    { code = 'pt', label = 'Portugues' },
+}
+
+-- Curated accent presets offered to players (hex without '#'). Brand-safe on
+-- purpose: no free picker. The owner can lock this with Theme.AllowAccentChange.
+local ACCENT_PRESETS = {
+    { hex = '00e676', label = 'Emerald' },
+    { hex = '38bdf8', label = 'Sky' },
+    { hex = 'a855f7', label = 'Violet' },
+    { hex = 'fbbf24', label = 'Amber' },
+    { hex = 'fb7185', label = 'Rose' },
+}
+
+local function isAccentPreset(hex)
+    for _, p in ipairs(ACCENT_PRESETS) do if p.hex == hex then return true end end
+    return false
+end
+
 local function BuildMenuConfig()
     local features = {}
     for k, v in pairs(MBT.Features or {}) do features[k] = v end
     features.EmotePlacement = (MBT.Features.EmotePlacement ~= false) and placementAvailable
     features.PhotoMode = (MBT.PhotoMode and MBT.PhotoMode.Enabled) and true or false
 
+    -- Player prefs override the config defaults where allowed.
+    local prefs = (Core.GetPrefs and Core.GetPrefs()) or {}
+    local allowLayoutSwitch = MBT.Menu.AllowLayoutSwitch ~= false
+    local allowAccentChange = (MBT.Theme and MBT.Theme.AllowAccentChange) ~= false
+    local closeOnPlay = MBT.Menu.CloseOnPlay
+    if prefs.closeOnPlay ~= nil then closeOnPlay = prefs.closeOnPlay end
+
+    local wheelMode = prefs.wheelMode
+    if wheelMode ~= 'linear' and wheelMode ~= 'radial' then
+        wheelMode = (MBT.EmoteWheel and MBT.EmoteWheel.Mode == 'linear') and 'linear' or 'radial'
+    end
+
+    -- Theme is copied so a player accent never mutates the shared config table.
+    local theme = {}
+    for k, v in pairs(MBT.Theme or {}) do theme[k] = v end
+    if allowAccentChange and type(prefs.accent) == 'string' and isAccentPreset(prefs.accent) then
+        theme.Accent = prefs.accent
+    end
+
     return {
-        layout        = MBT.Menu.Layout or 'default',
-        position      = MBT.Menu.Position,
-        watermark     = MBT.Menu.Watermark,
-        rememberState = MBT.Menu.RememberState,
-        debug         = MBT.Debug or false,
-        theme         = MBT.Theme,
-        categories    = BuildLocalizedCategories(),
-        features      = features,
-        ecosystem     = ecosystemStatus,
+        layout            = (allowLayoutSwitch and prefs.layout) or MBT.Menu.Layout or 'default',
+        allowLayoutSwitch = allowLayoutSwitch,
+        position          = prefs.position or MBT.Menu.Position,
+        closeOnPlay       = closeOnPlay,
+        performanceMode   = prefs.performanceMode == true,
+        wheelMode         = wheelMode,
+        language          = MBT.Language,
+        languages         = SUPPORTED_LANGS,
+        accents           = ACCENT_PRESETS,
+        allowAccentChange = allowAccentChange,
+        watermark         = MBT.Menu.Watermark,
+        rememberState     = MBT.Menu.RememberState,
+        debug             = MBT.Debug or false,
+        theme             = theme,
+        categories        = BuildLocalizedCategories(),
+        features          = features,
+        ecosystem         = ecosystemStatus,
     }
 end
+
+-- Validators for player-settable prefs. Anything not here is rejected.
+local PREF_VALIDATORS = {
+    layout          = function(v) return (v == 'default' or v == 'cinematic') and MBT.Menu.AllowLayoutSwitch ~= false end,
+    position        = function(v) return v == 'left' or v == 'right' end,
+    performanceMode = function(v) return type(v) == 'boolean' end,
+    closeOnPlay     = function(v) return type(v) == 'boolean' end,
+    wheelMode       = function(v) return v == 'radial' or v == 'linear' end,
+    language        = function(v)
+        if type(v) ~= 'string' then return false end
+        for _, l in ipairs(SUPPORTED_LANGS) do if l.code == v then return true end end
+        return false
+    end,
+    accent          = function(v)
+        if (MBT.Theme and MBT.Theme.AllowAccentChange) == false then return false end
+        return type(v) == 'string' and isAccentPreset(v)
+    end,
+}
+
+RegisterNUICallback('savePref', function(data, cb)
+    local validate = PREF_VALIDATORS[data.key]
+    if not validate or not validate(data.value) then
+        cb({ ok = false })
+        return
+    end
+
+    if data.key == 'language' then MBT.Language = data.value end
+    Core.SetPref(data.key, data.value)
+
+    -- Lua is the source of truth: hand back a freshly merged config + locale so
+    -- the UI just re-applies (layout class, position, language strings, etc).
+    cb({ ok = true, config = BuildMenuConfig(), locale = BuildLocaleStrings() })
+end)
 
 function Core.OpenMenu()
     if isOpen then return end
@@ -307,7 +426,10 @@ RegisterNUICallback('playEmote', function(data, cb)
         Core.AddRecent(data)
     end
 
-    if MBT.Menu.CloseOnPlay then
+    local prefs = (Core.GetPrefs and Core.GetPrefs()) or {}
+    local closeOnPlay = MBT.Menu.CloseOnPlay
+    if prefs.closeOnPlay ~= nil then closeOnPlay = prefs.closeOnPlay end
+    if closeOnPlay then
         Core.CloseMenu()
     end
 
@@ -408,10 +530,19 @@ if MBT.Features.EmoteWheel then
     local POINTER_DEADZONE = 0.28
     local TWO_PI = math.pi * 2
 
+    -- Player pref overrides the config default; read at open so a change in
+    -- the settings popover takes effect on the next wheel without a restart.
+    local function effectiveWheelMode()
+        local pref = Core.GetPrefs and Core.GetPrefs().wheelMode
+        if pref == 'linear' or pref == 'radial' then return pref end
+        return (MBT.EmoteWheel.Mode == 'linear') and 'linear' or 'radial'
+    end
+
     RegisterCommand('+' .. wheelCmdName, function()
         if isOpen or wheelOpen then return end
         wheelOpen = true
         wheelIndex = 1
+        wheelMode = effectiveWheelMode()
 
         SendNUIMessage({
             action   = 'openWheel',
@@ -592,7 +723,10 @@ CreateThread(function()
     while true do
         if placementAvailable then
             local state = Utils.SafeExport(rpemotesExportName, 'GetPlacementState')
-            local active = (state ~= nil and state ~= 'None')
+            -- Only the positioning phase counts as "placing". Once the player
+            -- confirms (state -> 'In Animation') or cancels ('None'), end the
+            -- overlay so it doesn't linger over the playing emote.
+            local active = (state == 'Previewing' or state == 'Walking')
 
             if active and not lastActive then
                 SendNUIMessage({ action = 'placementStarted' })
@@ -602,7 +736,9 @@ CreateThread(function()
                 lastActive = false
             end
 
-            Wait(active and 100 or 500)
+            -- Tight poll while positioning so the overlay clears the instant
+            -- the player confirms (state -> 'In Animation'); idle poll otherwise.
+            Wait(active and 50 or 500)
         else
             Wait(2000)
         end
@@ -614,6 +750,7 @@ end)
 -------------------------------------------------------------------------------
 
 RegisterNetEvent('mbt_emote_menu:receiveEmoteCatalog', function(catalog, resourceName)
+    if integrationMode == 'export' or catalogSource == 'export' then return end
     if not catalog or #catalog == 0 then return end
 
     emoteCatalog = catalog
@@ -653,6 +790,9 @@ RegisterNetEvent('mbt_emote_menu:receiveEmoteCatalog', function(catalog, resourc
     })
     catalogSentToNui = true
 
+    catalogSource = 'fallback'
+    Utils.MbtDebugger(('[catalog:fallback] Loaded %d entries through the legacy server loader'):format(#emoteCatalog))
+
     Utils.MbtDebugger('Received emote catalog: ' .. #emoteCatalog .. ' emotes from ' .. tostring(resourceName) .. ' (exports: ' .. tostring(rpemotesExportName) .. ')')
 
     if pendingOpen and (GetGameTimer() - pendingOpenAt) <= PENDING_OPEN_TTL_MS then
@@ -667,22 +807,234 @@ RegisterNetEvent('mbt_emote_menu:receiveEcosystemStatus', function(status)
     ecosystemStatus = status or {}
 end)
 
-local CATALOG_RETRY_DELAY_MS = 2500
-local CATALOG_MAX_RETRIES = 8
+local CATALOG_RETRY_DELAY_MS = 500
+local CATALOG_MAX_RETRIES = 10
+
+local function DetectRpemotesClient()
+    if MBT.RpemotesResource and GetResourceState(MBT.RpemotesResource) == 'started' then
+        return MBT.RpemotesResource
+    end
+
+    for _, name in ipairs({ 'rpemotes-reborn', 'rpemotes', 'rp-emotes', 'rp-emotes-reborn' }) do
+        if GetResourceState(name) == 'started' then return name end
+    end
+end
+
+local function ConfigureRpemotesClient(resourceName)
+    if not resourceName then return false end
+
+    rpemotesResource = resourceName
+    local provided = GetResourceMetadata(resourceName, 'provide', 0)
+    rpemotesExportName = (provided and provided ~= '') and provided or resourceName
+    Core._rpemotesExportName = rpemotesExportName
+    return true
+end
+
+-- Keep in sync with BuildKeywords in core/server.lua so export-mode search
+-- matches the legacy fallback (prop/anim token discoverability, e.g. "radio").
+local KW_NOISE = {
+    anim = true, prop = true, hand = true, male = true, female = true,
+    base = true, clip = true, idle = true, loop = true, pose = true,
+    miss = true, scenario = true, world = true, human = true, stand = true,
+    holding = true, ['for'] = true, the = true, and_ = true,
+}
+
+local function BuildClientKeywords(...)
+    local seen, out = {}, {}
+    for i = 1, select('#', ...) do
+        local s = select(i, ...)
+        if type(s) == 'string' then
+            for tok in s:gmatch('[%a%d]+') do
+                tok = tok:lower()
+                if #tok >= 3 and not KW_NOISE[tok] and not seen[tok] then
+                    seen[tok] = true
+                    out[#out + 1] = tok
+                end
+            end
+        end
+    end
+    return table.concat(out, ' ')
+end
+
+local function FormatEmoteName(name)
+    name = tostring(name or ''):gsub('_', ' ')
+    return name:gsub('^%l', string.upper)
+end
+
+-- rpemotes' GetEmoteCatalog hands back its raw internal entries (dict/anim/
+-- label/AnimationOptions/...). We map each one into the NUI view model here,
+-- so the menu sees the same shape whether it came from the export or the
+-- legacy server loader. Prop variation `value` is normalised to the one-based
+-- selector Execute expects.
+local function MapRawEmote(raw)
+    if raw.emoji then
+        return {
+            name = raw.name,
+            label = raw.label or FormatEmoteName(raw.name),
+            category = 'Emojis',
+            isEmoji = true,
+            emoji = raw.emoji,
+        }
+    end
+
+    local label = raw.label
+    if type(label) == 'string' then label = label:gsub('<[^>]+>', '') else label = FormatEmoteName(raw.name) end
+
+    local opts = raw.AnimationOptions
+    local hasProp, variations, animFlag, blendIn, blendOut, duration
+    local prop, propBone, propPlace, prop2, prop2Bone, prop2Place
+
+    if type(opts) == 'table' then
+        hasProp = opts.Prop ~= nil
+        if opts.PropTextureVariations then
+            variations = {}
+            for i, v in ipairs(opts.PropTextureVariations) do
+                local clean = (v.Name or ''):gsub('<[^>]+>', ''):gsub('%s+$', '')
+                variations[i] = { name = clean, value = i, textureValue = v.Value }
+            end
+        end
+        animFlag = opts.onFootFlag or (opts.EmoteMoving and 51 or 1)
+        blendIn  = opts.BlendInSpeed or 5.0
+        blendOut = opts.BlendOutSpeed or 5.0
+        duration = opts.EmoteDuration or -1
+        if opts.Prop then
+            prop, propBone = opts.Prop, opts.PropBone or 28422
+            local pp = opts.PropPlacement
+            if pp then propPlace = { pp[1] or 0.0, pp[2] or 0.0, pp[3] or 0.0, pp[4] or 0.0, pp[5] or 0.0, pp[6] or 0.0 } end
+        end
+        if opts.SecondProp then
+            prop2, prop2Bone = opts.SecondProp, opts.SecondPropBone or 60309
+            local sp = opts.SecondPropPlacement
+            if sp then prop2Place = { sp[1] or 0.0, sp[2] or 0.0, sp[3] or 0.0, sp[4] or 0.0, sp[5] or 0.0, sp[6] or 0.0 } end
+        end
+    end
+
+    return {
+        name       = raw.name,
+        label      = label,
+        keywords   = BuildClientKeywords(raw.name, label, prop, prop2, raw.anim, raw.dict),
+        category   = raw.emoteType,
+        hasProp    = hasProp,
+        isShared   = raw.emoteType == 'Shared',
+        variations = variations,
+        animDict   = raw.dict,
+        animClip   = raw.anim,
+        scenario   = raw.scenario,
+        animFlag   = animFlag,
+        blendIn    = blendIn,
+        blendOut   = blendOut,
+        duration   = duration,
+        prop       = prop,
+        propBone   = propBone,
+        propPlace  = propPlace,
+        prop2      = prop2,
+        prop2Bone  = prop2Bone,
+        prop2Place = prop2Place,
+    }
+end
+
+local function ApplyExportCatalog(entries)
+    if type(entries) ~= 'table' or #entries == 0 then
+        return false
+    end
+
+    local catalog, emojiCount = {}, 0
+    for _, raw in ipairs(entries) do
+        if type(raw) == 'table' and raw.name then
+            -- Honour MBT's own content filters (rpemotes applies its own first).
+            local skip = false
+            if not MBT.Features.AdultEmotes and raw.AdultAnimation then skip = true end
+            if not MBT.Features.AbusableEmotes and (raw.abusable or (type(raw.AnimationOptions) == 'table' and raw.AnimationOptions.abusable)) then skip = true end
+            if not skip then
+                local entry = MapRawEmote(raw)
+                catalog[#catalog + 1] = entry
+                if entry.isEmoji then emojiCount = emojiCount + 1 end
+            end
+        end
+    end
+    table.sort(catalog, function(a, b) return (a.label or ''):lower() < (b.label or ''):lower() end)
+
+    emoteCatalog = catalog
+    catalogSentToNui = false
+    emoteLabelByName = {}
+    for _, entry in ipairs(emoteCatalog) do
+        if entry.name then emoteLabelByName[entry.name] = entry.label or entry.name end
+    end
+
+    if MBT.Features.EmotePlacement ~= false then
+        local _, ok = Utils.SafeExport(rpemotesExportName, 'GetPlacementState')
+        placementAvailable = ok
+    end
+
+    catalogSource = 'export'
+    SendNUIMessage({
+        action = 'preloadCatalog',
+        catalog = emoteCatalog,
+        locale = BuildLocaleStrings(),
+        config = BuildMenuConfig(),
+    })
+    catalogSentToNui = true
+
+    Utils.MbtDebugger(('[catalog:export] Loaded %d entries (%d emojis)')
+        :format(#emoteCatalog, emojiCount))
+
+    if pendingOpen and (GetGameTimer() - pendingOpenAt) <= PENDING_OPEN_TTL_MS then
+        pendingOpen = false
+        Core.OpenMenu()
+    end
+    return true
+end
+
+local function TryExportCatalog()
+    if not ConfigureRpemotesClient(DetectRpemotesClient()) then return false end
+    local payload, ok = Utils.SafeExport(rpemotesExportName, 'GetEmoteCatalog')
+    return ok and ApplyExportCatalog(payload)
+end
 
 RequestEmoteCatalog = function(attempt)
     attempt = attempt or 1
-    TriggerServerEvent('mbt_emote_menu:requestEmoteCatalog')
+
+    if integrationMode ~= 'fallback' and TryExportCatalog() then return end
+
+    if integrationMode == 'fallback' or (integrationMode == 'auto' and attempt >= CATALOG_MAX_RETRIES) then
+        Utils.MbtDebugger('[catalog:fallback] Export unavailable; requesting legacy server catalog')
+        TriggerServerEvent('mbt_emote_menu:requestEmoteCatalog')
+    end
+
     SetTimeout(CATALOG_RETRY_DELAY_MS, function()
         if #emoteCatalog > 0 then return end
         if attempt >= CATALOG_MAX_RETRIES then
-            Utils.MbtDebugger(('Catalog still empty after %d retries — giving up'):format(CATALOG_MAX_RETRIES))
+            if integrationMode == 'export' then
+                print(('^1[mbt_emote_menu] [catalog:export] API unavailable after %d attempts^0'):format(CATALOG_MAX_RETRIES))
+            else
+                Utils.MbtDebugger(('Catalog still empty after %d retries — giving up'):format(CATALOG_MAX_RETRIES))
+            end
             return
         end
-        Utils.MbtDebugger(('Catalog still empty, retrying (%d/%d)'):format(attempt + 1, CATALOG_MAX_RETRIES))
         RequestEmoteCatalog(attempt + 1)
     end)
 end
+
+RegisterCommand('mbt_emote_source', function()
+    print(('^5[mbt_emote_menu] mode=%s catalog=%s route=%s resource=%s exports=%s entries=%d^0')
+        :format(integrationMode, catalogSource, routeSource, tostring(rpemotesResource), tostring(rpemotesExportName), #emoteCatalog))
+end, false)
+
+RegisterCommand('mbt_emote_reload', function(_, args)
+    local mode = args[1] or 'auto'
+    if mode ~= 'auto' and mode ~= 'export' and mode ~= 'fallback' then
+        print('^1[mbt_emote_menu] Usage: /mbt_emote_reload auto|export|fallback^0')
+        return
+    end
+
+    integrationMode = mode
+    catalogSource = 'none'
+    routeSource = 'none'
+    emoteCatalog = {}
+    catalogSentToNui = false
+    print(('^5[mbt_emote_menu] Reloading integration in %s mode^0'):format(mode))
+    RequestEmoteCatalog()
+end, false)
 
 local function RequestInitialData()
     Core.LoadRecent()

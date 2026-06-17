@@ -18,9 +18,10 @@ MBT.RpemotesResource = nil
 MBT.Menu = {
     Keybind            = 'F4',         -- Key to open/close the menu
     Command            = 'mbt_emotes', -- Chat command alternative (/mbt_emotes)
-    Layout             = 'cinematic',  -- 'default' or 'cinematic'
-    Position           = 'right',      -- Panel side: 'left' or 'right'
-    CloseOnPlay        = true,         -- Close the menu when an emote starts
+    Layout             = 'cinematic',  -- Default layout: 'default' or 'cinematic'
+    AllowLayoutSwitch  = true,         -- Let players pick their layout in the menu settings (false = lock to Layout above)
+    Position           = 'right',      -- Default panel side: 'left' or 'right' (players can change theirs in the settings)
+    CloseOnPlay        = true,         -- Close the menu when an emote starts (players can change theirs in the settings)
     RememberState      = true,         -- Keep scroll/tab/filters between opens (resets on ESC/X)
     Watermark          = true,         -- Show the 'MBT' watermark
     OverrideNativeMenu = true,         -- Replace rpemotes' own NativeUI menu with this one
@@ -238,12 +239,13 @@ MBT.BannedEmotes = {
 
 -- Menu colors, sent to the UI at startup. Hex without '#'.
 MBT.Theme = {
-    Accent     = '00e676', -- Brand green
-    Background = '0C0E14', -- Background
-    Card       = '141720', -- Card / panel
-    Text       = 'E8E8EE', -- Primary text
-    SubText    = '6B7280', -- Secondary text
-    Border     = '1A1D26', -- Borders
+    Accent            = '00e676', -- Brand green — the server's accent for everyone
+    AllowAccentChange = false,    -- Keep the accent admin-controlled. Set true only if you want players to pick their own preset in the settings
+    Background        = '0C0E14', -- Background
+    Card              = '141720', -- Card / panel
+    Text              = 'E8E8EE', -- Primary text
+    SubText           = '6B7280', -- Secondary text
+    Border            = '1A1D26', -- Borders
 }
 
 -------------------------------------------------------------------------------

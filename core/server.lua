@@ -2,6 +2,7 @@ if not Utils.MbtResourceNameCheck('mbt_emote_menu') then return end
 
 local EmoteData = {}
 local rpemotesResource = nil
+local fallbackCatalogAttempted = false
 
 -------------------------------------------------------------------------------
 -- [ AUTO-DETECT RPEMOTES RESOURCE ] --
@@ -331,9 +332,6 @@ end
 
 CreateThread(function()
     rpemotesResource = DetectRpemotesResource()
-    if rpemotesResource then
-        LoadAnimationList()
-    end
     Utils.MbtVersionCheck('MalibuTechTeam/mbt_emote_menu')
 end)
 
@@ -366,6 +364,13 @@ RegisterNetEvent('mbt_emote_menu:requestEmoteCatalog', function()
     local src = source
     if not src or src <= 0 then return end
     if throttled(lastCatalogRequest, src) then return end
+
+    if #EmoteData == 0 and not fallbackCatalogAttempted and rpemotesResource then
+        fallbackCatalogAttempted = true
+        print('^3[mbt_emote_menu] [catalog:fallback] Running legacy AnimationList loader on demand^0')
+        LoadAnimationList()
+    end
+
     if #EmoteData == 0 then return end
     TriggerClientEvent('mbt_emote_menu:receiveEmoteCatalog', src, EmoteData, rpemotesResource)
 end)

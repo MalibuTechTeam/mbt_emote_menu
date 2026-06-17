@@ -1,6 +1,37 @@
 Core                  = Core or {}
 
 -------------------------------------------------------------------------------
+-- [ PLAYER PREFERENCES ] --
+-------------------------------------------------------------------------------
+-- Per-player UI settings shown in the menu's "..." settings popover. The
+-- config.lua values are the defaults; saved prefs override them where the
+-- owner allows it (see Core.SavePref in core/client.lua).
+
+local prefsKVP    = 'mbt_emote_menu_prefs'
+local cachedPrefs = nil
+
+function Core.GetPrefs()
+    if not cachedPrefs then cachedPrefs = Utils.LoadKvpJson(prefsKVP) or {} end
+    return cachedPrefs
+end
+
+function Core.SetPref(key, value)
+    local prefs = Core.GetPrefs()
+    prefs[key] = value
+    Utils.SaveKvpJson(prefsKVP, prefs)
+    return prefs
+end
+
+-- Apply a saved language override before the menu ever builds its strings.
+-- An unknown code is harmless: Translate() falls back to English.
+do
+    local savedLang = Core.GetPrefs().language
+    if type(savedLang) == 'string' and savedLang ~= '' then
+        MBT.Language = savedLang
+    end
+end
+
+-------------------------------------------------------------------------------
 -- [ FAVORITES ] --
 -------------------------------------------------------------------------------
 

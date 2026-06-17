@@ -9,6 +9,7 @@ import { Toast, useToasts, setToastListener } from './Toast'
 
 interface AmbientLayerProps {
   layout?: 'default' | 'cinematic'
+  performanceMode?: boolean
 }
 
 /**
@@ -24,7 +25,7 @@ interface AmbientLayerProps {
  * Toasts use the module-level bus in Toast.tsx (`emitToast`), so any
  * component can fire one without threading state through a shared parent.
  */
-export function AmbientLayer({ layout }: AmbientLayerProps) {
+export function AmbientLayer({ layout, performanceMode }: AmbientLayerProps) {
   const [placementActive, setPlacementActive] = useState(false)
   const [previewVignette, setPreviewVignette] = useState(false)
   const [openJoin, setOpenJoin] = useState<{
@@ -114,7 +115,7 @@ export function AmbientLayer({ layout }: AmbientLayerProps) {
 
   return (
     <>
-      <PreviewVignette visible={previewVignette} layout={layout} />
+      <PreviewVignette visible={previewVignette && !performanceMode} layout={layout} />
       <PlacementOverlay visible={placementActive} layout={layout} />
       <OpenJoinPill
         visible={openJoin.visible}

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { MapPin, Move, RotateCw, ArrowUpDown, CornerDownLeft, X } from 'lucide-react'
 import { useLocale } from '../utils/locale'
 
@@ -15,10 +16,29 @@ interface PlacementOverlayProps {
 // menu style (radial gradient for default, glass-card for cinematic).
 export function PlacementOverlay({ visible, layout = 'default' }: PlacementOverlayProps) {
   const t = useLocale()
-  if (!visible) return null
+  const [render, setRender] = useState(visible)
+  const [shown, setShown] = useState(false)
+
+  // Pure transition in/out: mount at the hidden state, flip `shown` on the
+  // next frame so the opacity/transform actually transitions (CEF won't
+  // animate a value that was set in the same paint). On hide, drop `shown`
+  // and unmount only after the transition has run.
+  useEffect(() => {
+    if (visible) {
+      setRender(true)
+      const id = requestAnimationFrame(() => setShown(true))
+      return () => cancelAnimationFrame(id)
+    } else if (render) {
+      setShown(false)
+      const id = setTimeout(() => setRender(false), 280)
+      return () => clearTimeout(id)
+    }
+  }, [visible, render])
+
+  if (!render) return null
 
   return (
-    <div className={`mbt-placement layout-${layout}`}>
+    <div className={`mbt-placement layout-${layout}${shown ? ' mbt-placement--shown' : ''}`}>
       <div className="mbt-placement__title">
         <MapPin size={14} />
         <span>{t.placement_title || 'Place emote'}</span>

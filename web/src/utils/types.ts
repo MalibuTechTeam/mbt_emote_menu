@@ -65,7 +65,15 @@ export interface EcosystemStatus {
 
 export interface MenuConfig {
   layout?: 'default' | 'cinematic' // the new layout switcher
+  allowLayoutSwitch?: boolean // owner gate: may the player change the layout?
   position: 'left' | 'right'
+  closeOnPlay?: boolean // close the menu when an emote starts (player pref)
+  performanceMode?: boolean // drop ambient/vignette/stagger/preview for FPS (player pref)
+  wheelMode?: 'radial' | 'linear' // emote wheel interaction mode (player pref)
+  language?: string // active UI language code (player pref override)
+  languages?: { code: string; label: string }[] // languages offered in settings
+  accents?: { hex: string; label: string }[] // curated accent presets
+  allowAccentChange?: boolean // owner gate: may the player pick an accent?
   watermark: boolean
   rememberState?: boolean
   debug?: boolean
