@@ -778,7 +778,7 @@ local function MapRawEmote(raw)
     if raw.emoji then
         return {
             name = raw.name,
-            label = raw.label or FormatEmoteName(raw.name),
+            label = type(raw.label) == 'string' and raw.label or FormatEmoteName(raw.name),
             category = 'Emojis',
             isEmoji = true,
             emoji = raw.emoji,
@@ -905,7 +905,10 @@ RequestEmoteCatalog = function(attempt)
     local rpRes = DetectRpemotesClient()
     if rpRes then
         local ok, ver = Utils.CheckResourceVersion(rpRes, RPEMOTES_MIN_VERSION)
-        if not ok then
+        -- Hard-stop only on a KNOWN-too-old version. If the version is unreadable
+        -- ('unknown'), let the export itself be the gate (it either works or it
+        -- doesn't), so a fork/odd manifest with working exports isn't locked out.
+        if not ok and ver ~= 'unknown' then
             print(('^1[mbt_emote_menu] requires rpemotes-reborn %s+ (found %s: %s). Update rpemotes-reborn. Menu disabled.^0')
                 :format(RPEMOTES_MIN_VERSION, rpRes, ver))
             return
@@ -924,6 +927,18 @@ RequestEmoteCatalog = function(attempt)
         RequestEmoteCatalog(attempt + 1)
     end)
 end
+
+-- Recover from start-order and live restarts: when rpemotes (re)starts, refetch
+-- the catalog. Covers mbt booting before rpemotes (5s retry window may lapse) and
+-- a hot `restart rpemotes-reborn` while the menu is already loaded.
+AddEventHandler('onResourceStart', function(res)
+    if res == MBT.RpemotesResource or res == 'rpemotes-reborn' or res == 'rpemotes'
+        or res == 'rp-emotes' or res == 'rp-emotes-reborn' then
+        emoteCatalog = {}
+        catalogSentToNui = false
+        SetTimeout(1000, RequestEmoteCatalog) -- let rpemotes convert its list first
+    end
+end)
 
 RegisterCommand('mbt_emote_source', function()
     print(('^5[mbt_emote_menu] resource=%s exports=%s entries=%d^0')
