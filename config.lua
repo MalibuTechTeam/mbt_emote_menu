@@ -43,9 +43,11 @@ MBT.Features = {
     EmotePlacement = true,  -- "Place in world" button (needs a recent rpemotes-reborn)
     OpenJoin       = true,  -- Nearby players get a prompt to join your emote (see MBT.OpenJoin)
     WhatsThat      = false, -- Bubble over a nearby emoting player with their emote + copy hotkey
-    AdultEmotes    = false, -- Include 18+ emotes in the catalog
-    AbusableEmotes = false, -- Include movement-exploit walk styles
 }
+
+-- 18+ and movement-exploit ("abusable") emotes are controlled by rpemotes-reborn
+-- itself (AdultEmotesDisabled / AbusableEmotesDisabled in its config.lua). The
+-- menu shows whatever rpemotes exposes, so set those there.
 
 -- Anti-spam guard: minimum delay between consecutive emote plays (local player).
 MBT.AntiSpam = {
@@ -103,42 +105,6 @@ MBT.Trending = {
     WindowDays          = 7,  -- rolling window length in days
     MinPlays            = 10, -- minimum plays to qualify as trending
     SaveIntervalMinutes = 10, -- how often counts are saved
-}
-
--- Emoji Reactions: floats an emoji above the player's head. Shown in the
--- menu's "Emojis" category and via chat commands (/smile, /cry, ...).
-MBT.Emoji = {
-    Enabled       = true,  -- master toggle
-    Commands      = true,  -- register the /smile, /cry, ... chat commands
-    DisplayTimeMs = 5000,  -- how long the emoji stays up
-    Scale         = 0.22,  -- glyph size (lower = smaller)
-    MaxDistance   = 60.0,  -- max distance (m) at which others see it
-    ThrottleMs    = 1500,  -- per-player cooldown between emojis
-
-    -- Emoji catalog. 'id' = chat command + internal name, 'char' = glyph,
-    -- 'label' = menu card title. Add or remove rows freely.
-    List = {
-        { id = 'smile',     char = '😀', label = 'Smile' },
-        { id = 'sad',       char = '🙁', label = 'Sad' },
-        { id = 'tear',      char = '😥', label = 'Tear' },
-        { id = 'cry',       char = '😭', label = 'Cry' },
-        { id = 'blush',     char = '😊', label = 'Blush' },
-        { id = 'shy',       char = '😳', label = 'Shy' },
-        { id = 'surprised', char = '😲', label = 'Surprised' },
-        { id = 'sick',      char = '🤢', label = 'Sick' },
-        { id = 'pissedoff', char = '😠', label = 'Pissed Off' },
-        { id = 'anger',     char = '😡', label = 'Anger' },
-        { id = 'laught',    char = '😂', label = 'Laugh' },
-        { id = 'laught2',   char = '🤣', label = 'Laugh Hard' },
-        { id = 'dizzy',     char = '😵', label = 'Dizzy' },
-        { id = 'angel',     char = '😇', label = 'Angel' },
-        { id = 'demon',     char = '😈', label = 'Demon' },
-        { id = 'thumbeup',  char = '👍', label = 'Thumbs Up' },
-        { id = 'thumbdown', char = '👎', label = 'Thumbs Down' },
-        { id = 'vomit',     char = '🤮', label = 'Vomit' },
-        { id = 'tongue',    char = '😜', label = 'Tongue' },
-        { id = 'fear',      char = '😱', label = 'Fear' },
-    },
 }
 
 -- RP Text: /me and /do commands that float a styled pill above the player's

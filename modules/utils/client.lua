@@ -6,6 +6,23 @@ function Utils.MbtDebugger(...)
     end
 end
 
+function Utils.CheckResourceVersion(resource, minimumVersion)
+    local current = GetResourceMetadata(resource, 'version', 0)
+    current = current and current:match('%d+%.%d+%.%d+') or nil
+    if not current then return false, 'unknown' end
+    if current == minimumVersion then return true, current end
+
+    local cv, mv = {}, {}
+    for n in current:gmatch('%d+') do cv[#cv + 1] = tonumber(n) end
+    for n in minimumVersion:gmatch('%d+') do mv[#mv + 1] = tonumber(n) end
+
+    for i = 1, #mv do
+        local c, m = cv[i] or 0, mv[i] or 0
+        if c ~= m then return c > m, current end
+    end
+    return true, current
+end
+
 ---@param str string|nil
 ---@return string|nil sanitized string, or nil if input was invalid
 function Utils.Sanitize(str)

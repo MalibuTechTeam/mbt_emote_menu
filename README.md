@@ -73,7 +73,6 @@
 
 ### Roleplay & Expression *(new in 1.5)*
 
-- **Emoji Reactions** — 20 emoji that float above your head for nearby players to see. Browse them as cards in the **Emojis** category, or fire them instantly with chat commands (`/smile`, `/cry`, `/laught`, ...). Fully self-contained — no extra resource required. Size, duration, and visibility distance are tunable via `MBT.Emoji`
 - **RP Text** — `/me` and `/do` commands that float a styled pill above your head describing an action, visible to nearby players. Configurable channels with per-channel command name, range, and color. Server-side length clamp, sanitization, and throttle. Fully toggleable via `MBT.RpText.Enabled`
 
 ### Creator Tools *(new in 1.6)*
@@ -94,7 +93,7 @@
 - **Anti-spam cooldown** — client-side cooldown between back-to-back emote plays (`MBT.AntiSpam.CooldownMs`, default 250ms), with a separate cooldown on social broadcasts (default 3s per source)
 - **Large-server safety** — Open Join announcements cap at the N closest recipients (`MBT.OpenJoin.MaxRecipients`, default 30) so a 1000-player server doesn't fan-out into a network storm at busy zones
 - **Anti-spoofing** — server validates the initiator's replicated `mbtCurrentEmote` state bag against the announced emote before relaying, blocking clients that try to advertise an emote they aren't actually playing
-- **Hardened roleplay text** — `/me` and `/do` messages are sanitized and length-clamped server-side, then rendered as escaped text (never raw HTML), so a player cannot inject markup onto other players' screens. Emoji reactions resolve their glyph from a server-side whitelist; both broadcasts are distance-filtered and per-player throttled
+- **Hardened roleplay text** — `/me` and `/do` messages are sanitized and length-clamped server-side, then rendered as escaped text (never raw HTML), so a player cannot inject markup onto other players' screens. The broadcast is distance-filtered and per-player throttled
 - **Multi-framework support** — auto-detects ESX, QBox, QBCore, or standalone
 
 ### Ecosystem
@@ -226,20 +225,6 @@ MBT.Trending = {
     WindowDays          = 7,     -- Rolling window length, in days
     MinPlays            = 10,    -- Minimum window score for an emote to qualify
     SaveIntervalMinutes = 10,    -- How often counts are flushed to KVP
-}
-```
-
-### Emoji Reactions
-
-```lua
-MBT.Emoji = {
-    Enabled       = true,   -- Master toggle
-    Commands      = true,   -- Register /smile, /cry, ... chat commands
-    DisplayTimeMs = 5000,   -- How long the emoji stays up
-    Scale         = 0.22,   -- Glyph size (lower = smaller)
-    MaxDistance   = 60.0,   -- Max distance (m) at which others see it
-    ThrottleMs    = 1500,   -- Per-player cooldown between emojis
-    List          = { --[[ 20 emoji: id / char / label — add or remove freely ]] },
 }
 ```
 

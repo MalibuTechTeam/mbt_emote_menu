@@ -54,8 +54,6 @@ export interface FeaturesConfig {
   EmotePlacement?: boolean
   PhotoMode?: boolean
   Personas?: boolean
-  AdultEmotes?: boolean
-  AbusableEmotes?: boolean
 }
 
 export interface EcosystemStatus {

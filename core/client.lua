@@ -18,9 +18,6 @@ local emoteLabelByName = {}
 local pendingOpen = false
 local PENDING_OPEN_TTL_MS = 20000
 local pendingOpenAt = 0
-local integrationMode = 'auto'
-local catalogSource = 'none'
-local routeSource = 'none'
 
 Core = Core or {}
 
@@ -51,50 +48,18 @@ function Core.PlayEmoteRaw(emoteName, emoteType, variation)
     local safeType = SanitizeName(emoteType)
     variation = tonumber(variation) or 1
 
-    if integrationMode ~= 'fallback' then
-        local routed, exportOk = Utils.SafeExport(rpemotesExportName, 'Execute', safeName, safeType, variation)
-        if exportOk and routed ~= false then
-            if routeSource ~= 'export' then
-                routeSource = 'export'
-                Utils.MbtDebugger('[route:export] Using rpemotes Execute export')
-            end
-            Core.IncrementPlayCount(safeName)
+    -- Single path: rpemotes' Execute export plays every type (shared, expressions,
+    -- walks, emojis, props). The boot capability gate guarantees it exists.
+    local routed, exportOk = Utils.SafeExport(rpemotesExportName, 'Execute', safeName, safeType, variation)
+    if not (exportOk and routed ~= false) then return end
 
-            if OpenJoin and OpenJoin.MaybeAnnounce then
-                OpenJoin.MaybeAnnounce(safeName, emoteLabelByName[safeName] or safeName, safeType)
-            end
-            if Trending and Trending.MaybeReport then
-                Trending.MaybeReport(safeName, emoteLabelByName[safeName] or safeName, safeType)
-            end
-            return
-        end
-    end
-
-    if routeSource ~= 'fallback' then
-        routeSource = 'fallback'
-        Utils.MbtDebugger('[route:fallback] Using legacy MBT routing')
-    end
-
-    if safeType == 'Emojis' then
-        if MBT.Emoji and MBT.Emoji.Enabled and Emoji and Emoji.Play then
-            Emoji.Play(safeName)
-            Core.IncrementPlayCount(safeName)
-        end
-        return
-    end
-
-    if safeType == 'Shared' then
-        ExecuteCommand('nearby ' .. safeName)
-    elseif safeType == 'Expressions' then
-        ExecuteCommand('mood ' .. safeName)
-        activeExpression = safeName
-        SendNUIMessage({ action = 'activeStylesUpdate', activeWalk = activeWalkStyle, activeExpr = activeExpression })
-    elseif safeType == 'Walks' then
-        Utils.SafeExportCall(rpemotesExportName, 'setWalkstyle', safeName)
+    -- Execute plays it; we mirror walk/expression state for the NUI banner.
+    if safeType == 'Walks' then
         activeWalkStyle = safeName
         SendNUIMessage({ action = 'activeStylesUpdate', activeWalk = activeWalkStyle, activeExpr = activeExpression })
-    else
-        Utils.SafeExportCall(rpemotesExportName, 'EmoteCommandStart', safeName, variation)
+    elseif safeType == 'Expressions' then
+        activeExpression = safeName
+        SendNUIMessage({ action = 'activeStylesUpdate', activeWalk = activeWalkStyle, activeExpr = activeExpression })
     end
 
     Core.IncrementPlayCount(safeName)
@@ -102,7 +67,6 @@ function Core.PlayEmoteRaw(emoteName, emoteType, variation)
     if OpenJoin and OpenJoin.MaybeAnnounce then
         OpenJoin.MaybeAnnounce(safeName, emoteLabelByName[safeName] or safeName, safeType)
     end
-
     if Trending and Trending.MaybeReport then
         Trending.MaybeReport(safeName, emoteLabelByName[safeName] or safeName, safeType)
     end
@@ -749,60 +713,6 @@ end)
 -- [ INITIALIZATION ] --
 -------------------------------------------------------------------------------
 
-RegisterNetEvent('mbt_emote_menu:receiveEmoteCatalog', function(catalog, resourceName)
-    if integrationMode == 'export' or catalogSource == 'export' then return end
-    if not catalog or #catalog == 0 then return end
-
-    emoteCatalog = catalog
-    rpemotesResource = resourceName
-    catalogSentToNui = false
-    emoteLabelByName = {}
-    for _, e in ipairs(emoteCatalog) do
-        if e.name then emoteLabelByName[e.name] = e.label or e.name end
-    end
-
-    if rpemotesResource then
-        local provided = GetResourceMetadata(rpemotesResource, 'provide', 0)
-        if provided and provided ~= '' then
-            rpemotesExportName = provided
-        else
-            rpemotesExportName = rpemotesResource
-        end
-    end
-
-    Core._rpemotesExportName = rpemotesExportName
-
-    if MBT.Features.EmotePlacement ~= false then
-        local _, ok = Utils.SafeExport(rpemotesExportName, 'GetPlacementState')
-        placementAvailable = ok
-        if ok then
-            Utils.MbtDebugger('Placement export detected — "Place in world" available')
-        else
-            print('^3[mbt_emote_menu] rpemotes-reborn placement export not found — update rpemotes for "Place in world"^0')
-        end
-    end
-
-    SendNUIMessage({
-        action  = 'preloadCatalog',
-        catalog = emoteCatalog,
-        locale  = BuildLocaleStrings(),
-        config  = BuildMenuConfig(),
-    })
-    catalogSentToNui = true
-
-    catalogSource = 'fallback'
-    Utils.MbtDebugger(('[catalog:fallback] Loaded %d entries through the legacy server loader'):format(#emoteCatalog))
-
-    Utils.MbtDebugger('Received emote catalog: ' .. #emoteCatalog .. ' emotes from ' .. tostring(resourceName) .. ' (exports: ' .. tostring(rpemotesExportName) .. ')')
-
-    if pendingOpen and (GetGameTimer() - pendingOpenAt) <= PENDING_OPEN_TTL_MS then
-        pendingOpen = false
-        Core.OpenMenu()
-    else
-        pendingOpen = false
-    end
-end)
-
 RegisterNetEvent('mbt_emote_menu:receiveEcosystemStatus', function(status)
     ecosystemStatus = status or {}
 end)
@@ -830,8 +740,8 @@ local function ConfigureRpemotesClient(resourceName)
     return true
 end
 
--- Keep in sync with BuildKeywords in core/server.lua so export-mode search
--- matches the legacy fallback (prop/anim token discoverability, e.g. "radio").
+-- Search keyword tokens built from each entry (prop/anim discoverability,
+-- e.g. searching "radio" finds prop-radio emotes).
 local KW_NOISE = {
     anim = true, prop = true, hand = true, male = true, female = true,
     base = true, clip = true, idle = true, loop = true, pose = true,
@@ -862,10 +772,8 @@ local function FormatEmoteName(name)
 end
 
 -- rpemotes' GetEmoteCatalog hands back its raw internal entries (dict/anim/
--- label/AnimationOptions/...). We map each one into the NUI view model here,
--- so the menu sees the same shape whether it came from the export or the
--- legacy server loader. Prop variation `value` is normalised to the one-based
--- selector Execute expects.
+-- label/AnimationOptions/...). We map each one into the NUI view model here.
+-- Prop variation `value` is normalised to the one-based selector Execute expects.
 local function MapRawEmote(raw)
     if raw.emoji then
         return {
@@ -938,18 +846,17 @@ local function ApplyExportCatalog(entries)
         return false
     end
 
+    local banned = {}
+    for _, n in ipairs(MBT.BannedEmotes or {}) do
+        if type(n) == 'string' then banned[n:lower()] = true end
+    end
+
     local catalog, emojiCount = {}, 0
     for _, raw in ipairs(entries) do
-        if type(raw) == 'table' and raw.name then
-            -- Honour MBT's own content filters (rpemotes applies its own first).
-            local skip = false
-            if not MBT.Features.AdultEmotes and raw.AdultAnimation then skip = true end
-            if not MBT.Features.AbusableEmotes and (raw.abusable or (type(raw.AnimationOptions) == 'table' and raw.AnimationOptions.abusable)) then skip = true end
-            if not skip then
-                local entry = MapRawEmote(raw)
-                catalog[#catalog + 1] = entry
-                if entry.isEmoji then emojiCount = emojiCount + 1 end
-            end
+        if type(raw) == 'table' and raw.name and not banned[tostring(raw.name):lower()] then
+            local entry = MapRawEmote(raw)
+            catalog[#catalog + 1] = entry
+            if entry.isEmoji then emojiCount = emojiCount + 1 end
         end
     end
     table.sort(catalog, function(a, b) return (a.label or ''):lower() < (b.label or ''):lower() end)
@@ -966,7 +873,6 @@ local function ApplyExportCatalog(entries)
         placementAvailable = ok
     end
 
-    catalogSource = 'export'
     SendNUIMessage({
         action = 'preloadCatalog',
         catalog = emoteCatalog,
@@ -975,8 +881,7 @@ local function ApplyExportCatalog(entries)
     })
     catalogSentToNui = true
 
-    Utils.MbtDebugger(('[catalog:export] Loaded %d entries (%d emojis)')
-        :format(#emoteCatalog, emojiCount))
+    Utils.MbtDebugger(('[catalog] Loaded %d entries (%d emojis)'):format(#emoteCatalog, emojiCount))
 
     if pendingOpen and (GetGameTimer() - pendingOpenAt) <= PENDING_OPEN_TTL_MS then
         pendingOpen = false
@@ -991,24 +896,29 @@ local function TryExportCatalog()
     return ok and ApplyExportCatalog(payload)
 end
 
+-- Minimum rpemotes-reborn version that ships the GetEmoteCatalog / Execute exports.
+local RPEMOTES_MIN_VERSION = '2.1.2'
+
 RequestEmoteCatalog = function(attempt)
     attempt = attempt or 1
 
-    if integrationMode ~= 'fallback' and TryExportCatalog() then return end
-
-    if integrationMode == 'fallback' or (integrationMode == 'auto' and attempt >= CATALOG_MAX_RETRIES) then
-        Utils.MbtDebugger('[catalog:fallback] Export unavailable; requesting legacy server catalog')
-        TriggerServerEvent('mbt_emote_menu:requestEmoteCatalog')
+    local rpRes = DetectRpemotesClient()
+    if rpRes then
+        local ok, ver = Utils.CheckResourceVersion(rpRes, RPEMOTES_MIN_VERSION)
+        if not ok then
+            print(('^1[mbt_emote_menu] requires rpemotes-reborn %s+ (found %s: %s). Update rpemotes-reborn. Menu disabled.^0')
+                :format(RPEMOTES_MIN_VERSION, rpRes, ver))
+            return
+        end
+        if TryExportCatalog() then return end
     end
 
+    -- rpemotes not started yet, or export still converting: keep polling.
     SetTimeout(CATALOG_RETRY_DELAY_MS, function()
         if #emoteCatalog > 0 then return end
         if attempt >= CATALOG_MAX_RETRIES then
-            if integrationMode == 'export' then
-                print(('^1[mbt_emote_menu] [catalog:export] API unavailable after %d attempts^0'):format(CATALOG_MAX_RETRIES))
-            else
-                Utils.MbtDebugger(('Catalog still empty after %d retries — giving up'):format(CATALOG_MAX_RETRIES))
-            end
+            print(('^1[mbt_emote_menu] rpemotes-reborn %s+ export not found after retries. Is it started?^0')
+                :format(RPEMOTES_MIN_VERSION))
             return
         end
         RequestEmoteCatalog(attempt + 1)
@@ -1016,23 +926,14 @@ RequestEmoteCatalog = function(attempt)
 end
 
 RegisterCommand('mbt_emote_source', function()
-    print(('^5[mbt_emote_menu] mode=%s catalog=%s route=%s resource=%s exports=%s entries=%d^0')
-        :format(integrationMode, catalogSource, routeSource, tostring(rpemotesResource), tostring(rpemotesExportName), #emoteCatalog))
+    print(('^5[mbt_emote_menu] resource=%s exports=%s entries=%d^0')
+        :format(tostring(rpemotesResource), tostring(rpemotesExportName), #emoteCatalog))
 end, false)
 
-RegisterCommand('mbt_emote_reload', function(_, args)
-    local mode = args[1] or 'auto'
-    if mode ~= 'auto' and mode ~= 'export' and mode ~= 'fallback' then
-        print('^1[mbt_emote_menu] Usage: /mbt_emote_reload auto|export|fallback^0')
-        return
-    end
-
-    integrationMode = mode
-    catalogSource = 'none'
-    routeSource = 'none'
+RegisterCommand('mbt_emote_reload', function()
     emoteCatalog = {}
     catalogSentToNui = false
-    print(('^5[mbt_emote_menu] Reloading integration in %s mode^0'):format(mode))
+    print('^5[mbt_emote_menu] Reloading catalog from rpemotes export...^0')
     RequestEmoteCatalog()
 end, false)
 
