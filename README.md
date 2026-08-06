@@ -351,6 +351,13 @@ Special thanks to:
 
 ---
 
+## Links
+
+- 📖 **Documentation:** [malibutechteam.com/docs](https://malibutechteam.com/docs/mbt-emote-menu/overview)
+- 📦 **MBT Emote Menu on MalibuTech:** [malibutechteam.com](https://malibutechteam.com/scripts/7379660)
+- 💬 **Support & updates:** [MalibuTech Discord](https://discord.gg/6scYba9AMy)
+
+---
 ## License
 
 This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md).
