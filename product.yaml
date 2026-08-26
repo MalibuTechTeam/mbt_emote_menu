@@ -1,0 +1,11 @@
+schema_version: 1
+product_id: mbt-emote-menu
+kind: fivem-script
+owner: malibutech
+repository: MalibuTechTeam/mbt_emote_menu
+runtime_resource_name: mbt_emote_menu
+commercial_model: free
+store_id: "7379660"
+documentation_slug: mbt-emote-menu
+display_name: MBT Emote Menu
+lifecycle: released
