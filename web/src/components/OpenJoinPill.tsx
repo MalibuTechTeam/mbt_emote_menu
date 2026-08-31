@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Kbd } from './Kbd'
 import { Users } from 'lucide-react'
 import { useLocale } from '../utils/locale'
 
@@ -78,7 +79,7 @@ export function OpenJoinPill({ visible, emoteLabel, joinKey, position, layout = 
       <span className="mbt-openjoin__text">
         <b>{t.openjoin_label || 'Join'}</b>: {emoteLabel}
       </span>
-      <kbd className="mbt-openjoin__key" aria-label={`Press ${joinKey} to join`}>{joinKey}</kbd>
+      <Kbd label={`Press ${joinKey} to join`}>{joinKey}</Kbd>
     </div>
   )
 }

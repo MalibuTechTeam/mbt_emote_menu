@@ -1,16 +1,9 @@
 if not Utils.MbtResourceNameCheck('mbt_emote_menu') then return end
 
 -- The emote catalog is built entirely client-side from rpemotes' GetEmoteCatalog
--- export (see core/client.lua). The server only handles job permissions and the
--- ecosystem status, plus the startup version check.
-
--------------------------------------------------------------------------------
--- [ INITIALIZATION ] --
--------------------------------------------------------------------------------
-
-CreateThread(function()
-    Utils.MbtVersionCheck('MalibuTechTeam/mbt_emote_menu')
-end)
+-- export (see core/client.lua). The server handles job permissions, the
+-- ecosystem status, and the ACE-gated admin payload. The startup version check
+-- lives in modules/version/server.lua.
 
 -------------------------------------------------------------------------------
 -- [ CLIENT REQUESTS — per-source throttle ] --
@@ -19,6 +12,7 @@ end)
 local cachedEcosystemStatus = nil
 local lastJobRequest = {}
 local lastEcosystemRequest = {}
+local lastAdminRequest = {}
 local THROTTLE_MS = 2000
 
 local function throttled(tbl, src)
@@ -33,6 +27,7 @@ AddEventHandler('playerDropped', function()
     local src = source
     lastJobRequest[src] = nil
     lastEcosystemRequest[src] = nil
+    lastAdminRequest[src] = nil
 end)
 
 -------------------------------------------------------------------------------
@@ -141,4 +136,68 @@ RegisterNetEvent('mbt_emote_menu:requestEcosystemStatus', function()
         }
     end
     TriggerClientEvent('mbt_emote_menu:receiveEcosystemStatus', src, cachedEcosystemStatus)
+end)
+
+-------------------------------------------------------------------------------
+-- [ ADMIN PAYLOAD — ACE gated ] --
+--
+-- The single place that decides who is an admin. Everything admin-only in the
+-- UI (the update notice, the owner diagnostics, the scene editor) is unlocked
+-- by this one reply.
+--
+-- An unauthorized request is answered with silence: no event, not even an
+-- {authorized = false}. There is nothing for a normal player to intercept,
+-- and nothing client-side that has to be trusted to hide it.
+-------------------------------------------------------------------------------
+
+-- Brand convention (patterns/admin-command-naming): the admin command is the
+-- resource name, and the permission derives from it. FiveM auto-registers
+-- 'command.<name>' when the command is registered server-side, so a wildcard
+-- admin principal works with no extra server.cfg lines.
+local adminCommand = (MBT.Admin and MBT.Admin.Command) or GetCurrentResourceName()
+local adminPerm    = (MBT.Admin and MBT.Admin.Permission) or ('command.' .. adminCommand)
+
+--- The single authority on "is this player an admin here".
+---@param src number
+---@return boolean
+function IsMbtEmoteAdmin(src)
+    if not src or src <= 0 then return false end
+    return IsPlayerAceAllowed(src, adminPerm)
+end
+
+RegisterNetEvent('mbt_emote_menu:requestAdminInfo', function()
+    local src = source
+    if not src or src <= 0 then return end
+    if throttled(lastAdminRequest, src) then return end
+    if not IsMbtEmoteAdmin(src) then return end
+
+    -- Re-read on every request rather than caching per player: an ACE granted
+    -- or revoked at runtime takes effect on the next menu open, not on rejoin.
+    if not detectedFramework then DetectFramework() end
+
+    local editorOn = (MBT.Admin.Editor and MBT.Admin.Editor.Enabled) ~= false
+
+    TriggerClientEvent('mbt_emote_menu:receiveAdminInfo', src, {
+        update    = MBT.UpdateInfo,
+        status    = MBT.UpdateStatus,
+        framework = detectedFramework or 'disabled',
+        editor    = editorOn,
+    })
+end)
+
+-- Registered SERVER-side (like mbt_malisling and mbt_elevator) so FiveM
+-- auto-registers its ACE. Opens the scene editor for an authorised admin.
+RegisterCommand(adminCommand, function(source)
+    if source == 0 then return end -- console has no ped to place marks with
+    if not IsMbtEmoteAdmin(source) then
+        TriggerClientEvent('mbt_emote_menu:adminDenied', source)
+        return
+    end
+    TriggerClientEvent('mbt_emote_menu:editor:openCommand', source)
+end, false)
+
+AddEventHandler('onResourceStart', function(resourceName)
+    if resourceName ~= GetCurrentResourceName() then return end
+    TriggerEvent('chat:addSuggestion', '/' .. adminCommand,
+        'Open the MBT Emote Menu scene editor')
 end)

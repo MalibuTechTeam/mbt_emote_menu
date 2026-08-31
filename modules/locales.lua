@@ -23,12 +23,14 @@ function RegisterLocale(lang, data)
     Locales[lang] = data
 end
 
--- Expose the Locale table on MBT for compatibility with other MBT scripts
-CreateThread(function()
-    Wait(0)
-    MBT.Locale = setmetatable({}, {
-        __index = function(_, key)
-            return Translate(key)
-        end
-    })
-end)
+-- Expose the Locale table on MBT for compatibility with other MBT scripts.
+--
+-- Set at file scope, not from a thread: __index resolves through Translate at
+-- lookup time, so it does not need the locale files to have loaded yet -- and
+-- deferring it by even one tick left MBT.Locale nil for anything that reads it
+-- during startup, which silently produced a payload of raw keys.
+MBT.Locale = setmetatable({}, {
+    __index = function(_, key)
+        return Translate(key)
+    end
+})

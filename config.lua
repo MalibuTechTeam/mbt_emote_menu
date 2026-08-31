@@ -225,7 +225,60 @@ MBT.Ecosystem = {
 }
 
 -------------------------------------------------------------------------------
--- [ SECTION 7: JOB PERMISSIONS ] --
+-- [ SECTION 7: ADMIN ACCESS ] --
+-------------------------------------------------------------------------------
+
+-- Everything in this section is gated behind one FiveM ACE permission.
+--
+-- Brand convention (patterns/admin-command-naming): the command that opens the
+-- admin surface IS the resource name, and the permission derives from it as
+-- 'command.mbt_emote_menu'. That ACE is auto-registered by FiveM and is already
+-- covered by the wildcard most servers run (add_ace group.admin command allow),
+-- so a normal setup needs NO extra server.cfg line.
+--
+-- Players without it never receive this data: the server simply does not answer
+-- them, so there is nothing to hide client-side and nothing to leak.
+MBT.Admin = {
+    Command    = 'mbt_emote_menu', -- /mbt_emote_menu opens the scene editor
+    Permission = nil,              -- nil -> 'command.' .. Command
+
+    -- "Update available" notice, shown only to the players above, inside the
+    -- menu's settings popover. The console line prints regardless.
+    UpdateNotice = {
+        Enabled    = true,
+        Repository = 'MalibuTechTeam/mbt_emote_menu',
+    },
+
+    -- In-game scene editor: place marks in the world, assign an emote and a
+    -- role to each, save. Scenes are stored in MySQL (table
+    -- mbt_emote_menu_scenes, created automatically on first boot), so they
+    -- survive script updates and live in your normal database backups.
+    -- Requires oxmysql; without it the editor stays off and the rest of the
+    -- menu is unaffected.
+    Editor = {
+        Enabled  = true,
+        MaxMarks = 12,   -- per scene
+        MaxScenes = 200, -- per server
+    },
+}
+
+-- Scenes and spots authored with the in-game editor. The definitions live in
+-- the database, not here: an owner places them in the world instead of typing
+-- coordinates. This section only controls how they behave once placed.
+MBT.VenueSpots = {
+    Enabled = true,
+    PollMs  = 750,  -- how often we check whether you walked into one
+    Key     = 'E',  -- shown in the prompt; the control itself is E
+
+    -- Place the player exactly on the mark before the emote runs. This is the
+    -- point of authoring a position: an emote that leans on a counter only
+    -- looks right from the spot and angle it was placed at. Turn it off only
+    -- if you would rather the emote played wherever the player is standing.
+    SnapToMark = true,
+}
+
+-------------------------------------------------------------------------------
+-- [ SECTION 8: JOB PERMISSIONS ] --
 -------------------------------------------------------------------------------
 
 -- Restrict emotes to jobs — players without the job see them locked.
@@ -243,7 +296,7 @@ MBT.JobPermissions = {
 }
 
 -------------------------------------------------------------------------------
--- [ SECTION 8: NOTIFICATIONS ] --
+-- [ SECTION 9: NOTIFICATIONS ] --
 -------------------------------------------------------------------------------
 
 -- Notification handler. Uncomment the preset for your framework.

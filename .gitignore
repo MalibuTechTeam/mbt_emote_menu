@@ -37,3 +37,10 @@ rename-resource.ps1
 # Internal docs
 video_showcase_script.md
 cfx_release_post.md
+
+# Showcase media (huge, lives in D:\Projects\FiveM\MBT\emote-menu-video)
+*.mp4
+*.mov
+
+# Scene editor output: owner data, never ours to ship or commit.
+data/scenes.json

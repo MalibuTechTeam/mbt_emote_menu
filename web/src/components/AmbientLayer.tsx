@@ -5,6 +5,7 @@ import { OpenJoinPill, type OpenJoinPosition } from './OpenJoinPill'
 import { WhatsThatBubble } from './WhatsThatBubble'
 import { RpTextLayer } from './RpTextLayer'
 import { PhotoModeOverlay } from './PhotoModeOverlay'
+import { SceneLayer } from './SceneLayer'
 import { Toast, useToasts, setToastListener } from './Toast'
 
 interface AmbientLayerProps {
@@ -24,6 +25,9 @@ interface AmbientLayerProps {
  *
  * Toasts use the module-level bus in Toast.tsx (`emitToast`), so any
  * component can fire one without threading state through a shared parent.
+ *
+ * RpTextLayer and SceneLayer subscribe to their own messages for the same
+ * reason: their events fire on proximity, not on menu interaction.
  */
 export function AmbientLayer({ layout, performanceMode }: AmbientLayerProps) {
   const [placementActive, setPlacementActive] = useState(false)
@@ -133,6 +137,7 @@ export function AmbientLayer({ layout, performanceMode }: AmbientLayerProps) {
         layout={layout}
       />
       <RpTextLayer layout={layout} />
+      <SceneLayer layout={layout} />
       <PhotoModeOverlay />
       <Toast toasts={toasts} onDismiss={dismissToast} />
     </>

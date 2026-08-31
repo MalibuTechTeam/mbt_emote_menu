@@ -55,6 +55,9 @@ function Switch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
  * position, performance, language, close-on-play) and the favorites
  * Import/Export actions. Every change is persisted Lua-side via onSavePref,
  * which hands back a fresh config the parent re-applies.
+ *
+ * Player preferences only: the owner/admin surface lives in AdminPanel, on
+ * its own header button.
  */
 export function HeaderMenu({
   config,
@@ -227,6 +230,7 @@ export function HeaderMenu({
               </button>
             </div>
           )}
+
         </div>
       )}
     </div>

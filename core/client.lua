@@ -158,14 +158,69 @@ local LOCALE_KEYS = {
     'settings_performance', 'settings_performance_hint', 'settings_closeonplay',
     'settings_language', 'settings_wheel', 'settings_wheel_radial',
     'settings_wheel_linear', 'settings_accent',
+    -- Admin group (ACE gated): update notice + owner diagnostics
+    'admin_title', 'admin_update_available', 'admin_update_open', 'admin_up_to_date',
+    'admin_check_failed', 'admin_diag_rpemotes', 'admin_diag_catalog',
+    'admin_diag_framework', 'admin_diag_placement', 'admin_diag_yes', 'admin_diag_no',
+    -- Scene editor
+    'editor_open', 'editor_title', 'editor_new_spot', 'editor_untitled',
+    'editor_actors', 'editor_actor_n', 'editor_first_actor',
+    'editor_place_here', 'editor_move_here', 'editor_move_actor', 'editor_back',
+    'editor_selected_actor', 'editor_shift',
+    'editor_place_here', 'editor_adjust_pose', 'editor_no_pose', 'editor_fast', 'editor_kind', 'editor_kind_seats', 'editor_kind_scene',
+    'editor_lead', 'editor_new', 'editor_existing',
+    'editor_edit', 'editor_all_scenes', 'editor_scene_title',
+    'editor_name_hint', 'editor_step_first', 'editor_step_finish',
+    'editor_step_name', 'editor_step_ready', 'editor_add_actor',
+    'editor_change_emote', 'editor_placing_actor', 'editor_kind_seats_hint',
+    'editor_kind_scene_hint', 'editor_kind_spot_short', 'editor_kind_seats_short',
+    'editor_kind_scene_short',
+    'editor_confirm_pose', 'editor_preview', 'no_results', 'editor_more',
+    'editor_add_mark', 'editor_remove_mark', 'editor_assign_emote', 'editor_role',
+    'editor_role_placeholder', 'editor_scene_name', 'editor_save', 'editor_saved',
+    'editor_rotate', 'editor_unsaved', 'editor_incomplete', 'editor_discard_q',
+    'editor_exit', 'editor_no_scenes', 'editor_delete_scene', 'editor_delete_q',
+    'editor_save_failed',
+    'editor_height',
+    'editor_first_actor_hint',
+    'editor_name_help', 'editor_actors_help',
+    'editor_delete_title', 'editor_delete_body',
+    'editor_deleted', 'editor_delete_failed',
+    'editor_seat_placeholder',
+    'admin_running', 'admin_latest_release',
+    'admin_update_headline', 'admin_update_sub',
+    'editor_search', 'editor_tab_all', 'editor_tab_spots',
+    'editor_tab_seats', 'editor_tab_scenes', 'editor_resultbar',
+    'editor_sort_near', 'editor_sort_near_hint', 'editor_goto',
+    'editor_goto_missing', 'editor_no_match', 'editor_no_match_hint',
+    'editor_none_hint',
+    -- Scene / spot runtime
+    'scene_invite', 'scene_your_role', 'scene_join', 'scene_decline',
+    'scene_your_mark', 'scene_walk', 'scene_on_mark', 'scene_ready',
+    'scene_not_ready', 'scene_ready_hold', 'scene_too_far', 'scene_leave',
+    'scene_cancel', 'scene_counts', 'scene_pending', 'scene_solo',
+    'scene_needs_people', 'scene_hold', 'scene_hold_role', 'scene_reassigned',
+    'scene_end_timeout', 'scene_end_cancelled', 'scene_end_host',
+    'scene_end_without', 'scene_end_role', 'scene_end_you', 'scene_end_declined',
+    'scene_all_taken', 'scene_seats',
 }
 
 local function BuildLocaleStrings()
-    local L = MBT.Locale or {}
+    local L = MBT.Locale
     local out = {}
+
     for _, key in ipairs(LOCALE_KEYS) do
-        out[key] = L[key] or key
+        local value = L and L[key]
+        -- Translate() answers with the key itself when it has no string for
+        -- it, and MBT.Locale does not exist at all until its own thread has
+        -- run. Forwarding either one paints an identifier on screen: the panel
+        -- writes every string as `t.foo || "English sentence"`, and a truthy
+        -- key beats that fallback. Leaving the key out is what lets it fire.
+        if type(value) == 'string' and value ~= key then
+            out[key] = value
+        end
     end
+
     return out
 end
 
@@ -345,6 +400,10 @@ function Core.OpenMenu()
         Trending.Request()
     end
 
+    -- Asked per open, not cached: the server answers only ACE holders, and it
+    -- answers with silence otherwise. No HTTP happens here.
+    TriggerServerEvent('mbt_emote_menu:requestAdminInfo')
+
     Utils.MbtDebugger('Menu opened')
 end
 
@@ -360,6 +419,15 @@ end
 
 function Core.IsMenuOpen()
     return isOpen
+end
+
+---@param name string
+---@return table|nil catalog entry
+function Core.GetEmoteByName(name)
+    if type(name) ~= 'string' then return nil end
+    for i = 1, #emoteCatalog do
+        if emoteCatalog[i].name == name then return emoteCatalog[i] end
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -980,4 +1048,63 @@ AddEventHandler('onResourceStop', function(resourceName)
             isOpen = false
         end
     end
+end)
+
+-------------------------------------------------------------------------------
+-- [ ADMIN PAYLOAD — update notice, diagnostics, editor unlock ] --
+--
+-- Arrives only for players the server has already authorised via ACE. The
+-- client never asks "am I an admin?" and never stores the answer: it forwards
+-- an already-authorised payload to the NUI and nothing more.
+-------------------------------------------------------------------------------
+
+-- Local facts about this client's install. Not secret in themselves, but only
+-- ever assembled and sent once the server has authorised the request.
+local function BuildDiagnostics(info)
+    local rpVersion = 'not detected'
+    if rpemotesResource then
+        local _, ver = Utils.CheckResourceVersion(rpemotesResource, RPEMOTES_MIN_VERSION)
+        rpVersion = ver or 'unknown'
+    end
+
+    local status = type(info.status) == 'table' and info.status or {}
+
+    return {
+        rpemotesResource = rpemotesResource or 'not detected',
+        rpemotesExport   = rpemotesExportName,
+        rpemotesVersion  = rpVersion,
+        rpemotesMin      = RPEMOTES_MIN_VERSION,
+        catalogCount     = #emoteCatalog,
+        placement        = placementAvailable,
+        framework        = type(info.framework) == 'string' and info.framework or 'unknown',
+        versionCurrent   = type(status.current) == 'string' and status.current or nil,
+        versionLatest    = type(status.latest) == 'string' and status.latest or nil,
+        versionChecked   = status.checked == true,
+    }
+end
+
+RegisterNetEvent('mbt_emote_menu:receiveAdminInfo', function(info)
+    if type(info) ~= 'table' then return end
+    -- A reply that lands after the menu closed is simply dropped; the next
+    -- open asks again. Same guard the job payload uses.
+    if not isOpen then return end
+
+    local update = nil
+    local u = info.update
+    if type(u) == 'table'
+        and type(u.current) == 'string'
+        and type(u.latest) == 'string'
+        and type(u.url) == 'string'
+        -- Pin the destination: a handler invoked locally by an executor must
+        -- not be able to hand openUrl an arbitrary link.
+        and u.url:find('^https://github%.com/MalibuTechTeam/') then
+        update = { current = u.current, latest = u.latest, url = u.url }
+    end
+
+    SendNUIMessage({
+        action      = 'adminInfo',
+        update      = update,
+        diagnostics = BuildDiagnostics(info),
+        editor      = info.editor == true,
+    })
 end)
