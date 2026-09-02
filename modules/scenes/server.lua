@@ -18,8 +18,16 @@ local sessions = {}          -- [hostSrc] = session
 local playerSession = {}     -- [src] = hostSrc
 
 local INVITE_TTL_MS   = 30000
+
+-- Inactivity, not total elapsed time. A scene where people are still walking to
+-- their marks is a scene that is going fine, and it used to be killed at sixty
+-- seconds from the moment it started no matter what anyone was doing.
 local READY_TTL_MS    = 60000
-local COUNTDOWN_FROM  = 3
+local SWEEP_MS        = 5000
+-- Long enough to put the controller down and look at the other person. Three
+-- was picked to feel snappy, but this is not a race start: everyone is already
+-- standing on their mark and the only thing left is to brace for it.
+local COUNTDOWN_FROM  = tonumber(MBT.VenueSpots and MBT.VenueSpots.CountdownFrom) or 5
 local JOIN_RADIUS     = 30.0
 
 -------------------------------------------------------------------------------
@@ -75,6 +83,13 @@ local function broadcastProgress(session)
             expiresAt = session.expiresAt,
         })
     end
+end
+
+---Pushes a session's deadline out. Called whenever anything happens in it, so
+---the clock measures how long NOTHING has happened rather than how long the
+---scene has existed.
+local function touch(session)
+    if session then session.deadline = GetGameTimer() + READY_TTL_MS end
 end
 
 local function everyoneReady(session)
@@ -302,13 +317,8 @@ RegisterNetEvent('mbt_emote_menu:scenes:start', function(scene, targets)
         host      = true,
     })
 
+    touch(session)
     broadcastProgress(session)
-
-    SetTimeout(READY_TTL_MS + 500, function()
-        if sessions[src] and sessions[src].state ~= 'countdown' then
-            clearSession(src, 'timeout')
-        end
-    end)
 end)
 
 RegisterNetEvent('mbt_emote_menu:scenes:accept', function()
@@ -324,6 +334,8 @@ RegisterNetEvent('mbt_emote_menu:scenes:accept', function()
         end
         return true
     end
+
+    touch(session)
 
     local function give(i)
         session.assigned[src] = i
@@ -374,6 +386,21 @@ RegisterNetEvent('mbt_emote_menu:scenes:decline', function()
     session.members[src] = nil
     session.offered[src] = nil
     playerSession[src] = nil
+
+    -- Ready meant "I will perform this scene with these people". One of them
+    -- just left, so it is a different scene now and nobody has agreed to it
+    -- yet. Without this the host's earlier Ready was silently re-read as
+    -- consent to perform alone, which is not what they pressed it for.
+    local hadReady = next(session.ready) ~= nil
+    session.ready = {}
+
+    if hadReady then
+        for member in pairs(session.members) do
+            TriggerClientEvent('mbt_emote_menu:scenes:readyCleared', member)
+        end
+    end
+
+    touch(session)
     broadcastProgress(session)
 end)
 
@@ -385,10 +412,27 @@ RegisterNetEvent('mbt_emote_menu:scenes:ready', function(isReady)
     if not session.assigned[src] then return end
 
     session.ready[src] = isReady and true or nil
+    touch(session)
     broadcastProgress(session)
 
     if everyoneReady(session) then
         startCountdown(hostSrc)
+    end
+end)
+
+-- One sweep for every session, rather than a timer per session that cannot be
+-- refreshed. A scene only dies here when nothing has happened in it for a full
+-- minute, and never once it is counting down.
+CreateThread(function()
+    while true do
+        Wait(SWEEP_MS)
+
+        local now = GetGameTimer()
+        for hostSrc, session in pairs(sessions) do
+            if session.state ~= 'countdown' and session.deadline and now > session.deadline then
+                clearSession(hostSrc, 'timeout')
+            end
+        end
     end
 end)
 

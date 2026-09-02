@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { MapPin, Users, Navigation2, AlertTriangle } from "lucide-react";
 import { useLocale, tFormat } from "../utils/locale";
 import { Kbd, KeyHint } from "./Kbd";
-import { emitToast } from "./Toast";
 
 type Phase = "idle" | "invited" | "assigned" | "countdown";
 
@@ -92,7 +91,8 @@ export function SceneLayer({ layout }: { layout?: "default" | "cinematic" }) {
           break;
 
         case "sceneReassigned":
-          emitToast(t.scene_reassigned || "That role was taken — you have another", "info");
+          // The saying-so is Lua's now, through the owner's own notification
+          // handler. This layer only stops showing the old role.
           break;
 
         case "sceneReadyState":
@@ -127,7 +127,8 @@ export function SceneLayer({ layout }: { layout?: "default" | "cinematic" }) {
           break;
 
         case "sceneFull":
-          emitToast(t.scene_all_taken || "Every seat here is taken", "info");
+          // Said by Lua through the owner's notification handler. Nothing to
+          // do here: there is no card to take down for a bench that was full.
           break;
 
         case "sceneCountdown":
@@ -136,17 +137,9 @@ export function SceneLayer({ layout }: { layout?: "default" | "cinematic" }) {
           break;
 
         case "sceneEnded": {
-          const reasons: Record<string, string> = {
-            timeout: t.scene_end_timeout || "Scene expired — not everyone was ready",
-            cancelled: t.scene_end_cancelled || "Scene cancelled",
-            "host-left": t.scene_end_host || "Scene ended — the host left",
-            "started-without-you": t.scene_end_without || "The scene started without you",
-            "role-taken": t.scene_end_role || "That role was already taken",
-            "you-left": t.scene_end_you || "You left the scene",
-            declined: t.scene_end_declined || "Invite declined",
-          };
-          if (data.reason && reasons[data.reason]) emitToast(reasons[data.reason], "info");
-
+          // Why it ended is said by Lua through MBT.Notification, so it looks
+          // like every other message on the owner's server. All this does is
+          // take the card down.
           setPhase("idle");
           setRole(null);
           setReady(false);
@@ -189,9 +182,9 @@ export function SceneLayer({ layout }: { layout?: "default" | "cinematic" }) {
             <span className="mbt-scene__name">{sceneLabel}</span>
           </div>
           {role && (
-            <div className="mbt-scene__role">
+            <div className="mbt-scene__plate">
               <span className="mbt-scene__rolelabel">{t.scene_your_role || "Your role"}</span>
-              {role}
+              <span className="mbt-scene__rolename">{role}</span>
             </div>
           )}
           <div className="mbt-scene__keys">
@@ -214,7 +207,10 @@ export function SceneLayer({ layout }: { layout?: "default" | "cinematic" }) {
         {nav?.onScreen && !nav.inRange && (
           <div
             className="mbt-scene__pin"
-            style={{ left: `${nav.x * 100}%`, top: `${nav.y * 100}%` }}
+            // Two custom properties composed into one transform, the way the
+            // What's That bubble does it: `left`/`top` lay the page out again
+            // on every update, a transform never leaves the compositor.
+            style={{ '--mbt-x': nav.x, '--mbt-y': nav.y } as React.CSSProperties}
           >
             <MapPin size={14} />
             <span>{t.scene_your_mark || "Your mark"}</span>
@@ -240,46 +236,80 @@ export function SceneLayer({ layout }: { layout?: "default" | "cinematic" }) {
             </div>
 
             {role && (
-              <div className="mbt-scene__role">
+              <div className="mbt-scene__plate">
                 <span className="mbt-scene__rolelabel">{t.scene_your_role || "Your role"}</span>
-                {role}
+                <span className="mbt-scene__rolename">{role}</span>
               </div>
             )}
 
-            {tooFar ? (
-              <div className="mbt-scene__alert">
-                <AlertTriangle size={14} />
-                {tFormat(t.scene_too_far || "Too far — %sm to your mark", String(nav?.dist ?? "?"))}
-              </div>
-            ) : (
-              <div className="mbt-scene__status">
-                {nav?.inRange
-                  ? ready
-                    ? t.scene_ready_hold || "Ready — hold position"
-                    : t.scene_on_mark || "On your mark"
-                  : tFormat(t.scene_walk || "Walk to your mark — %sm", String(nav?.dist ?? "?"))}
-              </div>
-            )}
-
-            {progress.roles > 0 && (
-              <div className="mbt-scene__progress">
-                {tFormat(
-                  t.scene_counts || "%s of %s actors · %s ready",
-                  String(progress.players),
-                  String(progress.roles),
-                  String(progress.ready),
+            {/* Where things stand: one group, with the fact you check most
+                as its anchor and the slots reading at a glance beside it. */}
+            <div className="mbt-scene__board">
+              <div className="mbt-scene__stateline">
+                {tooFar ? (
+                  <span className="mbt-scene__alert">
+                    <AlertTriangle size={14} />
+                    {tFormat(t.scene_too_far || "Too far — %sm to your mark", String(nav?.dist ?? "?"))}
+                  </span>
+                ) : (
+                  <span className="mbt-scene__status">
+                    {nav?.inRange
+                      ? ready
+                        ? t.scene_ready_hold || "Ready — hold position"
+                        : t.scene_on_mark || "On your mark"
+                      : tFormat(t.scene_walk || "Walk to your mark — %sm", String(nav?.dist ?? "?"))}
+                  </span>
                 )}
-                {progress.pending > 0 &&
-                  ` · ${tFormat(t.scene_pending || "%s invited", String(progress.pending))}`}
-              </div>
-            )}
 
-            {/* The host can start alone at any moment. The old copy said
-                "waiting for the others", which described a rule the server
-                does not actually enforce. */}
-            {solo && isHost && !ready && (
-              <div className="mbt-scene__note">{t.scene_solo || "Nobody joined — you can perform alone"}</div>
-            )}
+                {/* One slot per role. Filled when that person is ready,
+                    outlined when they are here but not, dashed while their
+                    invitation is still out, empty when nobody holds it. The
+                    count underneath is the exact reading; this is the glance. */}
+                {progress.roles > 0 && (
+                  <span
+                    className="mbt-scene__slots"
+                    aria-label={tFormat(
+                      t.scene_counts || "%s of %s actors · %s ready",
+                      String(progress.players),
+                      String(progress.roles),
+                      String(progress.ready),
+                    )}
+                  >
+                    {Array.from({ length: progress.roles }, (_, i) => {
+                      const state =
+                        i < progress.ready
+                          ? "ready"
+                          : i < progress.players
+                            ? "here"
+                            : i < progress.players + progress.pending
+                              ? "asked"
+                              : "open";
+                      return <i key={i} className={`mbt-scene__slot mbt-scene__slot--${state}`} />;
+                    })}
+                  </span>
+                )}
+              </div>
+
+              {progress.roles > 0 && (
+                <div className="mbt-scene__progress">
+                  {tFormat(
+                    t.scene_counts || "%s of %s actors · %s ready",
+                    String(progress.players),
+                    String(progress.roles),
+                    String(progress.ready),
+                  )}
+                  {progress.pending > 0 &&
+                    ` · ${tFormat(t.scene_pending || "%s invited", String(progress.pending))}`}
+                </div>
+              )}
+
+              {/* The host can start alone at any moment. The old copy said
+                  "waiting for the others", which described a rule the server
+                  does not actually enforce. */}
+              {solo && isHost && !ready && (
+                <div className="mbt-scene__note">{t.scene_solo || "Nobody joined — you can perform alone"}</div>
+              )}
+            </div>
 
             <div className="mbt-scene__keys">
               <KeyHint
@@ -315,13 +345,19 @@ export function SceneLayer({ layout }: { layout?: "default" | "cinematic" }) {
             {prompt.key}
           </Kbd>
         )}
-        <span className="mbt-scene__label">{prompt.label}</span>
-        {/* Which of the seats you are about to take. The claim already goes to
-            the one you walked up to, so the prompt can say which that is
-            instead of naming the whole bench and leaving you to guess. */}
-        {!prompt.occupied && prompt.mark && (
-          <span className="mbt-scene__mark">{prompt.mark}</span>
-        )}
+        {/* One question: what happens if I press this key.
+
+            The place is what the player is standing in and can already see, so
+            naming it earns nothing; the action is what they cannot see. When
+            the seat they walked up to carries its own name, that name IS the
+            answer and it replaces the scene label rather than queueing behind
+            it. A spot has no seat name and its scene label is already the
+            action ("Sit down"), and a multi-role scene keeps its label because
+            roles are handed out by the server after everyone accepts -- naming
+            one here would promise something we cannot keep. */}
+        <span className="mbt-scene__label">
+          {(!prompt.occupied && prompt.mark) || prompt.label}
+        </span>
         {prompt.occupied ? (
           <span className="mbt-scene__badge">{t.scene_all_taken || "Every seat here is taken"}</span>
         ) : prompt.isScene ? (

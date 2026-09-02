@@ -158,6 +158,47 @@ MBT.PhotoMode = {
         { id = 'cool',    label = 'Cool',      timecycle = 'phone_cam4',  strength = 1.0 },
     },
 
+    -- Key light. One photographic light placed relative to the CAMERA, so it
+    -- keeps the same relationship to the shot however far the player orbits.
+    -- Costs one native per frame inside the loop photo mode already runs, and
+    -- nothing at all while photo mode is closed.
+    Lighting = {
+        Enabled          = true, -- false hides the Light tab entirely
+        DefaultOn        = false,
+        DefaultIntensity = 3.0,   -- 0.5 - 8.0
+        DefaultWarmth    = 0.0,   -- -1.0 cool ... 0 daylight ... +1.0 tungsten
+        DefaultKey       = 'front', -- 'front' | 'side' | 'rim'
+        Range            = 5.0,   -- metres the light reaches
+    },
+
+    -- Hour and sky, for the photographer only.
+    --
+    -- Both natives are client-side: the sun moves and the sky changes for the
+    -- person holding the camera and for nobody else, and everything is handed
+    -- back when they close photo mode.
+    --
+    -- KNOWN LIMIT, worth reading before you promise this to anyone: almost
+    -- every server runs a weather sync (vSync, cd_easytime, qb-weathersync...)
+    -- that pushes its own state back every few seconds. We re-assert ours on a
+    -- 1.5 s beat to stay on top of it, which works against the common ones but
+    -- cannot be guaranteed against all of them. Set Enabled = false if your
+    -- weather script fights it or if you would rather players did not.
+    Environment = {
+        Enabled = true, -- false hides the Scene tab entirely
+
+        -- Sky presets. 'id' must be a real GTA weather type; 'label' is what
+        -- the player reads. Order here is order on screen.
+        Weathers = {
+            { id = 'EXTRASUNNY', label = 'Clear'   },
+            { id = 'CLOUDS',     label = 'Cloudy'  },
+            { id = 'OVERCAST',   label = 'Grey'    },
+            { id = 'FOGGY',      label = 'Fog'     },
+            { id = 'RAIN',       label = 'Rain'    },
+            { id = 'THUNDER',    label = 'Storm'   },
+            { id = 'SNOWLIGHT',  label = 'Snow'    },
+        },
+    },
+
     -- Send-to-Discord (optional). When Enabled and a WebhookUrl is set, a
     -- "Send to Discord" button appears and the shot posts to that channel.
     Discord = {
@@ -269,6 +310,11 @@ MBT.VenueSpots = {
     Enabled = true,
     PollMs  = 750,  -- how often we check whether you walked into one
     Key     = 'E',  -- shown in the prompt; the control itself is E
+
+    -- Seconds counted down before a multi-actor scene fires. Everyone is
+    -- already standing on their mark by then, so this is bracing time, not a
+    -- race start: too short and the shot begins before anyone has looked up.
+    CountdownFrom = 5,
 
     -- Place the player exactly on the mark before the emote runs. This is the
     -- point of authoring a position: an emote that leans on a counter only

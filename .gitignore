@@ -44,3 +44,8 @@ cfx_release_post.md
 
 # Scene editor output: owner data, never ours to ship or commit.
 data/scenes.json
+
+# Artefatti di sessione: il piano e il log della review vivono nel vault,
+# non nel repo della risorsa.
+PLAN.md
+PLAN-REVIEW-LOG.md

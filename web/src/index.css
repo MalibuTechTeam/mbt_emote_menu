@@ -2914,12 +2914,12 @@ body {
    inactive chips. */
 .mbt-persona--active {
   color: var(--mbt-accent);
-  background: rgba(0, 230, 118, 0.10);
-  border-color: rgba(0, 230, 118, 0.45);
+  background: rgba(var(--mbt-accent-rgb), 0.10);
+  border-color: rgba(var(--mbt-accent-rgb), 0.45);
   cursor: default;
 }
 .mbt-persona--active:hover {
-  background: rgba(0, 230, 118, 0.10);
+  background: rgba(var(--mbt-accent-rgb), 0.10);
   color: var(--mbt-accent);
 }
 
@@ -2949,7 +2949,7 @@ body {
   font-weight: 600;
   outline: none;
 }
-.mbt-persona--editing { border-color: var(--mbt-accent); background: rgba(0, 230, 118, 0.08); }
+.mbt-persona--editing { border-color: var(--mbt-accent); background: rgba(var(--mbt-accent-rgb), 0.08); }
 
 /* Delete confirmation — danger-tinted chip so it clearly stands out from the
    normal chips, with both actions visible at rest (not only on hover). */
@@ -2998,12 +2998,12 @@ body {
   height: 24px;
   border-radius: 7px;
   color: var(--mbt-accent);
-  background: rgba(0, 230, 118, 0.08);
-  border: 1px solid rgba(0, 230, 118, 0.22);
+  background: rgba(var(--mbt-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.22);
   cursor: pointer;
   transition: background 130ms ease, border-color 130ms ease;
 }
-.mbt-personas__add:hover { background: rgba(0, 230, 118, 0.16); }
+.mbt-personas__add:hover { background: rgba(var(--mbt-accent-rgb), 0.16); }
 
 /* the slots grid IS the recessed tray */
 .mbt-quickbind__slots {
@@ -4384,6 +4384,170 @@ body {
   border-color: var(--mbt-accent);
 }
 
+/* Tabs of the control bar's top row. Filters, light and sky are three groups
+   with equal standing; stacking them as rows would push the bar up over the
+   shot it exists to frame, so they take turns instead. */
+.mbt-photo__tabs {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 2px;
+}
+
+.mbt-photo__tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  background: transparent;
+  border: none;
+  color: var(--mbt-text-lo);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.mbt-photo__tab:hover { color: var(--mbt-text-mid); }
+.mbt-photo__tab--on { color: var(--mbt-text-hi); }
+
+.mbt-photo__tab--on::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -4px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--mbt-accent);
+  box-shadow: 0 0 8px rgba(var(--mbt-accent-rgb), 0.5);
+}
+
+/* Says a tab is doing something without opening it: the light is on, or the
+   sky is no longer the server's. */
+.mbt-photo__tabdot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--mbt-accent);
+  box-shadow: 0 0 6px rgba(var(--mbt-accent-rgb), 0.6);
+}
+
+.mbt-photo__panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  max-width: 620px;
+}
+
+.mbt-photo__seg {
+  display: inline-flex;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.mbt-photo__segbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  color: var(--mbt-text-mid);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.mbt-photo__segbtn + .mbt-photo__segbtn { border-left: 1px solid rgba(255, 255, 255, 0.07); }
+.mbt-photo__segbtn:hover:not(:disabled) { color: var(--mbt-text-hi); background: rgba(255, 255, 255, 0.05); }
+.mbt-photo__segbtn--on { color: #07120b; background: var(--mbt-accent); }
+.mbt-photo__segbtn--on:hover { background: var(--mbt-accent); }
+.mbt-photo__segbtn:disabled { opacity: 0.35; cursor: default; }
+
+.mbt-photo__slider {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-photo__slider input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 116px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+}
+
+.mbt-photo__slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--mbt-accent);
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.mbt-photo__slider input[type="range"]:disabled { opacity: 0.35; cursor: default; }
+.mbt-photo__slider input[type="range"]:disabled::-webkit-slider-thumb { background: var(--mbt-text-faint); }
+
+/* Where the light actually is. Read-only: the gesture is the input, and a
+   second way to set the same number would be two controls arguing over one
+   value. */
+.mbt-photo__readouts {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mbt-photo__readouts b {
+  font-family: var(--mbt-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mbt-text-hi);
+}
+
+.mbt-photo__readouts small {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mbt-text-faint);
+  margin-right: 6px;
+}
+
+/* While the drag is holding the light rather than the camera, the hint that
+   says so is the only thing on the bar that changed -- so it says it loudly
+   enough to be believed. */
+.mbt-photo__hint--mode { color: var(--mbt-accent); }
+.mbt-photo__hint--mode svg { color: var(--mbt-accent); }
+
+.mbt-photo__readout {
+  font-family: var(--mbt-font-mono);
+  font-size: 11px;
+  color: var(--mbt-text-hi);
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+}
+
 .mbt-photo__tools {
   display: flex;
   align-items: center;
@@ -4407,10 +4571,18 @@ body {
   transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
 }
 .mbt-photo__tool:hover { color: var(--mbt-text-hi); }
+
+/* On, without competing with the choice above it. The filled accent in this bar
+   belongs to ONE thing -- which look is selected -- and two toggles wearing the
+   same fill made three primary elements on a bar that has one primary
+   question. Accent on the label and the icon says "on" perfectly well.
+
+   The border colour was also hardcoded MBT green, so an owner who themed the
+   accent kept two green buttons in the middle of their own palette. */
 .mbt-photo__tool--on {
   color: var(--mbt-accent);
-  border-color: rgba(0, 230, 118, 0.4);
-  background: rgba(0, 230, 118, 0.08);
+  border-color: rgba(var(--mbt-accent-rgb), 0.35);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .mbt-photo__send {
@@ -5496,21 +5668,6 @@ body {
 
 .mbt-scene__label { color: var(--mbt-text-hi); }
 
-/* The seat's own name, after the place's. Quieter than the label and set off
-   by a divider: it qualifies the place, it is not a second place. */
-.mbt-scene__mark {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--mbt-text-lo);
-}
-
-.mbt-scene__mark::before {
-  content: "";
-  width: 1px;
-  height: 11px;
-  background: rgba(255, 255, 255, 0.14);
-}
 
 /* Occupied: same pill, no accent, no key. It is a statement, not an offer. */
 .mbt-scene__pill--full {
@@ -5537,88 +5694,202 @@ body {
 
 /* ── Session card ───────────────────────────────────────────────────────── */
 
+/* Same recipe as every other panel that floats over the game world -- the spot
+   prompt directly above, Open Join, What's That: an accent glow in the corner
+   the light would come from, over a green-biased near-black, inside an
+   accent-tinted edge. This card had a flat bluish surface and the neutral
+   border token instead, so it read as colder and flatter than the pill the
+   player had been looking at seconds earlier.
+
+   No backdrop-filter: CEF-safe, per the rule this stylesheet already states for
+   the Trending hero. Opacity does the work instead. */
 .mbt-scene__card {
   min-width: 340px;
   max-width: 460px;
   padding: 14px 16px;
-  border: 1px solid var(--mbt-border);
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.22);
   border-radius: var(--mbt-radius);
-  /* No backdrop-filter: CEF-safe, per the rule this stylesheet already states
-     for the Trending hero. Opacity does the work instead. */
-  background: rgba(12, 14, 20, 0.95);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+  background:
+    radial-gradient(110% 200% at 0% 0%, rgba(var(--mbt-accent-rgb), 0.10), transparent 60%),
+    linear-gradient(180deg, #161d18, #0d120f);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
   animation: mbt-scenein 180ms var(--mbt-ease-out);
 }
 
 .mbt-scene__card--warn { border-color: var(--mbt-warning); }
 
+/* The micro-label scale the rest of the product uses -- section heads in the
+   editor, the list creator, the photo tabs are all 9.5px at 1px of tracking.
+   This one was 12px at 0.06em, which made an eyebrow compete with the role
+   underneath it for the same job. */
 .mbt-scene__head {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
-  font-size: 12px;
-  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 9.5px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   color: var(--mbt-text-lo);
 }
 
 .mbt-scene__head svg { color: var(--mbt-accent); flex: none; }
 
+/* The scene's own name, opposite the eyebrow. Sized back up because it is a
+   name a person wrote, not a label of ours. */
 .mbt-scene__name {
   margin-left: auto;
+  font-size: 12px;
   text-transform: none;
   letter-spacing: 0;
   color: var(--mbt-text-hi);
 }
 
-.mbt-scene__role {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 8px;
-  font-size: 19px;
-  color: var(--mbt-accent);
+
+
+/* The label stays quiet: the name beside it is what is being said. */
+.mbt-scene__rolelabel {
+  flex: none;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--mbt-text-lo);
 }
 
-.mbt-scene__rolelabel {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--mbt-text-lo);
+/* Two plates, for the two things you READ. The keys below stay unboxed: they
+   are what you DO, and a third box would make this a box inside a box inside a
+   box, which is heavier than the column of sentences it replaced. */
+
+/* Who you are. The hero of the whole session -- you are the Bride, you are the
+   Officiant -- and it used to be one line among five. */
+.mbt-scene__plate {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 11px;
+  padding: 9px 12px;
+  border-radius: var(--mbt-radius-sm);
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.24);
+  background: rgba(var(--mbt-accent-rgb), 0.08);
+}
+
+/* White, not accent. The plate underneath is already the accent-tinted one, so
+   the name does not have to carry the colour as well -- and white on that tint
+   is both more legible and more emphatic than green on green. The boldness gets
+   spent once. */
+.mbt-scene__rolename {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--mbt-text-hi);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* How it stands. Neutral on purpose: only one plate on this card gets to be
+   the accent one, or neither of them is. */
+.mbt-scene__board {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--mbt-radius-sm);
+  border: 1px solid var(--mbt-edge);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.mbt-scene__stateline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .mbt-scene__status {
   font-size: 15px;
+  font-weight: 600;
   color: var(--mbt-text-hi);
 }
 
 /* Refusals are stated, not swallowed. */
 .mbt-scene__alert {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 7px;
   font-size: 15px;
+  font-weight: 600;
   color: var(--mbt-warning);
 }
 
+/* One slot per role, read at a glance. The four states are four different
+   shapes, not four shades: someone reading this is glancing between walking
+   and standing still, and colour alone would not survive that. */
+.mbt-scene__slots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  flex: none;
+}
+
+.mbt-scene__slot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--mbt-text-faint);
+  background: transparent;
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+
+/* Present and ready. */
+.mbt-scene__slot--ready {
+  border-color: var(--mbt-accent);
+  background: var(--mbt-accent);
+  box-shadow: 0 0 7px rgba(var(--mbt-accent-rgb), 0.55);
+}
+
+/* Here, not ready yet. */
+.mbt-scene__slot--here {
+  border-color: var(--mbt-accent);
+  background: rgba(var(--mbt-accent-rgb), 0.18);
+}
+
+/* Asked, no answer yet -- the only one that moves, because it is the only one
+   waiting on somebody. */
+.mbt-scene__slot--asked {
+  border-style: dashed;
+  border-color: var(--mbt-text-lo);
+  animation: mbt-slot-wait 1.8s ease-in-out infinite;
+}
+
+@keyframes mbt-slot-wait {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1; }
+}
+
 .mbt-scene__progress {
-  margin-top: 6px;
+  margin-top: 5px;
   font-family: var(--mbt-font-mono);
-  font-size: 13px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
   color: var(--mbt-text-lo);
 }
 
 .mbt-scene__note {
-  margin-top: 6px;
-  font-size: 14px;
+  margin-top: 7px;
+  font-size: 13px;
   color: var(--mbt-text-lo);
 }
 
+/* The action row. Unboxed on purpose -- it is what you DO, and the hairline
+   already separates it from the two plates above. */
 .mbt-scene__keys {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 18px;
   margin-top: 12px;
   padding-top: 10px;
@@ -5630,14 +5901,23 @@ body {
 /* Both of these say "your mark" in words. Ownership carried by colour alone
    fails for the ~8% of men with a colour vision deficiency, and green/amber is
    the pair that fails most often. */
+/* Positioned the way the What's That bubble is: the screen projection arrives
+   as two custom properties and is composed into a single translate3d, so
+   tracking a mark never triggers layout. */
 .mbt-scene__pin {
   position: fixed;
   z-index: 34;
+  left: 0;
+  top: 0;
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 5px 10px;
-  transform: translate(-50%, -100%);
+  transform: translate3d(
+    calc(var(--mbt-x, 0.5) * 100vw - 50%),
+    calc(var(--mbt-y, 0.5) * 100vh - 100% - 10px),
+    0
+  );
   border: 1px solid rgba(var(--mbt-accent-rgb), 0.5);
   border-radius: var(--mbt-radius-pill);
   background: rgba(12, 14, 20, 0.85);
@@ -5707,7 +5987,11 @@ body {
   100% { opacity: 0.85; transform: scale(1); }
 }
 
+.mbt-overlay--perf .mbt-scene__slot--asked { animation: none !important; }
+
 @media (prefers-reduced-motion: reduce) {
+  .mbt-scene__slot--asked { animation: none !important; }
+
 
   /* Broad fallback — near-instant motion everywhere. The targeted rules
      below have higher specificity and keep a short opacity fade for the

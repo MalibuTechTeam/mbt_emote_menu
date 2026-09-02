@@ -83,6 +83,8 @@
 
 - **Photo Mode** — a cinematic camera opened from a button in the menu header. Drag to orbit the camera around your character, scroll to zoom, pick a look filter (cinematic, noir, warm, vibrant, cool), toggle depth-of-field and a rule-of-thirds framing grid, then capture — the MBT watermark rides on every shot. Optionally, the server owner can wire a Discord webhook so players send shots straight to a channel (per-player throttled; the upload runs client-side via `screenshot-basic`, so the webhook is handed to the uploading client — a write-only webhook, rotate it if abused). Uses `screenshot-basic` when present, falls back to "hide HUD + your own screenshot key" otherwise. Fully tunable via `MBT.PhotoMode`
 
+- **Photo Mode Pro** *(new in 1.8)* — a **key light** you place yourself, positioned relative to the camera so it keeps the same relationship to the shot however far you orbit: front, side or rim, with strength and warmth. Warmth runs between real white points (tungsten, daylight, open shade) rather than a hue tint, so it reads as a lamp and not as a filter. Plus **hour and sky**: dawn, noon, golden hour, night or any hour on a slider, and seven weather presets. Both are **client-side and yours alone** — the sun moves for the photographer and for nobody else, and everything is handed back when Photo Mode closes. Each half has its own switch (`MBT.PhotoMode.Lighting`, `MBT.PhotoMode.Environment`), and a switched-off tab disappears rather than showing controls that do nothing
+
 ### Scene Editor *(new in 1.8)*
 
 - **Place scenes in the world, in-game** — walk to where an actor should stand, face the way they should face, press a key. That is the mark. No coordinates to copy out of a dev tool, no Lua to edit
@@ -232,6 +234,22 @@ MBT.PhotoMode = {
     Watermark = true,   -- MBT watermark on the framing overlay
     DofDefault = true,  -- Start with depth-of-field on
     Filters = { --[[ look presets via timecycle modifiers ]] },
+    -- Key light, placed relative to the camera (new in 1.8)
+    Lighting = {
+        Enabled          = true,    -- false hides the Light tab entirely
+        DefaultOn        = false,
+        DefaultIntensity = 3.0,     -- 0.5 - 8.0
+        DefaultWarmth    = 0.0,     -- -1.0 cool ... 0 daylight ... +1.0 tungsten
+        DefaultKey       = 'front', -- 'front' | 'side' | 'rim'
+        Range            = 5.0,     -- metres the light reaches
+    },
+
+    -- Hour and sky, for the photographer only (new in 1.8)
+    Environment = {
+        Enabled  = true,  -- false hides the Scene tab entirely
+        Weathers = { --[[ id + label pairs, in the order they appear ]] },
+    },
+
     Discord = {
         Enabled    = false, -- Owner opt-in: "Send to Discord" button
         WebhookUrl = '',    -- Handed to the uploading client (write-only webhook)
@@ -239,6 +257,16 @@ MBT.PhotoMode = {
     },
 }
 ```
+
+**Read this before you promise the sky to anyone.** `Environment` overrides the
+hour and weather with client-side natives, so it changes nothing for other
+players and is released when Photo Mode closes. But almost every server runs a
+weather sync (vSync, cd_easytime, qb-weathersync and friends) that pushes its
+own state back every few seconds. We re-assert ours on a 1.5 s beat to stay on
+top of it, which works against the common ones — it is **not** guaranteed
+against all of them. Set `Environment.Enabled = false` if your weather script
+wins the argument, or if you would rather players did not touch the sky at
+all.
 
 ### Trending
 
@@ -333,6 +361,27 @@ database backups.
 This is the resource's only database dependency (`oxmysql`). If it is missing or
 the connection fails, the scene editor turns itself off and says so in console;
 everything else in the menu keeps working.
+
+### Scenes & Spots *(new in 1.8)*
+
+Where the scenes an admin authors *behave*. The scenes themselves live in the
+database, not here — an owner places them in the world instead of typing
+coordinates.
+
+```lua
+MBT.VenueSpots = {
+    Enabled = true,
+    PollMs  = 750,  -- How often we check whether you walked into one
+    Key     = 'E',  -- Shown in the prompt
+
+    CountdownFrom = 5, -- Seconds before a multi-actor scene fires
+
+    -- Place the player exactly on the mark before the emote runs. This is the
+    -- point of authoring a position: an emote that leans on a counter only
+    -- looks right from the spot and angle it was placed at.
+    SnapToMark = true,
+}
+```
 
 ### Job Permissions
 

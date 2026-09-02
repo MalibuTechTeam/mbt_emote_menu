@@ -34,7 +34,15 @@ local lastEmotePlayAt = 0
 --- @param emoteName string sanitized emote name
 --- @param emoteType string category name (Walks, Expressions, Shared, etc.)
 --- @param variation number|nil variation index (default 1)
-function Core.PlayEmoteRaw(emoteName, emoteType, variation)
+---@param silent? boolean true when this pose belongs to a scene or a seat.
+---
+---Such a pose is not something another player can join by copying it: it exists
+---at one position, in one orientation, and the place it belongs to has a fixed
+---number of them. Copying it stands you beside the bench performing a sit in
+---mid-air, and it competes with the offer that is already correct -- walk to a
+---free seat and press the key. Trending still counts the play; only the "join
+---this" offer is withheld.
+function Core.PlayEmoteRaw(emoteName, emoteType, variation, silent)
     local safeName = SanitizeName(emoteName)
     if not safeName or safeName == '' or not rpemotesResource then return end
 
@@ -64,7 +72,7 @@ function Core.PlayEmoteRaw(emoteName, emoteType, variation)
 
     Core.IncrementPlayCount(safeName)
 
-    if OpenJoin and OpenJoin.MaybeAnnounce then
+    if not silent and OpenJoin and OpenJoin.MaybeAnnounce then
         OpenJoin.MaybeAnnounce(safeName, emoteLabelByName[safeName] or safeName, safeType)
     end
     if Trending and Trending.MaybeReport then
@@ -181,6 +189,15 @@ local LOCALE_KEYS = {
     'editor_rotate', 'editor_unsaved', 'editor_incomplete', 'editor_discard_q',
     'editor_exit', 'editor_no_scenes', 'editor_delete_scene', 'editor_delete_q',
     'editor_save_failed',
+    'scene_ready_cleared',
+    'photo_key_custom', 'photo_light_move', 'photo_light_move_hint',
+    'photo_light_hint', 'photo_light_elev', 'photo_light_dist',
+    'photo_tab_filters', 'photo_tab_light', 'photo_tab_scene',
+    'photo_light_on', 'photo_light_off', 'photo_light_power',
+    'photo_light_warmth', 'photo_key_front', 'photo_key_side',
+    'photo_key_rim', 'photo_hour', 'photo_hour_dawn',
+    'photo_hour_noon', 'photo_hour_dusk', 'photo_hour_night',
+    'photo_server_time', 'photo_sky_server',
     'editor_height',
     'editor_first_actor_hint',
     'editor_name_help', 'editor_actors_help',

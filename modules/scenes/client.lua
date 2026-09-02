@@ -62,6 +62,9 @@ local function canPrompt()
     -- Sitting on it already. Offering the seat to the person in it is how you
     -- end up reading "every seat here is taken" over your own animation.
     if mySeat then return false end
+    -- Being asked to join one. A second offer stacked on the first is a
+    -- question nobody is trying to answer.
+    if pendingInvite then return false end
 
     return true
 end
@@ -75,6 +78,35 @@ local function hidePrompt()
     promptVisible = false
     currentSpot = nil
     SendNUIMessage({ action = 'venueHide' })
+end
+
+---Says something to the player the way the rest of their server says things.
+---
+---MBT.Notification is the handler the owner configures in config.lua; the NUI
+---toast belongs to the menu and is only right while the menu is on screen. A
+---scene ends, a role is reassigned and a bench fills up all happen with the
+---menu closed, so all three go here.
+local function notify(key, fallback)
+    if MBT and MBT.Notification then
+        MBT.Notification({ description = (MBT.Locale and MBT.Locale[key]) or fallback })
+    end
+end
+
+-- reason -> locale key. The server always says why it ended, and the three
+-- reasons used to look identical because the card simply vanished.
+local END_REASONS = {
+    timeout                 = { 'scene_end_timeout',   'Scene expired - not everyone was ready' },
+    cancelled               = { 'scene_end_cancelled', 'Scene cancelled' },
+    ['host-left']           = { 'scene_end_host',      'Scene ended - the host left' },
+    ['started-without-you'] = { 'scene_end_without',   'The scene started without you' },
+    ['role-taken']          = { 'scene_end_role',      'That role was already taken' },
+    ['you-left']            = { 'scene_end_you',       'You left the scene' },
+    declined                = { 'scene_end_declined',  'Invite declined' },
+}
+
+local function notifyEnd(reason)
+    local r = reason and END_REASONS[reason]
+    if r then notify(r[1], r[2]) end
 end
 
 ---@return boolean true when every mark of this scene is taken
@@ -356,7 +388,9 @@ local function takeSeat(scene, markIndex)
             releaseSeat()
             return
         end
-        Core.PlayEmoteRaw(m.emote, m.category or 'Emotes', 1)
+        -- silent: this pose belongs to a seat, so it is not on offer to be
+        -- copied. The way to join is to take one of the other seats.
+        Core.PlayEmoteRaw(m.emote, m.category or 'Emotes', 1, true)
         steadyAfterPose()
 
         -- Free it again when the pose ends or when we wander off. The server
@@ -388,6 +422,7 @@ RegisterNetEvent('mbt_emote_menu:scenes:claimed', function(sceneId, markIndex)
 
     if not markIndex then
         SendNUIMessage({ action = 'sceneFull' })
+        notify('scene_all_taken', 'Every seat here is taken')
         return
     end
 
@@ -439,10 +474,13 @@ end)
 CreateThread(function()
     while true do
         if promptVisible or pendingInvite or myMark then
-            if promptVisible and IsControlJustPressed(0, KEY_CONTROL) then
-                trigger(currentSpot)
-
-            elseif pendingInvite then
+            -- Order matters, and getting it wrong is what made this look
+            -- intermittent. An invitee is usually standing INSIDE the scene's
+            -- radius, because the host invites whoever is nearby -- so testing
+            -- the proximity prompt first meant their confirm key re-triggered
+            -- the prompt instead of accepting the invitation. Answering a
+            -- question already on screen beats asking a new one.
+            if pendingInvite then
                 if IsControlJustPressed(0, KEY_CONFIRM) then
                     TriggerServerEvent('mbt_emote_menu:scenes:accept')
                     pendingInvite = nil
@@ -450,6 +488,7 @@ CreateThread(function()
                     TriggerServerEvent('mbt_emote_menu:scenes:decline')
                     pendingInvite = nil
                     SendNUIMessage({ action = 'sceneEnded', reason = 'declined' })
+                    notifyEnd('declined')
                 end
 
             elseif myMark then
@@ -470,7 +509,11 @@ CreateThread(function()
                     TriggerServerEvent('mbt_emote_menu:scenes:decline')
                     myMark, myRole, isReady = nil, nil, false
                     SendNUIMessage({ action = 'sceneEnded', reason = 'you-left' })
+                    notifyEnd('you-left')
                 end
+
+            elseif promptVisible and IsControlJustPressed(0, KEY_CONTROL) then
+                trigger(currentSpot)
             end
 
             Wait(0)
@@ -505,13 +548,21 @@ CreateThread(function()
     end
 end)
 
+-- Last thing sent, so nothing is sent twice. Same rule the What's That bubble
+-- uses (modules/whatsthat): run per frame while tracking, but only SEND when
+-- something actually moved. Standing still costs one comparison a frame;
+-- walking updates as fast as the screen does.
+local lastSx, lastSy, lastDist, lastOn, lastBearing = -1, -1, -1, nil, 0
+
 CreateThread(function()
     while true do
         if not myMark then
+            lastSx, lastSy, lastDist, lastOn = -1, -1, -1, nil
             Wait(400)
         else
             local c = GetEntityCoords(PlayerPedId())
             local dist = #(vector3(myMark.x, myMark.y, myMark.z) - c)
+            local rounded = math.floor(dist + 0.5)
             local onScreen, sx, sy = World3dToScreen2d(myMark.x, myMark.y, myMark.z + 0.9)
 
             -- Heading from the player to the mark, expressed relative to where
@@ -520,17 +571,26 @@ CreateThread(function()
             local toMark = math.deg(math.atan(myMark.y - c.y, myMark.x - c.x)) - 90.0
             local relative = ((toMark - camHeading) + 540.0) % 360.0 - 180.0
 
-            SendNUIMessage({
-                action   = 'sceneMark',
-                onScreen = onScreen and true or false,
-                x        = sx,
-                y        = sy,
-                dist     = math.floor(dist + 0.5),
-                inRange  = dist <= READY_RANGE,
-                bearing  = relative,
-            })
+            if onScreen ~= lastOn
+                or rounded ~= lastDist
+                or math.abs(sx - lastSx) > 0.0005
+                or math.abs(sy - lastSy) > 0.0005
+                or math.abs(relative - lastBearing) > 1.0 then
 
-            Wait(80)
+                SendNUIMessage({
+                    action   = 'sceneMark',
+                    onScreen = onScreen and true or false,
+                    x        = sx,
+                    y        = sy,
+                    dist     = rounded,
+                    inRange  = dist <= READY_RANGE,
+                    bearing  = relative,
+                })
+
+                lastSx, lastSy, lastDist, lastOn, lastBearing = sx, sy, rounded, onScreen, relative
+            end
+
+            Wait(0)
         end
     end
 end)
@@ -582,6 +642,7 @@ end)
 -- underneath the player.
 RegisterNetEvent('mbt_emote_menu:scenes:reassigned', function()
     SendNUIMessage({ action = 'sceneReassigned' })
+    notify('scene_reassigned', 'That role was taken - you have another')
 end)
 
 RegisterNetEvent('mbt_emote_menu:scenes:progress', function(data)
@@ -611,11 +672,20 @@ RegisterNetEvent('mbt_emote_menu:scenes:execute', function(emote, category)
 
     if type(emote) ~= 'string' then return end
     if Core and Core.PlayEmoteRaw then
-        Core.PlayEmoteRaw(emote, type(category) == 'string' and category or 'Emotes', 1)
+        -- silent for the same reason as a seat, and more so: a scene role was
+        -- handed out by the server to the people who accepted it.
+        Core.PlayEmoteRaw(emote, type(category) == 'string' and category or 'Emotes', 1, true)
         -- Same reason as the spot path: the snap can drop the ped before the
         -- animation takes hold.
         steadyAfterPose()
     end
+end)
+
+RegisterNetEvent('mbt_emote_menu:scenes:readyCleared', function()
+    if not myMark then return end
+    isReady = false
+    SendNUIMessage({ action = 'sceneReadyState', ready = false })
+    notify('scene_ready_cleared', 'Someone left - confirm again to go ahead')
 end)
 
 RegisterNetEvent('mbt_emote_menu:scenes:ended', function(reason)
@@ -626,6 +696,7 @@ RegisterNetEvent('mbt_emote_menu:scenes:ended', function(reason)
     -- timeout, a cancellation and the host leaving all looked identical: the
     -- card simply vanished.
     SendNUIMessage({ action = 'sceneEnded', reason = reason })
+    notifyEnd(reason)
 end)
 
 -------------------------------------------------------------------------------
