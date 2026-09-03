@@ -17,6 +17,14 @@ local MIN_FOV    = 18.0
 local MAX_FOV    = 70.0
 local TARGET_Z   = 0.45 -- look point above ped root (~chest height)
 
+-- How far the framing may slide off the subject. Bounded on purpose: without a
+-- limit this stops being a camera and becomes a free one, which on a roleplay
+-- server means seeing into rooms and scouting behind walls. Three metres is
+-- enough to put four people in shot and not enough to go anywhere.
+local PAN_LIMIT_H = 3.0
+local PAN_LIMIT_V = 1.5
+local PAN_SENS    = 0.012 -- metres per pixel dragged
+
 -- filter id -> { timecycle, strength }
 local filters = {}
 for _, f in ipairs(cfg.Filters or {}) do
@@ -77,6 +85,9 @@ local fov           = 45.0
 local dofOn         = cfg.DofDefault ~= false
 local timecycleSet  = false
 
+-- Where the framing sits relative to the subject, in world metres.
+local panX, panY, panZ = 0.0, 0.0, 0.0
+
 -- Lighting
 local lightOn     = lightCfg.DefaultOn == true
 local lightPower  = tonumber(lightCfg.DefaultIntensity) or 3.0  -- 0.5 .. 8
@@ -102,10 +113,48 @@ local envWeather = nil
 -- [ CAMERA MATH ] --
 -------------------------------------------------------------------------------
 
-local function targetCoords()
-    local ped = PlayerPedId()
-    local c = GetEntityCoords(ped)
+---Where the SUBJECT is: the photographer's own ped, always.
+---
+---The key light hangs off this rather than off the framing, because a key light
+---lights a person. Panning the shot to include the people beside you should not
+---drag your lamp along with the frame.
+local function subjectCoords()
+    local c = GetEntityCoords(PlayerPedId())
     return vector3(c.x, c.y, c.z + TARGET_Z)
+end
+
+---Where the camera LOOKS. The subject, plus whatever has been panned.
+---
+---This used to be the subject and nothing else, which is why backing away gave
+---a wide shot centred on yourself with everyone else at the edges. Distance was
+---never the missing piece.
+local function targetCoords()
+    local s = subjectCoords()
+    return vector3(s.x + panX, s.y + panY, s.z + panZ)
+end
+
+---Slides the framing, in the camera's own axes rather than the world's, so
+---dragging right moves the shot right whichever way you happen to be facing.
+local function panFrame(dx, dy)
+    local az = math.rad(azimuth)
+
+    -- The camera sits at target + (sin, cos) * horiz, so it looks along
+    -- (-sin, -cos); its right is that turned a quarter turn.
+    local rx, ry = -math.cos(az), math.sin(az)
+
+    panX = panX + rx * dx * PAN_SENS
+    panY = panY + ry * dx * PAN_SENS
+    panZ = panZ - dy * PAN_SENS
+
+    -- Clamp the horizontal as a radius, not per axis: a square limit would let
+    -- you get 4.2 m away diagonally.
+    local flat = math.sqrt(panX * panX + panY * panY)
+    if flat > PAN_LIMIT_H then
+        local k = PAN_LIMIT_H / flat
+        panX, panY = panX * k, panY * k
+    end
+
+    panZ = math.max(-PAN_LIMIT_V, math.min(PAN_LIMIT_V, panZ))
 end
 
 ---Warmth (-1 cool .. +1 warm) to an RGB triplet.
@@ -175,7 +224,7 @@ end
 local function drawKeyLight()
     if not lightOn then return end
 
-    local t = targetCoords()
+    local t = subjectCoords()
     local az = math.rad(azimuth + lightAz)
     local elr = math.rad(lightElev)
     local horiz = lightDist * math.cos(elr)
@@ -284,6 +333,7 @@ local function enter()
     end
 
     local ped = PlayerPedId()
+    panX, panY, panZ = 0.0, 0.0, 0.0
     azimuth   = GetEntityHeading(ped)
     elevation = 12.0
     distance  = 2.6
@@ -397,6 +447,19 @@ RegisterNUICallback('photoOrbit', function(data, cb)
         azimuth   = azimuth - (tonumber(data.dx) or 0) * ORBIT_SENS
         elevation = math.max(MIN_ELEV, math.min(MAX_ELEV,
             elevation + (tonumber(data.dy) or 0) * ORBIT_SENS))
+    end
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('photoPan', function(data, cb)
+    if active and type(data) == 'table' then
+        local dx = tonumber(data.dx) or 0.0
+        local dy = tonumber(data.dy) or 0.0
+        -- Bounded per message as well as in total: a panel is not trusted to
+        -- report a gesture no hand could make.
+        dx = math.max(-400.0, math.min(400.0, dx))
+        dy = math.max(-400.0, math.min(400.0, dy))
+        if dx ~= 0.0 or dy ~= 0.0 then panFrame(dx, dy) end
     end
     cb({ ok = true })
 end)

@@ -143,7 +143,11 @@ MBT.PhotoMode = {
     OrbitSensitivity = 0.45, -- drag -> rotation speed
     ZoomSensitivity  = 0.30, -- scroll -> zoom speed
     MinDistance      = 0.7,  -- closest the camera can get (m)
-    MaxDistance      = 7.0,  -- farthest (m)
+    -- Far enough to put a group in shot. Seven was chosen when the camera could
+    -- only look at you, which made a longer arm pointless; now that the framing
+    -- can slide (right-drag), the distance is what lets it contain the people
+    -- it slid onto.
+    MaxDistance      = 12.0, -- farthest (m)
     DofDefault       = true, -- start with depth-of-field (background blur) on
 
     -- Look presets, applied as GTA timecycle modifiers. 'timecycle' = nil means

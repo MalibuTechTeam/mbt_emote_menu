@@ -196,7 +196,7 @@ RegisterLocale('de', {
     ['photo_sending']              = 'Senden...',
     ['photo_sent']                 = 'Gesendet!',
     ['photo_send_error']           = 'Fehler',
-    ['photo_capture_hint']         = 'Ziehen zum Drehen · scrollen zum Zoomen · Screenshot-Taste zum Aufnehmen',
+    ['photo_capture_hint']         = 'Ziehen zum Drehen · Rechtsziehen fuer den Bildaufbau · scrollen zum Zoomen',
 
     -- Profile / Loadouts
     ['persona_title']              = 'Profile',

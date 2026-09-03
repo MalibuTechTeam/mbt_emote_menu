@@ -196,7 +196,7 @@ RegisterLocale('it', {
     ['photo_sending']              = 'Invio...',
     ['photo_sent']                 = 'Inviato!',
     ['photo_send_error']           = 'Errore',
-    ['photo_capture_hint']         = 'Trascina per orbitare · scorri per zoomare · usa il tasto screenshot per catturare',
+    ['photo_capture_hint']         = 'Trascina per orbitare · tasto destro per inquadrare · rotella per lo zoom',
 
     -- Personas / loadout
     ['persona_title']              = 'Loadout',

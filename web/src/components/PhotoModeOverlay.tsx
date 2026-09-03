@@ -91,7 +91,10 @@ export function PhotoModeOverlay() {
   const [hour, setHour] = useState<number | null>(null)
   const [weather, setWeather] = useState<string | null>(null)
 
-  const pending = useRef({ ox: 0, oy: 0, z: 0, laz: 0, lelev: 0, ldist: 0 })
+  const pending = useRef({ ox: 0, oy: 0, z: 0, laz: 0, lelev: 0, ldist: 0, px: 0, py: 0 })
+  // Which button started the drag. Right pans the framing, always -- including
+  // while the light is being positioned, because they move different things.
+  const panning = useRef(false)
   const rafRef = useRef<number>(0)
   const inFlight = useRef(false)
   const lastSent = useRef(0)
@@ -153,7 +156,7 @@ export function PhotoModeOverlay() {
       rafRef.current = requestAnimationFrame(flush)
 
       const p = pending.current
-      const has = p.ox || p.oy || p.z || p.laz || p.lelev || p.ldist
+      const has = p.ox || p.oy || p.z || p.laz || p.lelev || p.ldist || p.px || p.py
       if (!has || inFlight.current) return
 
       const now = performance.now()
@@ -172,6 +175,11 @@ export function PhotoModeOverlay() {
       if (p.z !== 0) {
         calls.push(useNui('photoZoom', { delta: p.z }))
         p.z = 0
+      }
+      if (p.px !== 0 || p.py !== 0) {
+        calls.push(useNui('photoPan', { dx: p.px, dy: p.py }))
+        p.px = 0
+        p.py = 0
       }
       if (p.laz !== 0 || p.lelev !== 0 || p.ldist !== 0) {
         calls.push(
@@ -201,7 +209,8 @@ export function PhotoModeOverlay() {
   }, [active])
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
-    if (e.button !== 0) return
+    if (e.button !== 0 && e.button !== 2) return
+    panning.current = e.button === 2
     setDragging(true)
     ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
   }, [])
@@ -209,7 +218,10 @@ export function PhotoModeOverlay() {
   const onPointerMove = useCallback((e: React.PointerEvent) => {
     if (!dragging) return
     const p = pending.current
-    if (positioningRef.current) {
+    if (panning.current) {
+      p.px += e.movementX
+      p.py += e.movementY
+    } else if (positioningRef.current) {
       p.laz += e.movementX * DRAG_AZ
       p.lelev += -e.movementY * DRAG_ELEV
     } else {
@@ -220,6 +232,7 @@ export function PhotoModeOverlay() {
 
   const endDrag = useCallback((e: React.PointerEvent) => {
     setDragging(false)
+    panning.current = false
     try { (e.target as HTMLElement).releasePointerCapture(e.pointerId) } catch { /* noop */ }
   }, [])
 
@@ -229,7 +242,7 @@ export function PhotoModeOverlay() {
   const onPointerCancel = useCallback((e: React.PointerEvent) => {
     endDrag(e)
     const p = pending.current
-    p.ox = 0; p.oy = 0; p.laz = 0; p.lelev = 0
+    p.ox = 0; p.oy = 0; p.laz = 0; p.lelev = 0; p.px = 0; p.py = 0
   }, [endDrag])
 
   const onWheel = useCallback((e: React.WheelEvent) => {
@@ -305,6 +318,7 @@ export function PhotoModeOverlay() {
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
+        onContextMenu={(e) => e.preventDefault()}
         onPointerCancel={onPointerCancel}
         onLostPointerCapture={onPointerCancel}
         onWheel={onWheel}

@@ -196,7 +196,7 @@ RegisterLocale('en', {
     ['photo_sending']              = 'Sending...',
     ['photo_sent']                 = 'Sent!',
     ['photo_send_error']           = 'Failed',
-    ['photo_capture_hint']         = 'Drag to orbit · scroll to zoom · use your screenshot key to capture',
+    ['photo_capture_hint']         = 'Drag to orbit · right-drag to frame · scroll to zoom',
 
     -- Personas / loadouts
     ['persona_title']              = 'Loadouts',

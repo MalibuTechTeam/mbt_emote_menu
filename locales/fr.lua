@@ -196,7 +196,7 @@ RegisterLocale('fr', {
     ['photo_sending']              = 'Envoi...',
     ['photo_sent']                 = 'Envoye !',
     ['photo_send_error']           = 'Echec',
-    ['photo_capture_hint']         = 'Glissez pour pivoter · molette pour zoomer · touche capture pour photographier',
+    ['photo_capture_hint']         = 'Glissez pour pivoter · clic droit pour cadrer · molette pour zoomer',
 
     -- Profils / loadouts
     ['persona_title']              = 'Profils',

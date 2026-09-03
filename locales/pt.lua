@@ -196,7 +196,7 @@ RegisterLocale('pt', {
     ['photo_sending']              = 'Enviando...',
     ['photo_sent']                 = 'Enviado!',
     ['photo_send_error']           = 'Falhou',
-    ['photo_capture_hint']         = 'Arraste para orbitar · role para zoom · use a tecla de captura',
+    ['photo_capture_hint']         = 'Arraste para orbitar · botao direito para enquadrar · role para zoom',
 
     -- Perfis / loadouts
     ['persona_title']              = 'Perfis',
