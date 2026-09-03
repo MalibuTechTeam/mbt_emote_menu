@@ -24,6 +24,7 @@ import { ResultBar } from "./ResultBar";
 import { HeaderMenu } from "./HeaderMenu";
 import { AdminPanel } from "./AdminPanel";
 import { EditorBody } from "./EditorPanel";
+import { AdminSettings } from "./AdminSettings";
 import { EmoteCard } from "./EmoteCard";
 import { TrendingHero, type TrendingEmote } from "./TrendingHero";
 import { QuickBindBar } from "./QuickBindBar";
@@ -405,6 +406,10 @@ export function EmoteMenu({
   const handlePlace = useCallback(async (emote: Emote) => {
     await useNui("placeEmote", { name: emote.name });
   }, []);
+
+  // Settings is a NUI-only view: nothing about it exists in the world, so
+  // unlike the editor it needs no round trip to Lua to open.
+  const [adminSettings, setAdminSettings] = useState(false);
 
   // The hub is the editor with no scene open: the browse view for scenes.
   const inSceneHub = editorState.active && !editorState.scene && !editorPicking;
@@ -988,7 +993,9 @@ export function EmoteMenu({
           <div className="mbt-header__left">
             {config.watermark && <span className="mbt-logo">MBT</span>}
             <span className="mbt-header__title">
-              {editorState.active
+              {adminSettings
+                ? t.admin_settings || "Settings"
+                : editorState.active
                 ? editorPicking
                   ? t.editor_assign_emote || "Pick emote"
                   : editorState.scene
@@ -1001,12 +1008,15 @@ export function EmoteMenu({
             {/* First in the row: the owner surface is not a player preference,
                 and it should not sit between the camera and the settings as if
                 it were one. */}
-            <AdminPanel adminInfo={adminInfo} />
+            <AdminPanel
+              adminInfo={adminInfo}
+              onOpenSettings={setAdminSettings}
+            />
             {/* One button, one meaning: "create the thing this view lists".
                 Browsing emotes that is a custom list; in the scene hub it is a
                 scene, which also keeps the create action out of the list
                 itself where it was competing with the content. */}
-            {(!editorState.active || inSceneHub) && (
+            {!adminSettings && (!editorState.active || inSceneHub) && (
               <button
                 className="mbt-header__new"
                 onClick={() => {
@@ -1051,7 +1061,8 @@ export function EmoteMenu({
                 // While the editor owns this panel, the X means "back out of
                 // what I am doing", not "close the menu" — closing it would
                 // strand the editor with nowhere to draw.
-                if (editorPicking) onEditorPicked();
+                if (adminSettings) setAdminSettings(false);
+                else if (editorPicking) onEditorPicked();
                 else if (editorState.active) useNui("editorExit", {});
                 else handleClose();
               }}
@@ -1064,11 +1075,15 @@ export function EmoteMenu({
         {/* The editor is a VIEW of this panel, not a second panel. When it
             is reviewing a scene the browse view steps aside; when it needs
             an emote it borrows the browse view back, grid and all. */}
-        {editorState.active && !editorPicking ? (
+        {adminSettings ? (
+          <AdminSettings
+            adminInfo={adminInfo}
+            accent={config.theme?.Accent || "00e676"}
+          />
+        ) : editorState.active && !editorPicking ? (
           <EditorBody
             state={editorState}
             scenes={scenes}
-            adminInfo={adminInfo}
             playerPos={editorPos}
             onPick={onEditorPick}
           />
@@ -1376,7 +1391,7 @@ export function EmoteMenu({
         ) : null}
 
         {/* ── Quick Bind Bar ── */}
-        {!editorState.active && config.features.QuickBind && (
+        {!editorState.active && !adminSettings && config.features.QuickBind && (
           <QuickBindBar
             keybinds={keybinds}
             onPlay={onPlay}

@@ -22,7 +22,7 @@ import type { ReactNode } from "react";
  * `size` is legibility, not hierarchy: `lg` for prompts that float over the
  * game world, `sm` for hints inside a panel the reader is already looking at.
  */
-export type KeyIntent = "go" | "off";
+export type KeyIntent = "off";
 export type KeySize = "sm" | "lg";
 
 export function Kbd({

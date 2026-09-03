@@ -18,6 +18,9 @@ dependencies {
 shared_scripts {
     'modules/locales.lua',
     'locales/*.lua',
+    -- Factory values first: config.lua is loaded after so an owner can still
+    -- override anything it sets.
+    'default.lua',
     'config.lua',
 }
 
@@ -28,6 +31,7 @@ server_scripts {
     'modules/utils/server.lua',
     'modules/version/server.lua',
     'core/server.lua',
+    'modules/theme/server.lua',
     'modules/bridges/esx.lua',
     'modules/bridges/qbcore.lua',
     'modules/bridges/qbox.lua',

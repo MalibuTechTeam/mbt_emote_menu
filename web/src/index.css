@@ -63,6 +63,33 @@ body {
   --mbt-surface-3: #1A221E;
   --mbt-edge-hi:   rgba(255, 255, 255, 0.10);
   --mbt-edge:      rgba(255, 255, 255, 0.055);
+
+  /* I pannelli che galleggiano sul mondo -- pill, card scena, barre. Derivati
+     da MBT.Theme in theme.ts, questi sono solo il default spedito.
+
+     Il gradiente e' quello canonico del brand: --mbt-surface-panel-gradient
+     in mbt_malisling/web/src/styles/tokens.css, dove il commento lo destina
+     alle "floating editor cards" -- cioe' proprio a questi. La dashboard di
+     malisling e il Control Room dell'elevator usano lo stesso, quindi i tre
+     script leggono come un prodotto solo.
+
+     I tre stop stanno fra loro come top, top*0.67, top*0.50: theme.ts li
+     ricalcola da Theme.Card, cosi il default spedito e' il brand ma un owner
+     che cambia colore ottiene il suo gradiente invece di tre hex cablati.
+
+     Il bordo e' bianco a 0.17 perche' e' l'alpha che pareggia l'edge del
+     vecchio bordo accent (1.65:1 sul proprio fondo). Di notte il pannello ha
+     la stessa luminanza del cielo e l'ombra nera non disegna niente: il bordo
+     e' letteralmente l'unica cosa che definisce la forma. */
+  --mbt-panel-top:  #121814;
+  --mbt-panel-mid:  #0C100E;
+  --mbt-panel-deep: #090C0A;
+  --mbt-edge-world: rgba(255, 255, 255, 0.17);
+
+  /* Cosa si stampa SOPRA l'accent. Default uguale al valore che dieci punti
+     cablavano, cosi il primo render prima che arrivi il tema e' identico;
+     theme.ts poi lo ricalcola dall'accent scelto. */
+  --mbt-on-accent:  #04140c;
   --mbt-edge-lo:   rgba(255, 255, 255, 0.03);
 
   --mbt-ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
@@ -1159,7 +1186,7 @@ body {
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #04140c;
+  color: var(--mbt-on-accent);
   background: var(--mbt-accent);
   box-shadow: 0 8px 22px rgba(var(--mbt-accent-rgb), 0.30);
   transition: transform 0.14s var(--mbt-ease-out), box-shadow 0.18s;
@@ -1640,7 +1667,7 @@ body {
 
 .mbt-shared-popup__btn--accept {
   background: var(--mbt-accent);
-  color: #04140c;
+  color: var(--mbt-on-accent);
   box-shadow: 0 6px 16px rgba(var(--mbt-accent-rgb), 0.28);
 }
 
@@ -1935,7 +1962,7 @@ body {
 /* the slot THIS emote occupies — chip clearly reads as assigned:
    accent border + accent fill + glow, not just a dot */
 .mbt-drawer__wheel-btn--active {
-  color: #04140c;
+  color: var(--mbt-on-accent);
   font-weight: 800;
   background: var(--mbt-accent);
   border-color: var(--mbt-accent);
@@ -1945,7 +1972,7 @@ body {
 }
 
 .mbt-drawer__wheel-btn--active:hover {
-  color: #04140c;
+  color: var(--mbt-on-accent);
   background: var(--mbt-accent);
   border-color: var(--mbt-accent);
 }
@@ -2585,7 +2612,7 @@ body {
    solid accent fill, dark ink, soft accent shadow, subtle lift. */
 .mbt-modal__btn--confirm {
   border: none;
-  color: #04140c;
+  color: var(--mbt-on-accent);
   font-weight: 700;
   letter-spacing: 0.3px;
   background: var(--mbt-accent);
@@ -2760,7 +2787,7 @@ body {
   border: none;
   border-radius: 9px;
   background: var(--mbt-accent);
-  color: #04140c;
+  color: var(--mbt-on-accent);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.8px;
@@ -3935,9 +3962,9 @@ body {
   padding: 9px 11px 9px 13px;
   border-radius: 11px;
   background:
-    radial-gradient(110% 200% at 0% 0%, rgba(var(--mbt-accent-rgb), 0.10), transparent 60%),
-    linear-gradient(180deg, #161d18, #0d120f);
-  border: 1px solid rgba(var(--mbt-accent-rgb), 0.22);
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
+  border: 1px solid var(--mbt-edge-world);
   box-shadow:
     0 14px 30px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -4068,8 +4095,10 @@ body {
   gap: 8px;
   padding: 8px 10px;
   border-radius: 10px;
-  background: linear-gradient(180deg, #1b231d, #10150f);
-  border: 1px solid var(--mbt-edge-hi);
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
+  border: 1px solid var(--mbt-edge-world);
   box-shadow:
     0 14px 30px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -4345,8 +4374,10 @@ body {
   gap: 12px;
   padding: 14px 16px;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(20,24,30,0.92), rgba(12,14,18,0.92));
-  border: 1px solid var(--mbt-edge-hi);
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
+  border: 1px solid var(--mbt-edge-world);
   box-shadow: 0 18px 44px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
   pointer-events: auto;
   animation: mbt-photo-bar-in 380ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -4379,7 +4410,7 @@ body {
   background: rgba(255, 255, 255, 0.07);
 }
 .mbt-photo__filter--active {
-  color: #07120b;
+  color: var(--mbt-on-accent);
   background: var(--mbt-accent);
   border-color: var(--mbt-accent);
 }
@@ -4469,7 +4500,7 @@ body {
 
 .mbt-photo__segbtn + .mbt-photo__segbtn { border-left: 1px solid rgba(255, 255, 255, 0.07); }
 .mbt-photo__segbtn:hover:not(:disabled) { color: var(--mbt-text-hi); background: rgba(255, 255, 255, 0.05); }
-.mbt-photo__segbtn--on { color: #07120b; background: var(--mbt-accent); }
+.mbt-photo__segbtn--on { color: var(--mbt-on-accent); background: var(--mbt-accent); }
 .mbt-photo__segbtn--on:hover { background: var(--mbt-accent); }
 .mbt-photo__segbtn:disabled { opacity: 0.35; cursor: default; }
 
@@ -4595,7 +4626,7 @@ body {
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: #07120b;
+  color: var(--mbt-on-accent);
   background: var(--mbt-accent);
   border: 1px solid var(--mbt-accent);
   cursor: pointer;
@@ -5259,60 +5290,131 @@ body {
 .mbt-editor__scene--seats { --mbt-card-cat-rgb: 245, 190, 74; }
 .mbt-editor__scene--scene { --mbt-card-cat-rgb: 236, 72, 153; }
 
-/* The install's state, pinned under the list. It is reference — read once,
-   then never again — so it must not push the scenes out of view, and it must
-   not scroll away either. */
-.mbt-editor__status {
+/* La vista Impostazioni: niente ricerca e niente schede, solo contenuto che
+   scorre. E' il corpo del menu, quindi prende lo spazio che avanza. */
+.mbt-admin__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+/* Un blocco di Impostazioni: intestazione, controllo, azioni. */
+.mbt-admin__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 13px 13px;
+  border-radius: var(--mbt-radius-sm);
+  border: 1px solid var(--mbt-edge);
+  background: var(--mbt-surface-2);
+}
+
+.mbt-admin__sechead { display: flex; flex-direction: column; gap: 2px; }
+.mbt-admin__sechead b { font-size: 12.5px; font-weight: 600; color: var(--mbt-text-mid); }
+.mbt-admin__sechead small { font-size: 10.5px; color: var(--mbt-text-lo); }
+
+.mbt-admin__accent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Il rapporto di contrasto dell'accent sul pannello. Sotto 3:1 lo stato --
+   caselle pronte, chip attivi -- smette di staccarsi dal suo sfondo, quindi
+   il numero diventa un avviso invece di una curiosita'. */
+.mbt-admin__ratio {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-left: auto;
+  text-align: right;
+}
+
+.mbt-admin__ratio b {
+  font-family: var(--mbt-font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mbt-text-mid);
+}
+
+.mbt-admin__ratio b.mbt-admin__ratio--low { color: var(--mbt-warning); }
+.mbt-admin__ratio small { font-size: 9.5px; color: var(--mbt-text-faint); }
+
+.mbt-admin__accentbtns { display: flex; gap: 8px; }
+.mbt-admin__accentbtns .mbt-modal__btn { flex: 1; gap: 6px; }
+
+/* Un aggiornamento disponibile, sulla riga a cui appartiene invece che come
+   secondo distintivo sullo scudo. */
+.mbt-sortpop__dot {
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mbt-warning);
+  box-shadow: 0 0 6px var(--mbt-warning);
   flex: none;
-  padding: 10px 16px 12px;
+}
+
+/* Lo stato dell'installazione, in fondo al pannello. E' riferimento — lo si
+   consulta una volta e poi mai piu' — quindi non sta sopra la cosa che si e'
+   venuti a cambiare. margin-top:auto lo spinge in basso finche' c'e' spazio,
+   e lo lascia scorrere con il resto quando non ce n'e'. */
+.mbt-admin__status {
+  flex: none;
+  margin-top: auto;
+  padding: 12px 0 0;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* One card, three states, built from .mbt-card. The row, the disc, the label
    column and the meta slot are the emote card's; the only things declared here
    are which state tints it and the facts that sit where a drawer would. */
-.mbt-editor__health {
+.mbt-admin__health {
   cursor: default;
   font-family: inherit;
   text-align: left;
 }
 
-.mbt-editor__health--ok      { --mbt-card-cat-rgb: 34, 197, 94; }
-.mbt-editor__health--update  { --mbt-card-cat-rgb: 251, 140, 0; }
+.mbt-admin__health--ok      { --mbt-card-cat-rgb: 34, 197, 94; }
+.mbt-admin__health--update  { --mbt-card-cat-rgb: 251, 140, 0; }
 /* Nothing is broken when the check cannot run, so nothing is coloured. */
-.mbt-editor__health--unknown { --mbt-card-cat-rgb: 154, 160, 166; }
+.mbt-admin__health--unknown { --mbt-card-cat-rgb: 154, 160, 166; }
 
 /* Only the update state is pressable, and it says so: amber fill, a hover, a
    focus ring, and a pointer. Amber is informational here, not an error. */
-.mbt-editor__health--update {
+.mbt-admin__health--update {
   cursor: pointer;
   border-color: rgba(251, 140, 0, 0.3);
   background: rgba(251, 140, 0, 0.09);
 }
 
-.mbt-editor__health--update:hover {
+.mbt-admin__health--update:hover {
   border-color: rgba(251, 140, 0, 0.45);
   background: rgba(251, 140, 0, 0.15);
 }
 
-.mbt-editor__health--update:focus-visible {
+.mbt-admin__health--update:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px rgba(251, 140, 0, 0.35);
 }
 
-.mbt-editor__health--update .mbt-card__label { color: var(--mbt-warning); }
-.mbt-editor__healthgo { color: var(--mbt-warning); }
+.mbt-admin__health--update .mbt-card__label { color: var(--mbt-warning); }
+.mbt-admin__healthgo { color: var(--mbt-warning); }
 
 /* Facts sit where a card's drawer sits: below the row, inside the same border.
    As one flat mono line they wrapped mid-phrase and read as a broken sentence;
    as equal cells each one ellipsises on its own. */
-.mbt-editor__facts {
+.mbt-admin__facts {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.mbt-editor__fact {
+.mbt-admin__fact {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -5320,11 +5422,11 @@ body {
   padding: 7px 12px 9px;
 }
 
-.mbt-editor__fact + .mbt-editor__fact {
+.mbt-admin__fact + .mbt-admin__fact {
   border-left: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.mbt-editor__fact b {
+.mbt-admin__fact b {
   font-family: var(--mbt-font-mono);
   font-size: 11px;
   font-weight: 600;
@@ -5334,7 +5436,7 @@ body {
   white-space: nowrap;
 }
 
-.mbt-editor__fact small {
+.mbt-admin__fact small {
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
@@ -5487,15 +5589,6 @@ body {
 
 /* The surface's primary action. Solid, not tinted: in a row of five hints the
    one that does the thing has to win without being read first. */
-.mbt-key--go {
-  color: #06210f;
-  background: var(--mbt-accent);
-  border-color: transparent;
-  box-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
-}
-
 /* Backing out. Tinted, never solid — cancel does not get to shout. */
 .mbt-key--off {
   color: var(--mbt-danger);
@@ -5513,7 +5606,6 @@ body {
 .mbt-keyhint--sm { font-size: 11px; }
 .mbt-keyhint--lg { font-size: 13px; }
 
-.mbt-keyhint--go  { color: var(--mbt-text-hi); }
 .mbt-keyhint--off { color: var(--mbt-danger); }
 
 /* Shown but not armed yet, so pressing it and being refused is not a surprise.
@@ -5549,14 +5641,17 @@ body {
 .mbt-place__bar {
   display: flex;
   align-items: center;
-  gap: 22px;
+  /* Sei gruppi di tasti vogliono 624px: sotto i ~1500px di schermo non ci
+     stanno accanto al titolo, e senza wrap finivano sopra. */
+  flex-wrap: wrap;
+  gap: 10px 22px;
   width: clamp(600px, 50vw, 940px);
   padding: 12px 20px;
   border-radius: 14px;
   background:
-    radial-gradient(110% 200% at 0% 0%, rgba(var(--mbt-accent-rgb), 0.08), transparent 60%),
-    linear-gradient(180deg, #161d18, #0d120f);
-  border: 1px solid rgba(255, 255, 255, 0.085);
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
+  border: 1px solid var(--mbt-edge-world);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -5565,7 +5660,9 @@ body {
   flex-direction: column;
   gap: 2px;
   flex: 1;
-  min-width: 0;
+  /* Non 0: a zero la colonna spariva e il suo testo traboccava sui tasti.
+     Con un minimo, a mancare lo spazio sono i tasti, che vanno a capo. */
+  min-width: 220px;
 }
 
 .mbt-place__title {
@@ -5586,6 +5683,9 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
   font-family: var(--mbt-font-mono);
   font-size: 12px;
   color: var(--mbt-text-lo);
@@ -5620,8 +5720,13 @@ body {
 .mbt-place__keys {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px 16px;
   flex: none;
+  /* flex:none li dimensiona sul contenuto, quindi da soli non andrebbero mai
+     a capo: sotto i 1280 traboccavano dalla barra. */
+  max-width: 100%;
 }
 
 /* ==========================================================================
@@ -5657,9 +5762,9 @@ body {
   padding: 9px 16px;
   border-radius: var(--mbt-radius-pill);
   background:
-    radial-gradient(110% 200% at 0% 0%, rgba(var(--mbt-accent-rgb), 0.10), transparent 60%),
-    linear-gradient(180deg, #161d18, #0d120f);
-  border: 1px solid rgba(var(--mbt-accent-rgb), 0.22);
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
+  border: 1px solid var(--mbt-edge-world);
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
   font-size: 14px;
   color: var(--mbt-text-hi);
@@ -5707,11 +5812,11 @@ body {
   min-width: 340px;
   max-width: 460px;
   padding: 14px 16px;
-  border: 1px solid rgba(var(--mbt-accent-rgb), 0.22);
+  border: 1px solid var(--mbt-edge-world);
   border-radius: var(--mbt-radius);
   background:
-    radial-gradient(110% 200% at 0% 0%, rgba(var(--mbt-accent-rgb), 0.10), transparent 60%),
-    linear-gradient(180deg, #161d18, #0d120f);
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
   box-shadow:
     0 14px 30px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);

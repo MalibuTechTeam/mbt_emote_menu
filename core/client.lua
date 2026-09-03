@@ -204,7 +204,9 @@ local LOCALE_KEYS = {
     'editor_delete_title', 'editor_delete_body',
     'editor_deleted', 'editor_delete_failed',
     'editor_seat_placeholder',
-    'admin_running', 'admin_latest_release',
+    'admin_running', 'admin_latest_release', 'admin_settings',
+    'admin_accent', 'admin_accent_sub', 'admin_apply', 'admin_reset',
+    'admin_contrast',
     'admin_update_headline', 'admin_update_sub',
     'editor_search', 'editor_tab_all', 'editor_tab_spots',
     'editor_tab_seats', 'editor_tab_scenes', 'editor_resultbar',
@@ -279,6 +281,11 @@ local ACCENT_PRESETS = {
     { hex = 'fb7185', label = 'Rose' },
 }
 
+-- The accent an admin chose for this server, pushed by the server module.
+-- nil until it answers, which is why the factory value has to stand on its
+-- own: the menu can be opened before the round trip lands.
+local serverAccent = nil
+
 local function isAccentPreset(hex)
     for _, p in ipairs(ACCENT_PRESETS) do if p.hex == hex then return true end end
     return false
@@ -305,6 +312,7 @@ local function BuildMenuConfig()
     -- Theme is copied so a player accent never mutates the shared config table.
     local theme = {}
     for k, v in pairs(MBT.Theme or {}) do theme[k] = v end
+    if serverAccent then theme.Accent = serverAccent end
     if allowAccentChange and type(prefs.accent) == 'string' and isAccentPreset(prefs.accent) then
         theme.Accent = prefs.accent
     end
@@ -361,6 +369,32 @@ RegisterNUICallback('savePref', function(data, cb)
     -- Lua is the source of truth: hand back a freshly merged config + locale so
     -- the UI just re-applies (layout class, position, language strings, etc).
     cb({ ok = true, config = BuildMenuConfig(), locale = BuildLocaleStrings() })
+end)
+
+RegisterNetEvent('mbt_emote_menu:theme:sync', function(hex)
+    if type(hex) ~= 'string' or hex:match('^%x%x%x%x%x%x$') ~= hex then return end
+    if serverAccent == hex then return end
+    serverAccent = hex
+    -- Only worth telling the panel while it is on screen; otherwise the
+    -- next open builds the config fresh anyway.
+    if isOpen then
+        SendNUIMessage({ action = 'config', config = BuildMenuConfig() })
+    end
+end)
+
+-- Writing is gated server-side on every call. Nothing here is trusted:
+-- the panel only renders for an admin, and that is a convenience, not the
+-- check.
+RegisterNUICallback('themeSet', function(data, cb)
+    if type(data) == 'table' and type(data.accent) == 'string' then
+        TriggerServerEvent('mbt_emote_menu:theme:set', data.accent)
+    end
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('themeReset', function(_, cb)
+    TriggerServerEvent('mbt_emote_menu:theme:reset')
+    cb({ ok = true })
 end)
 
 function Core.OpenMenu()
@@ -1041,6 +1075,7 @@ local function RequestInitialData()
     Core.LoadRecent()
     RequestEmoteCatalog()
     TriggerServerEvent('mbt_emote_menu:requestEcosystemStatus')
+    TriggerServerEvent('mbt_emote_menu:theme:request')
     if MBT.JobPermissions and MBT.JobPermissions.Enabled then
         TriggerServerEvent('mbt_emote_menu:requestPlayerJob')
     end

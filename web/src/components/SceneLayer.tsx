@@ -188,7 +188,7 @@ export function SceneLayer({ layout }: { layout?: "default" | "cinematic" }) {
             </div>
           )}
           <div className="mbt-scene__keys">
-            <KeyHint size="lg" intent="go" keys={["E"]} label={t.scene_join || "Join"} />
+            <KeyHint size="lg" keys={["E"]} label={t.scene_join || "Join"} />
             <KeyHint size="lg" intent="off" keys={["\u232b"]} label={t.scene_decline || "Decline"} />
           </div>
         </div>
@@ -314,7 +314,6 @@ export function SceneLayer({ layout }: { layout?: "default" | "cinematic" }) {
             <div className="mbt-scene__keys">
               <KeyHint
                 size="lg"
-                intent="go"
                 disabled={!nav?.inRange}
                 keys={["E"]}
                 label={ready ? t.scene_not_ready || "Not ready" : t.scene_ready || "Ready"}
@@ -341,7 +340,7 @@ export function SceneLayer({ layout }: { layout?: "default" | "cinematic" }) {
         {/* An occupied spot shows no key: offering one that does nothing is
             worse than saying it is taken. */}
         {!prompt.occupied && (
-          <Kbd size="lg" intent="go">
+          <Kbd>
             {prompt.key}
           </Kbd>
         )}

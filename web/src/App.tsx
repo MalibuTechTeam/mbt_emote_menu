@@ -74,6 +74,16 @@ function App() {
       if (!data || typeof data !== 'object') return
 
       switch (data.action) {
+        // Lua re-merged the config while the panel is open -- the server
+        // accent changed under us. Same payload as openMenu's, applied the
+        // same way.
+        case 'config':
+          if (data.config && typeof data.config === 'object') {
+            setConfig(data.config)
+            setDebugEnabled(!!data.config.debug)
+          }
+          break
+
         case 'openMenu':
           // Catalog, config, locale are only sent on first open; reuse cached values on subsequent opens
           if (Array.isArray(data.catalog)) setCatalog(data.catalog)

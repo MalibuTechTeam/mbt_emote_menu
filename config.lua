@@ -248,16 +248,14 @@ MBT.BannedEmotes = {
 -- [ SECTION 5: THEME ] --
 -------------------------------------------------------------------------------
 
--- Menu colors, sent to the UI at startup. Hex without '#'.
-MBT.Theme = {
-    Accent            = '00e676', -- Brand green — the server's accent for everyone
-    AllowAccentChange = false,    -- Keep the accent admin-controlled. Set true only if you want players to pick their own preset in the settings
-    Background        = '0C0E14', -- Background
-    Card              = '141720', -- Card / panel
-    Text              = 'E8E8EE', -- Primary text
-    SubText           = '6B7280', -- Secondary text
-    Border            = '1A1D26', -- Borders
-}
+-- Colours moved OUT of this file in 1.8.0. They now live in default.lua as the
+-- shipped values, and an admin changes them in game from the shield menu --
+-- server-wide, for everyone, without a restart.
+--
+-- One switch stays here, because it is a policy and not a colour: whether
+-- players may pick their own accent from the curated presets.
+MBT.Theme = MBT.Theme or {}
+MBT.Theme.AllowAccentChange = false
 
 -------------------------------------------------------------------------------
 -- [ SECTION 6: MBT ECOSYSTEM INTEGRATION ] --

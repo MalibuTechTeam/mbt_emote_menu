@@ -13,8 +13,6 @@ import {
   ChevronLeft,
   UserPlus,
   AlertTriangle,
-  ExternalLink,
-  ShieldCheck,
   Navigation,
   SearchX,
   LayoutGrid,
@@ -28,7 +26,7 @@ import { AnimatedNumber } from "./AnimatedNumber";
 import { EmptyState } from "./EmptyState";
 import { KeyHint } from "./Kbd";
 import { emitToast } from "./Toast";
-import type { AdminInfo, EditorState, Scene, WorldPos } from "../utils/types";
+import type { EditorState, Scene, WorldPos } from "../utils/types";
 
 /**
  * The scene editor is a VIEW OF THE MENU, not a second panel: EditorBody
@@ -75,7 +73,7 @@ export function EditorBar({ state }: { state: EditorState }) {
         </div>
 
         <div className="mbt-place__keys">
-          <KeyHint size="lg" intent="go" keys={["E"]} label={t.editor_confirm_pose || "Confirm the pose"} />
+          <KeyHint size="lg" keys={["E"]} label={t.editor_confirm_pose || "Confirm the pose"} />
           <KeyHint
             size="lg"
             keys={["\u2190", "\u2191", "\u2193", "\u2192"]}
@@ -128,11 +126,9 @@ function formatDistance(d: number): string {
 // ── Hub: the browse view for scenes ────────────────────────────────────────
 function Hub({
   scenes,
-  adminInfo,
   playerPos,
 }: {
   scenes: Scene[];
-  adminInfo: AdminInfo | null;
   playerPos: WorldPos | null;
 }) {
   const t = useLocale();
@@ -152,8 +148,6 @@ function Hub({
       setConfirmClosing(false);
     }, 160);
   };
-  const d = adminInfo?.diagnostics;
-  const update = adminInfo?.update;
 
   // Everything the list needs, computed once: kind, distance, and the search
   // haystack. Recomputing distance inside the sort comparator would call it
@@ -389,108 +383,6 @@ function Hub({
           </div>
         </div>
       )}
-
-      {/* Install state, pinned. It is reference — an admin consults it once and
-          then never again — so it must not push the scenes out of view.
-
-          One card, three states, built from .mbt-card like every row above it.
-          The version you run and whether it is current are the same fact about
-          the same thing (mbt_malisling's rail plate makes the same argument),
-          so an update recolours this card rather than adding a second one. */}
-      <div className="mbt-editor__status">
-        {(() => {
-          // The check itself can fail. The resource is running perfectly when
-          // GitHub is unreachable, so that goes on the second line -- painting
-          // the card as a fault would be a lie about what is wrong.
-          const failed = !update && !!d && !d.versionChecked;
-          const state = update ? "update" : failed ? "unknown" : "ok";
-
-          const inner = (
-            <>
-              <div className="mbt-card__row">
-                <div className="mbt-card__name">
-                  <span className="mbt-card__disc">
-                    {update ? <AlertTriangle size={18} /> : <ShieldCheck size={18} />}
-                  </span>
-                  <span className="mbt-card__text">
-                    <span className="mbt-card__label">
-                      {update
-                        ? t.admin_update_headline || "Update available"
-                        : failed
-                          ? t.admin_running || "Running"
-                          : t.admin_up_to_date || "Up to date"}
-                    </span>
-                    <span className="mbt-card__sub">
-                      <span className="mbt-card__cmd">
-                        {update
-                          ? (t.admin_update_sub || "%s on GitHub").replace("%s", update.latest)
-                          : failed
-                            ? t.admin_check_failed || "Update check failed"
-                            : t.admin_latest_release || "Latest release"}
-                      </span>
-                    </span>
-                  </span>
-                </div>
-
-                <div className="mbt-card__meta">
-                  {/* The chip is dropped while updating: the card is about the
-                      NEW version, so repeating the one you are on competes
-                      with it. The arrow takes its place, because the card
-                      leaves the game when you press it. */}
-                  {update ? (
-                    <ExternalLink size={14} className="mbt-editor__healthgo" />
-                  ) : (
-                    d?.versionCurrent && (
-                      <span className="mbt-badge mbt-badge--plays">{d.versionCurrent}</span>
-                    )
-                  )}
-                </div>
-              </div>
-
-              {d && (
-                <div className="mbt-editor__facts">
-                  <span className="mbt-editor__fact">
-                    <b>{d.rpemotesVersion}</b>
-                    <small>{t.admin_diag_rpemotes || "rpemotes"}</small>
-                  </span>
-                  <span className="mbt-editor__fact">
-                    <b>{d.catalogCount}</b>
-                    <small>{t.admin_diag_catalog || "Catalog"}</small>
-                  </span>
-                  <span className="mbt-editor__fact">
-                    <b>{d.framework}</b>
-                    <small>{t.admin_diag_framework || "Framework"}</small>
-                  </span>
-                </div>
-              )}
-            </>
-          );
-
-          const cls = `mbt-card mbt-editor__health mbt-editor__health--${state}`;
-
-          // Only the update state does anything when pressed, and only then is
-          // it a button. A div with a click handler that sometimes works is
-          // how you teach people not to try.
-          if (!update) return <div className={cls}>{inner}</div>;
-
-          return (
-            <button
-              className={cls}
-              title={`${update.current} -> ${update.latest}`}
-              onClick={() => {
-                const invoke = (window as any).invokeNative;
-                // A plain target=_blank does nothing in CEF: there is no
-                // browser to open a tab in. openUrl raises FiveM's own
-                // "you are leaving" step.
-                if (typeof invoke === "function") invoke("openUrl", update.url);
-                else window.open(update.url, "_blank", "noreferrer");
-              }}
-            >
-              {inner}
-            </button>
-          );
-        })()}
-      </div>
     </>
   );
 }
@@ -499,13 +391,11 @@ function Hub({
 export function EditorBody({
   state,
   scenes,
-  adminInfo,
   playerPos,
   onPick,
 }: {
   state: EditorState;
   scenes: Scene[];
-  adminInfo: AdminInfo | null;
   playerPos: WorldPos | null;
   onPick: () => void;
 }) {
@@ -535,7 +425,7 @@ export function EditorBody({
     if (!state.active) setConfirmExit(false);
   }, [state.active]);
 
-  if (!state.scene) return <Hub scenes={scenes} adminInfo={adminInfo} playerPos={playerPos} />;
+  if (!state.scene) return <Hub scenes={scenes} playerPos={playerPos} />;
 
   const isMulti = marks.length > 1;
   const kind = state.scene.type === "scene" ? "scene" : "seats";

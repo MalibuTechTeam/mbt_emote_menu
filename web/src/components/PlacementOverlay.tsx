@@ -48,7 +48,7 @@ export function PlacementOverlay({ visible, layout = 'default' }: PlacementOverl
         <KeyHint keys={['W', 'A', 'S', 'D']} label={t.placement_position || 'Position'} icon={<Move size={12} />} />
         <KeyHint keys={['Q', 'E']} label={t.placement_rotate || 'Rotate'} icon={<RotateCw size={12} />} />
         <KeyHint keys={['R', 'G']} label={t.placement_height || 'Height'} icon={<ArrowUpDown size={12} />} />
-        <KeyHint keys={['Enter']} label={t.placement_confirm || 'Confirm'} icon={<CornerDownLeft size={12} />} intent="go" />
+        <KeyHint keys={['Enter']} label={t.placement_confirm || 'Confirm'} icon={<CornerDownLeft size={12} />} />
         <KeyHint keys={['Backspace']} label={t.placement_cancel || 'Cancel'} icon={<X size={12} />} intent="off" />
       </div>
     </div>
