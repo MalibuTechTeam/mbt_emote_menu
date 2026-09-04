@@ -93,6 +93,19 @@
 - **Built by you, not by us** — every server ends up with different scenes on different MLOs. This is not a fixed list of animations we picked
 - **Survives updates** — scenes live in your database, not in the resource folder, so dropping a new version over the old one never touches your work
 - **Admin only** — the editor is behind an ACE permission, server-side. Ordinary players see the scenes, never the editor
+- **One door** — the shield icon in the menu header opens a small menu: *Scene editor* or *Settings*. The install state, the version and the update notice live under Settings, where you look for them once and then never again
+
+### Server Colour *(new in 1.8)*
+
+- **Pick your server's accent in game** — shield → Settings → a colour picker with
+  a hex / `rgb()` field. It applies to every player at once, without a restart,
+  and it is remembered across them
+- **The whole UI follows it**, not just the highlights: panels, cards and world
+  prompts take the accent's hue at the lightness they already had
+- **It tells you when a colour will not read** — a live contrast figure against
+  the panel, flagged below 3:1. A warning, not a veto
+- **Admin only**, behind the same ACE as the scene editor. The server never sends
+  the panel to anyone else
 
 ### Player Settings *(new in 1.7)*
 
@@ -152,6 +165,11 @@ Built-in translations for **6 languages**: English, Italian, Spanish, French, Ge
    > **Important:** `mbt_emote_menu` must start **after** `rpemotes-reborn`.
 
 4. Configure `config.lua` to your liking (see Configuration below).
+
+   > There are two Lua files at the root. **`config.lua` is yours** and we never
+   > touch it. **`default.lua` is ours** — the factory values, overwritten by
+   > every update. Most of what used to need a file edit is now in the in-game
+   > admin panel anyway.
 
 5. Restart your server or run `ensure mbt_emote_menu` in the live console.
 
@@ -228,6 +246,10 @@ MBT.Personas = {
 
 ### Photo Mode
 
+Drag to orbit, **right-drag to slide the framing**, scroll to zoom. The framing
+is what lets you photograph the people next to you instead of only yourself; it
+is deliberately bounded, so it stays a camera rather than becoming a free one.
+
 ```lua
 MBT.PhotoMode = {
     Enabled   = true,   -- Camera button in the menu header
@@ -295,24 +317,60 @@ MBT.RpText = {
 }
 ```
 
-### Theme
+### Theme *(moved in 1.8)*
+
+**The colours are no longer in `config.lua`.** They ship in `default.lua`, and
+you change them **in game** — shield icon → Settings → pick a colour → Apply.
+It applies to everyone on the server, immediately, with no restart, and it
+survives one because it is stored server-side.
+
+One switch stays in `config.lua`, because it is a policy and not a colour:
+
+```lua
+MBT.Theme = MBT.Theme or {}
+MBT.Theme.AllowAccentChange = false  -- true = players may pick their own accent preset
+```
+
+The shipped values live in `default.lua`:
 
 ```lua
 MBT.Theme = {
-    Accent            = '00e676', -- Brand green — the server's accent for everyone
-    AllowAccentChange = false,    -- true = players can pick their own accent preset in the settings
-    Background        = '0C0E14',
-    Card              = '141720',
-    Text              = 'E8E8EE',
-    SubText           = '6B7280',
-    Border            = '1A1D26',
+    Accent            = '00e676', -- the one that matters; the admin panel overrides it per server
+    AllowAccentChange = false,
+    Background        = '0C0E14', -- legacy, unused
+    Card              = '121814', -- legacy, unused
+    Text              = 'E8E8EE', -- primary text
+    SubText           = '8A93A6', -- secondary text
+    Border            = '1A1D26', -- internal dividers
 }
 ```
 
+`Background` and `Card` no longer drive anything — the surfaces derive from the
+accent now. They are left in place rather than removed mid-release.
+
+> `default.lua` is **ours**, not yours: an update overwrites it. Editing it works,
+> but anything you change there comes back on the next release. `config.lua` is
+> the file we never touch.
+
+**Every surface derives from the accent.** The panels are not a fixed colour with
+a coloured highlight on top — they carry the accent's own hue at a fixed
+lightness, so choosing amber turns the cards amber and choosing a near-grey
+leaves them near-grey. Text stays between 14:1 and 15:1 against the panel for
+every colour, because only the hue moves.
+
+The picker shows the contrast of your accent against the panel and warns below
+3:1 — that is where the *state* lives (ready slots, active chips), so a colour
+that sinks into its own panel stops being readable. It warns; it never blocks.
+It is your server.
+
+**Reset** clears the stored choice and returns to the shipped value. It deletes
+the key rather than writing today's default into it, so a future release that
+ships a different colour still reaches you.
+
 ### Admin Access
 
-The update notice, the owner diagnostics and the scene editor are all unlocked by
-one ACE permission. Following the MBT convention, **the admin command is the
+The update notice, the owner diagnostics, the scene editor and the server colour
+are all unlocked by one ACE permission. Following the MBT convention, **the admin command is the
 resource name** and the permission derives from it:
 
 ```
