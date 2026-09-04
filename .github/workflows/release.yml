@@ -61,7 +61,7 @@ jobs:
       - name: Bundle files
         run: |
           mkdir -p ./temp/mbt_emote_menu/web
-          cp ./{README.md,config.lua,fxmanifest.lua,LICENSE.md} ./temp/mbt_emote_menu
+          cp ./{README.md,config.lua,default.lua,fxmanifest.lua,LICENSE.md} ./temp/mbt_emote_menu
           cp -r ./{modules,core,locales} ./temp/mbt_emote_menu
           cp -r ./web/dist ./temp/mbt_emote_menu/web/dist
           cd ./temp && zip -r ../mbt_emote_menu.zip ./mbt_emote_menu
