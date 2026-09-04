@@ -3,11 +3,12 @@ import { EmoteMenu } from './components/EmoteMenu'
 import type { TrendingEmote } from './components/TrendingHero'
 import { EmoteWheel } from './components/EmoteWheel'
 import { AmbientLayer } from './components/AmbientLayer'
+import { EditorBar } from './components/EditorPanel'
 import { emitToast } from './components/Toast'
 import { LocaleProvider, type LocaleStrings } from './utils/locale'
 import { useNui } from './utils/useNui'
 import { buildThemeVars } from './utils/theme'
-import type { Emote, MenuConfig, SharedRequest, JobPermissions, CustomList } from './utils/types'
+import type { Emote, MenuConfig, SharedRequest, JobPermissions, CustomList, AdminInfo, EditorState, Scene, WorldPos } from './utils/types'
 import { setDebugEnabled, mbtDebug } from './utils/debug'
 
 function App() {
@@ -43,6 +44,22 @@ function App() {
   } | null>(null)
   const [nearbyCount, setNearbyCount] = useState(0)
   const [trending, setTrending] = useState<TrendingEmote | null>(null)
+  // Admin payload. Null until the server answers, and the server only answers
+  // ACE holders — so "null" is both "not an admin" and "not asked yet", and
+  // neither case renders anything.
+  const [adminInfo, setAdminInfo] = useState<AdminInfo | null>(null)
+  const [editorState, setEditorState] = useState<EditorState>({
+    active: false, phase: 'placing', scene: null, selected: 0, dirty: false, replacing: false, previewing: false,
+  })
+  // Every player receives this — a spot has to be visible to be walked into.
+  // Only the admin group renders it, and deleting is ACE checked server-side.
+  const [scenes, setScenes] = useState<Scene[]>([])
+  // The editor borrowed the browse view to fill a mark.
+  const [editorPicking, setEditorPicking] = useState(false)
+  // Pushed only while the hub is open, so the scene list can show how far each
+  // scene is. Null means "not being tracked" — the list then shows no distance
+  // rather than a wrong one.
+  const [editorPos, setEditorPos] = useState<WorldPos | null>(null)
 
   // Listen for NUI messages from client.lua
   useEffect(() => {
@@ -57,6 +74,16 @@ function App() {
       if (!data || typeof data !== 'object') return
 
       switch (data.action) {
+        // Lua re-merged the config while the panel is open -- the server
+        // accent changed under us. Same payload as openMenu's, applied the
+        // same way.
+        case 'config':
+          if (data.config && typeof data.config === 'object') {
+            setConfig(data.config)
+            setDebugEnabled(!!data.config.debug)
+          }
+          break
+
         case 'openMenu':
           // Catalog, config, locale are only sent on first open; reuse cached values on subsequent opens
           if (Array.isArray(data.catalog)) setCatalog(data.catalog)
@@ -81,6 +108,10 @@ function App() {
           }
           if (data.activeWalk !== undefined) setActiveWalk(data.activeWalk || null)
           if (data.activeExpr !== undefined) setActiveExpression(data.activeExpr || null)
+          // Cleared on every open: the fresh answer arrives moments later, and
+          // if the ACE was revoked in between it never arrives at all — which
+          // must read as "gone", not as the previous session's payload.
+          setAdminInfo(null)
           setVisible(true)
           break
 
@@ -102,6 +133,47 @@ function App() {
 
         // placement / previewVignette / openJoin* / whatsthat* are owned
         // by AmbientLayer (it runs its own message listener) — not here.
+
+        case 'adminInfo':
+          // Arrives only for a player the server already ACE-checked.
+          setAdminInfo({
+            update: data.update ?? null,
+            diagnostics: data.diagnostics,
+            editor: data.editor === true,
+          })
+          break
+
+        case 'scenesList':
+          setScenes(Array.isArray(data.scenes) ? data.scenes : [])
+          break
+
+        case 'editorPos':
+          setEditorPos(
+            typeof data.x === 'number' && typeof data.y === 'number' && typeof data.z === 'number'
+              ? { x: data.x, y: data.y, z: data.z }
+              : null,
+          )
+          break
+
+        case 'editorOpenPicker':
+          setEditorPicking(true)
+          break
+
+        case 'editorState':
+          setEditorState({
+            active: data.active === true,
+            phase: data.phase === 'review' ? 'review' : 'placing',
+            scene: data.scene ?? null,
+            selected: typeof data.selected === 'number' ? data.selected : 0,
+            dirty: data.dirty === true,
+            replacing: data.replacing === true,
+            previewing: data.previewing === true,
+          })
+          if (data.active !== true || data.phase !== 'review') setEditorPicking(false)
+          // Stale coordinates would keep the list sorted by where the admin
+          // stood when they last opened it.
+          if (data.active !== true) setEditorPos(null)
+          break
 
         case 'nearbyCountUpdate':
           setNearbyCount(typeof data.count === 'number' ? data.count : 0)
@@ -368,6 +440,7 @@ function App() {
           />
         )}
         <AmbientLayer layout={config?.layout} performanceMode={config?.performanceMode} />
+        <EditorBar state={editorState} />
       </LocaleProvider>
     )
   }
@@ -424,8 +497,16 @@ function App() {
         onClose={handleManualClose}
         onPlayClose={() => setVisible(false)}
         onSavePref={handleSavePref}
+        adminInfo={adminInfo}
+        scenes={scenes}
+        editorState={editorState}
+        editorPicking={editorPicking}
+        editorPos={editorPos}
+        onEditorPick={() => setEditorPicking(true)}
+        onEditorPicked={() => setEditorPicking(false)}
       />
       <AmbientLayer layout={config?.layout} performanceMode={config?.performanceMode} />
+      <EditorBar state={editorState} />
     </LocaleProvider>
   )
 }

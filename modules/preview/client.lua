@@ -79,6 +79,96 @@ local function PlayAnimOnPed(ped, data)
     end
 end
 
+-------------------------------------------------------------------------------
+-- [ POSE PED — shared with the scene editor ] --
+--
+-- Just the ped: no camera, no vignette, no hiding the player. The editor needs
+-- a clone of you standing somewhere performing an emote, while you keep your
+-- own body and walk around it.
+-------------------------------------------------------------------------------
+
+---@param data table   catalog entry (animDict/animClip/scenario/prop/...)
+---@param coords vector3
+---@param heading number
+---@return table|nil   { ped = handle, props = { entity, ... } }
+function Core.CreatePosePed(data, coords, heading)
+    if type(data) ~= 'table' then return nil end
+
+    local ped = ClonePed(PlayerPedId(), false, false, false)
+    if not ped or ped == 0 then return nil end
+
+    SetEntityCoordsNoOffset(ped, coords.x, coords.y, coords.z, false, false, false)
+    SetEntityHeading(ped, heading)
+    SetEntityCollision(ped, false, false)
+    SetEntityInvincible(ped, true)
+    FreezeEntityPosition(ped, true)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    NetworkSetEntityInvisibleToNetwork(ped, true)
+    SetEntityLocallyVisible(ped)
+    -- Ghosted: this is a proposal, not a person. Same value rpemotes uses for
+    -- its own placement preview.
+    SetEntityAlpha(ped, 150, false)
+
+    PlayAnimOnPed(ped, data)
+
+    local handle = { ped = ped, props = {} }
+    for _, spec in ipairs({
+        { data.prop,  data.propBone,  data.propPlace },
+        { data.prop2, data.prop2Bone, data.prop2Place },
+    }) do
+        local propName, boneId, placement = spec[1], spec[2], spec[3]
+        if propName then
+            CreateThread(function()
+                local hash = GetHashKey(propName)
+                if not Utils.RequestModel(hash, 3000) then return end
+
+                -- RequestModel is the only yield in this thread, so a preview
+                -- torn down while we waited is visible here and nowhere else.
+                -- Creating the object anyway left it attached to a deleted ped
+                -- -- an orphan for the rest of the session, because nothing
+                -- held a reference to it any more.
+                if handle.destroyed then
+                    SetModelAsNoLongerNeeded(hash)
+                    return
+                end
+
+                local ent = CreateObject(hash, 0.0, 0.0, 0.0, false, false, false)
+                AttachEntityToEntity(ent, ped, GetPedBoneIndex(ped, boneId or 28422),
+                    placement and placement[1] or 0.0,
+                    placement and placement[2] or 0.0,
+                    placement and placement[3] or 0.0,
+                    placement and placement[4] or 0.0,
+                    placement and placement[5] or 0.0,
+                    placement and placement[6] or 0.0,
+                    true, true, false, true, 1, true)
+                SetModelAsNoLongerNeeded(hash)
+                handle.props[#handle.props + 1] = ent
+            end)
+        end
+    end
+
+    return handle
+end
+
+---Moves a pose ped without disturbing what it is performing: it is frozen, so
+---the coordinate change is not fighting physics or a movement task.
+function Core.MovePosePed(handle, coords, heading)
+    if not handle or not DoesEntityExist(handle.ped) then return end
+    SetEntityCoordsNoOffset(handle.ped, coords.x, coords.y, coords.z, false, false, false)
+    SetEntityHeading(handle.ped, heading)
+end
+
+function Core.DestroyPosePed(handle)
+    if not handle then return end
+    -- Prop loading is asynchronous, so one of those threads may still be
+    -- waiting on RequestModel right now. This is what tells it not to bother.
+    handle.destroyed = true
+    for _, ent in ipairs(handle.props) do
+        if DoesEntityExist(ent) then DeleteEntity(ent) end
+    end
+    if DoesEntityExist(handle.ped) then DeleteEntity(handle.ped) end
+end
+
 local function CreatePreviewCamera(ped)
     local pedPos  = GetEntityCoords(ped)
     local heading = GetEntityHeading(ped)

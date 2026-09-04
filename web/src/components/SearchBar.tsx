@@ -7,11 +7,14 @@ interface SearchBarProps {
   onChange: (value: string) => void
   resultCount: number
   totalCount: number
+  /** The editor lists scenes through this same field; without an override it
+   *  would ask an admin to "search emotes". */
+  placeholder?: string
 }
 
 // v7 minimal search — just the field. "New list" lives on the lens "+" tab,
 // "Stop" lives in the header. See EmoteMenu.
-export function SearchBar({ value, onChange, resultCount, totalCount }: SearchBarProps) {
+export function SearchBar({ value, onChange, resultCount, totalCount, placeholder }: SearchBarProps) {
   const t = useLocale()
 
   return (
@@ -20,7 +23,7 @@ export function SearchBar({ value, onChange, resultCount, totalCount }: SearchBa
         <input
           className="mbt-search__input"
           type="text"
-          placeholder={t.search_placeholder || 'Search emotes...'}
+          placeholder={placeholder || t.search_placeholder || 'Search emotes...'}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoFocus

@@ -8,6 +8,9 @@ interface UseVirtualGridOptions {
 }
 
 interface UseVirtualGridResult {
+  /** Attach this to the scrolling element. It is a callback ref on purpose:
+   *  the container may mount later than the hook (see the note above). */
+  setContainerRef: (node: HTMLDivElement | null) => void
   containerRef: React.RefObject<HTMLDivElement | null>
   totalHeight: number    // total scrollable height in px
   startIndex: number     // first visible item index
@@ -22,9 +25,17 @@ export function useVirtualGrid({
   overscan = 4,
 }: UseVirtualGridOptions): UseVirtualGridResult {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  // The element itself is state, not just a ref: a ref changing does not
+  // re-run an effect, and this container can appear after mount.
+  const [container, setContainer] = useState<HTMLDivElement | null>(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [viewportHeight, setViewportHeight] = useState(600)
   const rafRef = useRef(0)
+
+  const setContainerRef = useCallback((node: HTMLDivElement | null) => {
+    containerRef.current = node
+    setContainer(node)
+  }, [])
 
   const totalRows = Math.ceil(totalItems / columns)
   const totalHeight = totalRows * rowHeight
@@ -43,12 +54,28 @@ export function useVirtualGrid({
   }, [])
 
   useEffect(() => {
-    const el = containerRef.current
+    const el = container
     if (!el) return
+
+    // Sync both, not just the height: the element may already carry a restored
+    // scroll position by the time we see it.
     setViewportHeight(el.clientHeight)
+    setScrollTop(el.scrollTop)
     el.addEventListener('scroll', handleScroll, { passive: true })
-    return () => el.removeEventListener('scroll', handleScroll)
-  }, [handleScroll])
+
+    // A height measured once goes stale when the panel is resized or the
+    // layout switched, and a short viewport renders too few rows to fill it.
+    const observer =
+      typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => setViewportHeight(el.clientHeight))
+        : null
+    observer?.observe(el)
+
+    return () => {
+      el.removeEventListener('scroll', handleScroll)
+      observer?.disconnect()
+    }
+  }, [container, handleScroll])
 
   // Reset scroll position when totalItems changes (e.g. search/filter)
   useEffect(() => {
@@ -71,5 +98,5 @@ export function useVirtualGrid({
     }
   }, [scrollTop, viewportHeight, rowHeight, columns, overscan, totalRows, totalItems])
 
-  return { containerRef, totalHeight, startIndex, endIndex, offsetY }
+  return { setContainerRef, containerRef, totalHeight, startIndex, endIndex, offsetY }
 }

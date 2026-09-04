@@ -22,6 +22,9 @@ import { LIST_ICONS, LIST_ICON_KEYS, DEFAULT_LIST_ICON, listIconFor } from "../u
 import { SearchBar } from "./SearchBar";
 import { ResultBar } from "./ResultBar";
 import { HeaderMenu } from "./HeaderMenu";
+import { AdminPanel } from "./AdminPanel";
+import { EditorBody } from "./EditorPanel";
+import { AdminSettings } from "./AdminSettings";
 import { EmoteCard } from "./EmoteCard";
 import { TrendingHero, type TrendingEmote } from "./TrendingHero";
 import { QuickBindBar } from "./QuickBindBar";
@@ -33,6 +36,10 @@ import type {
   SharedRequest,
   JobPermissions,
   CustomList,
+  AdminInfo,
+  Scene,
+  EditorState,
+  WorldPos,
 } from "../utils/types";
 import { mbtDebug } from "../utils/debug";
 
@@ -88,6 +95,19 @@ interface EmoteMenuProps {
   onClose: () => void;
   onPlayClose: () => void;
   onSavePref: (key: string, value: unknown) => void;
+  /** ACE-gated payload; null for every ordinary player. */
+  adminInfo: AdminInfo | null;
+  /** Authored scenes, listed in the admin group for review and deletion. */
+  scenes: Scene[];
+  /** When the editor is in review, this panel shows the editor view instead of
+   *  the browse view — same shell, same header, same cards. */
+  editorState: EditorState;
+  /** The editor borrowed the browse view to choose an emote for a mark. */
+  editorPicking: boolean;
+  /** Player position while the hub is open, for the scene list's distances. */
+  editorPos: WorldPos | null;
+  onEditorPick: () => void;
+  onEditorPicked: () => void;
   savedMenuState: {
     search: string;
     tab: string;
@@ -171,6 +191,13 @@ export function EmoteMenu({
   onClose,
   onPlayClose,
   onSavePref,
+  adminInfo,
+  scenes,
+  editorState,
+  editorPicking,
+  editorPos,
+  onEditorPick,
+  onEditorPicked,
   savedMenuState,
   onSaveMenuState,
 }: EmoteMenuProps) {
@@ -380,6 +407,13 @@ export function EmoteMenu({
     await useNui("placeEmote", { name: emote.name });
   }, []);
 
+  // Settings is a NUI-only view: nothing about it exists in the world, so
+  // unlike the editor it needs no round trip to Lua to open.
+  const [adminSettings, setAdminSettings] = useState(false);
+
+  // The hub is the editor with no scene open: the browse view for scenes.
+  const inSceneHub = editorState.active && !editorState.scene && !editorPicking;
+
   const { categories, features } = config;
   const visibleCategories = categories.filter((c) => c.visible);
   const favCount = Object.keys(favorites).length;
@@ -485,7 +519,7 @@ export function EmoteMenu({
   ]);
 
   const {
-    containerRef: virtualRef,
+    setContainerRef: setVirtualRef,
     totalHeight,
     startIndex,
     endIndex,
@@ -506,10 +540,9 @@ export function EmoteMenu({
   const setGridRef = useCallback(
     (el: HTMLDivElement | null) => {
       (gridRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
-      (virtualRef as React.MutableRefObject<HTMLDivElement | null>).current =
-        el;
+      setVirtualRef(el);
     },
-    // gridRef is a stable useRef; virtualRef is a stable ref from
+    // gridRef is a stable useRef; setVirtualRef is a stable useCallback from
     // useVirtualGrid — neither identity changes across renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -718,6 +751,18 @@ export function EmoteMenu({
 
   const handleEmotePlay = useCallback(
     (emote: Emote, element?: HTMLElement | null) => {
+      // The editor is borrowing this view to fill a mark. It runs before the
+      // lock check on purpose: an admin authoring a police scene must be able
+      // to pick a job-restricted emote for it.
+      if (editorPicking) {
+        useNui("editorAssignEmote", {
+          name: emote.name,
+          category: emote.category,
+          label: emote.label,
+        });
+        onEditorPicked();
+        return;
+      }
       if (isEmoteLocked(emote.name)) {
         onToast(t.toast_emote_restricted || 'Emote restricted to specific jobs', "error", 2000);
         return;
@@ -733,7 +778,7 @@ export function EmoteMenu({
         onPlay(emote);
       }
     },
-    [onPlay, isEmoteLocked, onToast, saveCurrentState, config.rememberState],
+    [onPlay, isEmoteLocked, onToast, saveCurrentState, config.rememberState, editorPicking, onEditorPicked],
   );
 
   // Refresh the keydown handler's live values each render — the window
@@ -948,20 +993,45 @@ export function EmoteMenu({
           <div className="mbt-header__left">
             {config.watermark && <span className="mbt-logo">MBT</span>}
             <span className="mbt-header__title">
-              {t.menu_title || "Emote Menu"}
+              {adminSettings
+                ? t.admin_settings || "Settings"
+                : editorState.active
+                ? editorPicking
+                  ? t.editor_assign_emote || "Pick emote"
+                  : editorState.scene
+                    ? t.editor_scene_title || "Scene"
+                    : t.editor_title || "Scene editor"
+                : t.menu_title || "Emote Menu"}
             </span>
           </div>
           <div className="mbt-header__actions">
-            <button
-              className="mbt-header__new"
-              onClick={() => {
-                setListCreatorClosing(false);
-                setShowListCreator(true);
-              }}
-              title={t.tooltip_new_list || "New custom list"}
-            >
-              <Plus size={14} />
-            </button>
+            {/* First in the row: the owner surface is not a player preference,
+                and it should not sit between the camera and the settings as if
+                it were one. */}
+            <AdminPanel
+              adminInfo={adminInfo}
+              onOpenSettings={setAdminSettings}
+            />
+            {/* One button, one meaning: "create the thing this view lists".
+                Browsing emotes that is a custom list; in the scene hub it is a
+                scene, which also keeps the create action out of the list
+                itself where it was competing with the content. */}
+            {!adminSettings && (!editorState.active || inSceneHub) && (
+              <button
+                className="mbt-header__new"
+                onClick={() => {
+                  if (inSceneHub) {
+                    useNui("editorNewScene", {});
+                    return;
+                  }
+                  setListCreatorClosing(false);
+                  setShowListCreator(true);
+                }}
+                title={inSceneHub ? t.editor_new || "New scene" : t.tooltip_new_list || "New custom list"}
+              >
+                <Plus size={14} />
+              </button>
+            )}
             <button
               className="mbt-header__stop"
               onClick={onCancel}
@@ -985,294 +1055,329 @@ export function EmoteMenu({
               onExport={handleExportOpen}
               onImport={handleImportOpen}
             />
-            <button className="mbt-header__close" onClick={handleClose}>
+            <button
+              className="mbt-header__close"
+              onClick={() => {
+                // While the editor owns this panel, the X means "back out of
+                // what I am doing", not "close the menu" — closing it would
+                // strand the editor with nowhere to draw.
+                if (adminSettings) setAdminSettings(false);
+                else if (editorPicking) onEditorPicked();
+                else if (editorState.active) useNui("editorExit", {});
+                else handleClose();
+              }}
+            >
               <X size={14} />
             </button>
           </div>
         </div>
 
-        {/* ── Search ── */}
-        <SearchBar
-          value={search}
-          onChange={setSearch}
-          resultCount={filteredEmotes.length}
-          totalCount={catalog.length}
-        />
-
-        {/* ── Tabs ── */}
-        <div className="mbt-tabs">
-          <button
-            className={`mbt-tab ${activeTab === "all" ? "mbt-tab--active" : ""}`}
-            onClick={() => handleTabChange("all")}
-          >
-            <LayoutGrid size={13} />
-            <span>{t.tab_all || "All"}</span>
-            <span className="mbt-tab__count">{catalog.length}</span>
-          </button>
-
-          {features.Favorites && (
-            <button
-              className={`mbt-tab ${activeTab === "favorites" ? "mbt-tab--active" : ""}`}
-              onClick={() => handleTabChange("favorites")}
-            >
-              <Star size={13} />
-              <span>{t.tab_favorites || "Favorites"}</span>
-              <span className="mbt-tab__count">{favCount}</span>
-            </button>
-          )}
-
-          {features.RecentEmotes && (
-            <button
-              className={`mbt-tab ${activeTab === "recent" ? "mbt-tab--active" : ""}`}
-              onClick={() => handleTabChange("recent")}
-            >
-              <History size={13} />
-              <span>{t.tab_recent || "Recent"}</span>
-              <AnimatedNumber value={recent.length} className="mbt-tab__count" />
-            </button>
-          )}
-
-          <button
-            className={`mbt-tab ${activeTab === "top" ? "mbt-tab--active" : ""}`}
-            onClick={() => handleTabChange("top")}
-          >
-            <Trophy size={13} />
-            <span>{t.tab_top || 'Top'}</span>
-            <span className="mbt-tab__count">
-              {Object.keys(playCounts).length}
-            </span>
-          </button>
-
-          {/* Custom Lists integrated directly into the core grid */}
-          {customLists.map((list) => {
-            const ListIcon = listIconFor(list.icon);
-            return (
-              <button
-                key={list.id}
-                className={`mbt-tab ${activeTab === "list" && activeListId === list.id ? "mbt-tab--active" : ""} ${recentlyCreatedListId === list.id ? "mbt-tab--just-created" : ""}`}
-                onClick={() => {
-                  setActiveListId(list.id);
-                  setActiveTab("list");
-                }}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  handleDeleteList(list.id);
-                }}
-                title={t.tooltip_list_delete || 'Right-click to delete'}
-              >
-                <ListIcon size={13} />
-                <span>{list.name}</span>
-                <span className="mbt-tab__count">{list.emotes.length}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* ── Nearby section (only while browsing All tab) ── */}
-        {activeTab === "all" && nearbyCount > 0 && (
-          <NearbySection
-            nearbyCount={nearbyCount}
-            catalog={catalog}
-            playCounts={playCounts}
-            layout={config?.layout}
-            onPlay={handleEmotePlay}
-            onShowMore={() => setActiveCategory("Shared")}
+        {/* The editor is a VIEW of this panel, not a second panel. When it
+            is reviewing a scene the browse view steps aside; when it needs
+            an emote it borrows the browse view back, grid and all. */}
+        {adminSettings ? (
+          <AdminSettings
+            adminInfo={adminInfo}
+            accent={config.theme?.Accent || "00e676"}
           />
-        )}
+        ) : editorState.active && !editorPicking ? (
+          <EditorBody
+            state={editorState}
+            scenes={scenes}
+            playerPos={editorPos}
+            onPick={onEditorPick}
+          />
+        ) : (
+          <>
+          {/* ── Search ── */}
+          <SearchBar
+            value={search}
+            onChange={setSearch}
+            resultCount={filteredEmotes.length}
+            totalCount={catalog.length}
+          />
 
-        {/* ── Category Pills ── */}
-        {activeTab === "all" && (
-          <div className="mbt-categories">
+          {/* ── Tabs ── */}
+          <div className="mbt-tabs">
             <button
-              className={`mbt-pill ${!activeCategory ? "mbt-pill--active" : ""}`}
-              style={{ "--mbt-pill-cat": "154, 160, 166", "--i": 0 } as React.CSSProperties}
-              onClick={() => { setActiveCategory(null); triggerGridEntrance(); }}
+              className={`mbt-tab ${activeTab === "all" ? "mbt-tab--active" : ""}`}
+              onClick={() => handleTabChange("all")}
             >
-              <span className="mbt-pill__label">{t.tab_all || "All"}</span>
-              <span className="mbt-pill__count">{catalog.length}</span>
+              <LayoutGrid size={13} />
+              <span>{t.tab_all || "All"}</span>
+              <span className="mbt-tab__count">{catalog.length}</span>
             </button>
-            {visibleCategories.map((cat, index) => (
-              <button
-                key={cat.type}
-                className={`mbt-pill ${activeCategory === cat.type ? "mbt-pill--active" : ""}`}
-                style={{ "--mbt-pill-cat": pillCatVar(cat.type), "--i": index + 1 } as React.CSSProperties}
-                onClick={() => { setActiveCategory(cat.type); triggerGridEntrance(); }}
-              >
-                <span className="mbt-pill__label">
-                  {categoryShortLabel(cat.type, cat.label)}
-                </span>
-                {categoryCounts[cat.type] != null && (
-                  <span className="mbt-pill__count">
-                    {categoryCounts[cat.type]}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-        )}
 
-        {/* ── Result Bar + Sort & Filter popover ── */}
-        <ResultBar
-          resultCount={filteredEmotes.length}
-          sortOrder={sortOrder}
-          onSortChange={setSortOrder}
-          activeFilter={activeFilter}
-          onFilterChange={(f) => { setActiveFilter(f); triggerGridEntrance(); }}
-          onRandom={handleRandomPlay}
-          randomDisabled={filteredEmotes.length === 0}
-        />
-
-        {/* ── Emote Grid ── */}
-        {/* Active Walk/Expression Banner */}
-        {activeCategory === "Walks" && (
-          <div className="mbt-active-banner">
-            <span className="mbt-active-banner__label">{t.banner_walk_active || 'Active walk:'}</span>
-            <span className="mbt-active-banner__value">
-              {activeWalk || (t.banner_default || 'Default')}
-            </span>
-            {activeWalk && (
+            {features.Favorites && (
               <button
-                className="mbt-active-banner__reset"
-                onClick={() => {
-                  onResetWalkstyle();
-                  onToast(t.toast_walk_reset || 'Walk style reset', "info");
-                }}
+                className={`mbt-tab ${activeTab === "favorites" ? "mbt-tab--active" : ""}`}
+                onClick={() => handleTabChange("favorites")}
               >
-                {t.btn_reset || 'Reset'}
+                <Star size={13} />
+                <span>{t.tab_favorites || "Favorites"}</span>
+                <span className="mbt-tab__count">{favCount}</span>
               </button>
             )}
-          </div>
-        )}
-        {activeCategory === "Expressions" && (
-          <div className="mbt-active-banner">
-            <span className="mbt-active-banner__label">{t.banner_expression_active || 'Active expression:'}</span>
-            <span className="mbt-active-banner__value">
-              {activeExpression || (t.banner_default || 'Default')}
-            </span>
-            {activeExpression && (
+
+            {features.RecentEmotes && (
               <button
-                className="mbt-active-banner__reset"
-                onClick={() => {
-                  onResetExpression();
-                  onToast(t.toast_expression_reset || 'Expression reset', "info");
-                }}
+                className={`mbt-tab ${activeTab === "recent" ? "mbt-tab--active" : ""}`}
+                onClick={() => handleTabChange("recent")}
               >
-                {t.btn_reset || 'Reset'}
+                <History size={13} />
+                <span>{t.tab_recent || "Recent"}</span>
+                <AnimatedNumber value={recent.length} className="mbt-tab__count" />
               </button>
             )}
-          </div>
-        )}
 
-        {/* ── Trending Hero ── (clean browse view only). Rendered as a
-            normal element ABOVE the grid — never inside .mbt-grid__virtual,
-            since useVirtualGrid assumes a uniform rowHeight and the hero is
-            taller. */}
-        {activeTab === "all" &&
-          !activeCategory &&
-          !search &&
-          activeFilter === "all" &&
-          trending && (
-            <TrendingHero trending={trending} onPlay={handleEmotePlay} />
+            <button
+              className={`mbt-tab ${activeTab === "top" ? "mbt-tab--active" : ""}`}
+              onClick={() => handleTabChange("top")}
+            >
+              <Trophy size={13} />
+              <span>{t.tab_top || 'Top'}</span>
+              <span className="mbt-tab__count">
+                {Object.keys(playCounts).length}
+              </span>
+            </button>
+
+            {/* Custom Lists integrated directly into the core grid */}
+            {customLists.map((list) => {
+              const ListIcon = listIconFor(list.icon);
+              return (
+                <button
+                  key={list.id}
+                  className={`mbt-tab ${activeTab === "list" && activeListId === list.id ? "mbt-tab--active" : ""} ${recentlyCreatedListId === list.id ? "mbt-tab--just-created" : ""}`}
+                  onClick={() => {
+                    setActiveListId(list.id);
+                    setActiveTab("list");
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    handleDeleteList(list.id);
+                  }}
+                  title={t.tooltip_list_delete || 'Right-click to delete'}
+                >
+                  <ListIcon size={13} />
+                  <span>{list.name}</span>
+                  <span className="mbt-tab__count">{list.emotes.length}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Nearby section (only while browsing All tab) ── */}
+          {activeTab === "all" && nearbyCount > 0 && (
+            <NearbySection
+              nearbyCount={nearbyCount}
+              catalog={catalog}
+              playCounts={playCounts}
+              layout={config?.layout}
+              onPlay={handleEmotePlay}
+              onShowMore={() => setActiveCategory("Shared")}
+            />
           )}
 
-        {/* `mbt-grid-content` view-transition-name lets the directional
-            tab slide (via View Transitions API in handleTabChange) capture
-            this whole subtree as a single snapshot — empty state OR grid —
-            so both transition out together. */}
-        {filteredEmotes.length === 0 ? (
-          <div className="mbt-grid--empty" style={{ viewTransitionName: "mbt-grid-content" } as React.CSSProperties}>
-            <EmptyState
-              icon={SearchX}
-              title={t.no_emotes_found || "No emotes found"}
-              hint={t.no_emotes_hint || "Try a different search or clear the filters"}
-              arrowDirection="up"
-              arrowLabel={t.no_emotes_arrow || "Search above"}
-            />
-          </div>
-        ) : (
-          <div
-            className={`mbt-grid${gridEntering ? " mbt-grid--entering" : ""}`}
-            style={{ viewTransitionName: "mbt-grid-content" } as React.CSSProperties}
-            ref={setGridRef}
-          >
-            {/* Spacer: total scrollable height */}
-            <div
-              style={{
-                gridColumn: "1 / -1",
-                height: totalHeight,
-                pointerEvents: "none",
-              }}
-            />
-            {/* Visible slice, positioned via transform. The ref lets the
-                filter-morph effect toggle a class for the in-place fade
-                without re-mounting any virtual content. */}
-            <div
-              className="mbt-grid__virtual"
-              ref={virtualContainerRef}
-              style={{ transform: `translateY(${offsetY - totalHeight}px)` }}
-            >
-              {filteredEmotes.slice(startIndex, endIndex).map((emote, i) => {
-                const idx = startIndex + i;
-                return (
-                  <FavoriteDraggable
-                    key={`${emote.category}-${emote.name}`}
-                    emote={emote}
-                    idx={idx}
-                    enabled={activeTab === "favorites"}
-                    onReorder={handleReorderByIndex}
-                    className="mbt-card-wrap"
-                    style={{ "--i": i } as React.CSSProperties}
-                  >
-                    <EmoteCard
-                      emote={emote}
-                      isFavorite={!!favorites[emote.name]}
-                      isFocused={focusedIndex === idx}
-                      cardIndex={idx}
-                      hidePropBadge={
-                        activeFilter === "props" ||
-                        activeCategory === "PropEmotes"
-                      }
-                      hideSharedBadge={
-                        activeFilter === "shared" || activeCategory === "Shared"
-                      }
-                      isPreviewActive={previewingEmote === emote.name}
-                      isActiveStyle={
-                        (emote.category === "Walks" &&
-                          activeWalk === emote.name) ||
-                        (emote.category === "Expressions" &&
-                          activeExpression === emote.name)
-                      }
-                      playCount={
-                        activeTab === "top" ? playCounts[emote.name] : undefined
-                      }
-                      locked={isEmoteLocked(emote.name)}
-                      onPlay={handleEmotePlay}
-                      onToggleFavorite={onToggleFavorite}
-                      onPreviewToggle={
-                        features.PreviewPed && !config.performanceMode
-                          ? handlePreviewToggle
-                          : undefined
-                      }
-                      onAddToPlaylist={onAddToPlaylist}
-                      placementEnabled={!!features.EmotePlacement}
-                      onPlace={handlePlace}
-                      onBindClick={handleBindClick}
-                      wheelSlots={wheelSlots}
-                      wheelMaxSlots={wheelMaxSlots}
-                      onSetWheelSlot={onSetWheelSlot}
-                      customLists={customLists}
-                      onAddToList={handleAddToList}
-                      onRemoveFromList={handleRemoveFromList}
-                    />
-                  </FavoriteDraggable>
-                );
-              })}
+          {/* ── Category Pills ── */}
+          {activeTab === "all" && (
+            <div className="mbt-categories">
+              <button
+                className={`mbt-pill ${!activeCategory ? "mbt-pill--active" : ""}`}
+                style={{ "--mbt-pill-cat": "154, 160, 166", "--i": 0 } as React.CSSProperties}
+                onClick={() => { setActiveCategory(null); triggerGridEntrance(); }}
+              >
+                <span className="mbt-pill__label">{t.tab_all || "All"}</span>
+                <span className="mbt-pill__count">{catalog.length}</span>
+              </button>
+              {visibleCategories.map((cat, index) => (
+                <button
+                  key={cat.type}
+                  className={`mbt-pill ${activeCategory === cat.type ? "mbt-pill--active" : ""}`}
+                  style={{ "--mbt-pill-cat": pillCatVar(cat.type), "--i": index + 1 } as React.CSSProperties}
+                  onClick={() => { setActiveCategory(cat.type); triggerGridEntrance(); }}
+                >
+                  <span className="mbt-pill__label">
+                    {categoryShortLabel(cat.type, cat.label)}
+                  </span>
+                  {categoryCounts[cat.type] != null && (
+                    <span className="mbt-pill__count">
+                      {categoryCounts[cat.type]}
+                    </span>
+                  )}
+                </button>
+              ))}
             </div>
-          </div>
+          )}
+
+          {/* ── Result Bar + Sort & Filter popover ── */}
+          <ResultBar
+            resultCount={filteredEmotes.length}
+            sortOrder={sortOrder}
+            onSortChange={setSortOrder}
+            activeFilter={activeFilter}
+            onFilterChange={(f) => { setActiveFilter(f); triggerGridEntrance(); }}
+            onRandom={handleRandomPlay}
+            randomDisabled={filteredEmotes.length === 0}
+          />
+
+          {/* ── Emote Grid ── */}
+          {/* Active Walk/Expression Banner */}
+          {activeCategory === "Walks" && (
+            <div className="mbt-active-banner">
+              <span className="mbt-active-banner__label">{t.banner_walk_active || 'Active walk:'}</span>
+              <span className="mbt-active-banner__value">
+                {activeWalk || (t.banner_default || 'Default')}
+              </span>
+              {activeWalk && (
+                <button
+                  className="mbt-active-banner__reset"
+                  onClick={() => {
+                    onResetWalkstyle();
+                    onToast(t.toast_walk_reset || 'Walk style reset', "info");
+                  }}
+                >
+                  {t.btn_reset || 'Reset'}
+                </button>
+              )}
+            </div>
+          )}
+          {activeCategory === "Expressions" && (
+            <div className="mbt-active-banner">
+              <span className="mbt-active-banner__label">{t.banner_expression_active || 'Active expression:'}</span>
+              <span className="mbt-active-banner__value">
+                {activeExpression || (t.banner_default || 'Default')}
+              </span>
+              {activeExpression && (
+                <button
+                  className="mbt-active-banner__reset"
+                  onClick={() => {
+                    onResetExpression();
+                    onToast(t.toast_expression_reset || 'Expression reset', "info");
+                  }}
+                >
+                  {t.btn_reset || 'Reset'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* ── Trending Hero ── (clean browse view only). Rendered as a
+              normal element ABOVE the grid — never inside .mbt-grid__virtual,
+              since useVirtualGrid assumes a uniform rowHeight and the hero is
+              taller. */}
+          {activeTab === "all" &&
+            !activeCategory &&
+            !search &&
+            activeFilter === "all" &&
+            trending && (
+              <TrendingHero trending={trending} onPlay={handleEmotePlay} />
+            )}
+
+          {/* `mbt-grid-content` view-transition-name lets the directional
+              tab slide (via View Transitions API in handleTabChange) capture
+              this whole subtree as a single snapshot — empty state OR grid —
+              so both transition out together. */}
+          {filteredEmotes.length === 0 ? (
+            <div className="mbt-grid--empty" style={{ viewTransitionName: "mbt-grid-content" } as React.CSSProperties}>
+              <EmptyState
+                icon={SearchX}
+                title={t.no_emotes_found || "No emotes found"}
+                hint={t.no_emotes_hint || "Try a different search or clear the filters"}
+                arrowDirection="up"
+                arrowLabel={t.no_emotes_arrow || "Search above"}
+              />
+            </div>
+          ) : (
+            <div
+              className={`mbt-grid${gridEntering ? " mbt-grid--entering" : ""}`}
+              style={{ viewTransitionName: "mbt-grid-content" } as React.CSSProperties}
+              ref={setGridRef}
+            >
+              {/* Spacer: total scrollable height */}
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  height: totalHeight,
+                  pointerEvents: "none",
+                }}
+              />
+              {/* Visible slice, positioned via transform. The ref lets the
+                  filter-morph effect toggle a class for the in-place fade
+                  without re-mounting any virtual content. */}
+              <div
+                className="mbt-grid__virtual"
+                ref={virtualContainerRef}
+                style={{ transform: `translateY(${offsetY - totalHeight}px)` }}
+              >
+                {filteredEmotes.slice(startIndex, endIndex).map((emote, i) => {
+                  const idx = startIndex + i;
+                  return (
+                    <FavoriteDraggable
+                      key={`${emote.category}-${emote.name}`}
+                      emote={emote}
+                      idx={idx}
+                      enabled={activeTab === "favorites"}
+                      onReorder={handleReorderByIndex}
+                      className="mbt-card-wrap"
+                      style={{ "--i": i } as React.CSSProperties}
+                    >
+                      <EmoteCard
+                        emote={emote}
+                        isFavorite={!!favorites[emote.name]}
+                        isFocused={focusedIndex === idx}
+                        cardIndex={idx}
+                        hidePropBadge={
+                          activeFilter === "props" ||
+                          activeCategory === "PropEmotes"
+                        }
+                        hideSharedBadge={
+                          activeFilter === "shared" || activeCategory === "Shared"
+                        }
+                        isPreviewActive={previewingEmote === emote.name}
+                        isActiveStyle={
+                          (emote.category === "Walks" &&
+                            activeWalk === emote.name) ||
+                          (emote.category === "Expressions" &&
+                            activeExpression === emote.name)
+                        }
+                        playCount={
+                          activeTab === "top" ? playCounts[emote.name] : undefined
+                        }
+                        locked={isEmoteLocked(emote.name)}
+                        onPlay={handleEmotePlay}
+                        onToggleFavorite={onToggleFavorite}
+                        onPreviewToggle={
+                          features.PreviewPed && !config.performanceMode
+                            ? handlePreviewToggle
+                            : undefined
+                        }
+                        onAddToPlaylist={onAddToPlaylist}
+                        placementEnabled={!!features.EmotePlacement}
+                        onPlace={handlePlace}
+                        onBindClick={handleBindClick}
+                        wheelSlots={wheelSlots}
+                        wheelMaxSlots={wheelMaxSlots}
+                        onSetWheelSlot={onSetWheelSlot}
+                        customLists={customLists}
+                        onAddToList={handleAddToList}
+                        onRemoveFromList={handleRemoveFromList}
+                      />
+                    </FavoriteDraggable>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          </>
         )}
+
+        {/* The playlist and the numpad binds are the player's own tools. While
+            the editor owns this panel they are not just irrelevant, they are
+            answering a different question than the one on screen. */}
 
         {/* ── Playlist Panel ── */}
-        {playlist.length > 0 || playlistPlaying ? (
+        {!editorState.active && (playlist.length > 0 || playlistPlaying) ? (
           <PlaylistPanel
             items={playlist}
             playing={playlistPlaying}
@@ -1286,7 +1391,7 @@ export function EmoteMenu({
         ) : null}
 
         {/* ── Quick Bind Bar ── */}
-        {config.features.QuickBind && (
+        {!editorState.active && !adminSettings && config.features.QuickBind && (
           <QuickBindBar
             keybinds={keybinds}
             onPlay={onPlay}

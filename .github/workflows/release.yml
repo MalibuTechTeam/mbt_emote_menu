@@ -22,23 +22,16 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.repository.default_branch }}
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'pnpm'
-          cache-dependency-path: web/pnpm-lock.yaml
+          bun-version: latest
 
       - name: Install web dependencies
-        run: cd web && pnpm install --frozen-lockfile
+        run: cd web && bun install --frozen-lockfile
 
       - name: Build NUI
-        run: cd web && pnpm run build
+        run: cd web && bun run build
 
       - name: Get variables
         id: get_vars
@@ -47,7 +40,7 @@ jobs:
           echo "DATE=$(date +'%D')" >> $GITHUB_OUTPUT
 
       - name: Bump manifest version
-        run: node .github/actions/bump-manifest-version.js
+        run: bun .github/actions/bump-manifest-version.js
         env:
           TGT_RELEASE_VERSION: ${{ github.ref_name }}
 

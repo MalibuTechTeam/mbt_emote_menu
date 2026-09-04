@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { KeyHint } from './Kbd'
 import { MapPin, Move, RotateCw, ArrowUpDown, CornerDownLeft, X } from 'lucide-react'
 import { useLocale } from '../utils/locale'
 
@@ -47,32 +48,11 @@ export function PlacementOverlay({ visible, layout = 'default' }: PlacementOverl
         <KeyHint keys={['W', 'A', 'S', 'D']} label={t.placement_position || 'Position'} icon={<Move size={12} />} />
         <KeyHint keys={['Q', 'E']} label={t.placement_rotate || 'Rotate'} icon={<RotateCw size={12} />} />
         <KeyHint keys={['R', 'G']} label={t.placement_height || 'Height'} icon={<ArrowUpDown size={12} />} />
-        <KeyHint keys={['Enter']} label={t.placement_confirm || 'Confirm'} icon={<CornerDownLeft size={12} />} variant="confirm" />
-        <KeyHint keys={['Backspace']} label={t.placement_cancel || 'Cancel'} icon={<X size={12} />} variant="cancel" />
+        <KeyHint keys={['Enter']} label={t.placement_confirm || 'Confirm'} icon={<CornerDownLeft size={12} />} />
+        <KeyHint keys={['Backspace']} label={t.placement_cancel || 'Cancel'} icon={<X size={12} />} intent="off" />
       </div>
     </div>
   )
 }
 
-interface KeyHintProps {
-  keys: string[]
-  label: string
-  icon: React.ReactNode
-  variant?: 'confirm' | 'cancel'
-}
 
-function KeyHint({ keys, label, icon, variant }: KeyHintProps) {
-  return (
-    <div className={`mbt-placement__hint ${variant ? `mbt-placement__hint--${variant}` : ''}`}>
-      <div className="mbt-placement__keys-group">
-        {keys.map((k, i) => (
-          <kbd key={i} className="mbt-placement__kbd">{k}</kbd>
-        ))}
-      </div>
-      <div className="mbt-placement__label">
-        {icon}
-        <span>{label}</span>
-      </div>
-    </div>
-  )
-}

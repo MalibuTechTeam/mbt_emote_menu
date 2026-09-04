@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Kbd } from './Kbd'
 import { Eye } from 'lucide-react'
 import { useLocale } from '../utils/locale'
 
@@ -70,7 +71,7 @@ export function WhatsThatBubble({ visible, label, hotKey, x, y, layout = 'defaul
     >
       <Eye size={11} className="mbt-whatsthat__icon" aria-hidden="true" />
       <span className="mbt-whatsthat__label">{label}</span>
-      <kbd className="mbt-whatsthat__key" aria-label={`Press ${hotKey} to try`}>{hotKey}</kbd>
+      <Kbd label={`Press ${hotKey} to try`}>{hotKey}</Kbd>
       <span className="mbt-whatsthat__try">{t.whatsthat_try || 'Try'}</span>
     </div>
   )

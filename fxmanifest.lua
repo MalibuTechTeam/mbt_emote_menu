@@ -12,17 +12,26 @@ dependencies {
     '/server:6116',
     '/onesync',
     'rpemotes-reborn',
+    'oxmysql',
 }
 
 shared_scripts {
     'modules/locales.lua',
     'locales/*.lua',
+    -- Factory values first: config.lua is loaded after so an owner can still
+    -- override anything it sets.
+    'default.lua',
     'config.lua',
 }
 
 server_scripts {
+    -- Declaring oxmysql as a dependency only orders the start; the MySQL
+    -- global comes from importing its library here.
+    '@oxmysql/lib/MySQL.lua',
     'modules/utils/server.lua',
+    'modules/version/server.lua',
     'core/server.lua',
+    'modules/theme/server.lua',
     'modules/bridges/esx.lua',
     'modules/bridges/qbcore.lua',
     'modules/bridges/qbox.lua',
@@ -30,6 +39,9 @@ server_scripts {
     'modules/trending/server.lua',
     'modules/rptext/server.lua',
     'modules/photomode/server.lua',
+    'modules/editor/database.lua',
+    'modules/editor/server.lua',
+    'modules/scenes/server.lua',
 }
 
 client_scripts {
@@ -44,6 +56,8 @@ client_scripts {
     'modules/nearby/client.lua',
     'modules/rptext/client.lua',
     'modules/photomode/client.lua',
+    'modules/editor/client.lua',
+    'modules/scenes/client.lua',
     'core/client.lua',
 }
 

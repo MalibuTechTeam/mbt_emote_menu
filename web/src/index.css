@@ -63,6 +63,33 @@ body {
   --mbt-surface-3: #1A221E;
   --mbt-edge-hi:   rgba(255, 255, 255, 0.10);
   --mbt-edge:      rgba(255, 255, 255, 0.055);
+
+  /* I pannelli che galleggiano sul mondo -- pill, card scena, barre. Derivati
+     da MBT.Theme in theme.ts, questi sono solo il default spedito.
+
+     Il gradiente e' quello canonico del brand: --mbt-surface-panel-gradient
+     in mbt_malisling/web/src/styles/tokens.css, dove il commento lo destina
+     alle "floating editor cards" -- cioe' proprio a questi. La dashboard di
+     malisling e il Control Room dell'elevator usano lo stesso, quindi i tre
+     script leggono come un prodotto solo.
+
+     I tre stop stanno fra loro come top, top*0.67, top*0.50: theme.ts li
+     ricalcola da Theme.Card, cosi il default spedito e' il brand ma un owner
+     che cambia colore ottiene il suo gradiente invece di tre hex cablati.
+
+     Il bordo e' bianco a 0.17 perche' e' l'alpha che pareggia l'edge del
+     vecchio bordo accent (1.65:1 sul proprio fondo). Di notte il pannello ha
+     la stessa luminanza del cielo e l'ombra nera non disegna niente: il bordo
+     e' letteralmente l'unica cosa che definisce la forma. */
+  --mbt-panel-top:  #121814;
+  --mbt-panel-mid:  #0C100E;
+  --mbt-panel-deep: #090C0A;
+  --mbt-edge-world: rgba(255, 255, 255, 0.17);
+
+  /* Cosa si stampa SOPRA l'accent. Default uguale al valore che dieci punti
+     cablavano, cosi il primo render prima che arrivi il tema e' identico;
+     theme.ts poi lo ricalcola dall'accent scelto. */
+  --mbt-on-accent:  #04140c;
   --mbt-edge-lo:   rgba(255, 255, 255, 0.03);
 
   --mbt-ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
@@ -1159,7 +1186,7 @@ body {
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #04140c;
+  color: var(--mbt-on-accent);
   background: var(--mbt-accent);
   box-shadow: 0 8px 22px rgba(var(--mbt-accent-rgb), 0.30);
   transition: transform 0.14s var(--mbt-ease-out), box-shadow 0.18s;
@@ -1640,7 +1667,7 @@ body {
 
 .mbt-shared-popup__btn--accept {
   background: var(--mbt-accent);
-  color: #04140c;
+  color: var(--mbt-on-accent);
   box-shadow: 0 6px 16px rgba(var(--mbt-accent-rgb), 0.28);
 }
 
@@ -1935,7 +1962,7 @@ body {
 /* the slot THIS emote occupies — chip clearly reads as assigned:
    accent border + accent fill + glow, not just a dot */
 .mbt-drawer__wheel-btn--active {
-  color: #04140c;
+  color: var(--mbt-on-accent);
   font-weight: 800;
   background: var(--mbt-accent);
   border-color: var(--mbt-accent);
@@ -1945,7 +1972,7 @@ body {
 }
 
 .mbt-drawer__wheel-btn--active:hover {
-  color: #04140c;
+  color: var(--mbt-on-accent);
   background: var(--mbt-accent);
   border-color: var(--mbt-accent);
 }
@@ -2017,6 +2044,7 @@ body {
 .mbt-card__preview,
 .mbt-card__playlist-add,
 .mbt-card__place,
+.mbt-editor__act,
 .mbt-card__list-add {
   width: 28px;
   height: 28px;
@@ -2043,6 +2071,7 @@ body {
 .mbt-card--expanded .mbt-card__place,
 .mbt-card:hover .mbt-card__list-add,
 .mbt-card--expanded .mbt-card__list-add,
+.mbt-card:hover .mbt-editor__act,
 .mbt-card__list-add--active {
   opacity: 0.7;
   transform: scale(1);
@@ -2054,6 +2083,7 @@ body {
 .mbt-card__preview:hover,
 .mbt-card__playlist-add:hover,
 .mbt-card__place:hover,
+.mbt-editor__act:hover,
 .mbt-card__list-add:hover,
 .mbt-card__list-add--active {
   opacity: 1;
@@ -2061,6 +2091,10 @@ body {
   background: transparent;
   animation: mbt-icon-pop 0.4s var(--mbt-ease-out);
 }
+
+/* Destructive actions read as destructive only once you are on them, and the
+   armed state stays lit so a two-step delete is visibly mid-question. */
+.mbt-editor__act--off:hover { color: var(--mbt-danger); }
 
 .mbt-card__preview--active {
   opacity: 1;
@@ -2539,6 +2573,30 @@ body {
   transition: color var(--mbt-transition), background var(--mbt-transition), border-color var(--mbt-transition), transform var(--mbt-transition);
 }
 
+/* The one button in this UI that destroys something. Solid, like confirm, for
+   the same reason: in a pair of buttons the one that acts has to win without
+   being read first. Red rather than accent, because what it does is not good
+   news. */
+.mbt-modal__btn--danger {
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  background: var(--mbt-danger);
+  box-shadow: 0 8px 22px rgba(239, 68, 68, 0.26);
+  transition: transform 0.14s var(--mbt-ease-out), box-shadow 0.18s, opacity 0.16s;
+}
+
+.mbt-modal__btn--danger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(239, 68, 68, 0.36);
+}
+
+.mbt-modal__btn--danger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.45);
+}
+
 .mbt-modal__btn--cancel {
   background: transparent;
   border-color: var(--mbt-edge);
@@ -2554,7 +2612,7 @@ body {
    solid accent fill, dark ink, soft accent shadow, subtle lift. */
 .mbt-modal__btn--confirm {
   border: none;
-  color: #04140c;
+  color: var(--mbt-on-accent);
   font-weight: 700;
   letter-spacing: 0.3px;
   background: var(--mbt-accent);
@@ -2729,7 +2787,7 @@ body {
   border: none;
   border-radius: 9px;
   background: var(--mbt-accent);
-  color: #04140c;
+  color: var(--mbt-on-accent);
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.8px;
@@ -2883,12 +2941,12 @@ body {
    inactive chips. */
 .mbt-persona--active {
   color: var(--mbt-accent);
-  background: rgba(0, 230, 118, 0.10);
-  border-color: rgba(0, 230, 118, 0.45);
+  background: rgba(var(--mbt-accent-rgb), 0.10);
+  border-color: rgba(var(--mbt-accent-rgb), 0.45);
   cursor: default;
 }
 .mbt-persona--active:hover {
-  background: rgba(0, 230, 118, 0.10);
+  background: rgba(var(--mbt-accent-rgb), 0.10);
   color: var(--mbt-accent);
 }
 
@@ -2918,7 +2976,7 @@ body {
   font-weight: 600;
   outline: none;
 }
-.mbt-persona--editing { border-color: var(--mbt-accent); background: rgba(0, 230, 118, 0.08); }
+.mbt-persona--editing { border-color: var(--mbt-accent); background: rgba(var(--mbt-accent-rgb), 0.08); }
 
 /* Delete confirmation — danger-tinted chip so it clearly stands out from the
    normal chips, with both actions visible at rest (not only on hover). */
@@ -2967,12 +3025,12 @@ body {
   height: 24px;
   border-radius: 7px;
   color: var(--mbt-accent);
-  background: rgba(0, 230, 118, 0.08);
-  border: 1px solid rgba(0, 230, 118, 0.22);
+  background: rgba(var(--mbt-accent-rgb), 0.08);
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.22);
   cursor: pointer;
   transition: background 130ms ease, border-color 130ms ease;
 }
-.mbt-personas__add:hover { background: rgba(0, 230, 118, 0.16); }
+.mbt-personas__add:hover { background: rgba(var(--mbt-accent-rgb), 0.16); }
 
 /* the slots grid IS the recessed tray */
 .mbt-quickbind__slots {
@@ -3205,6 +3263,7 @@ body {
   gap: 10px;
 }
 
+.mbt-editor__field input,
 .mbt-list-creator__input {
   background: var(--mbt-surface-1);
   border: 1px solid var(--mbt-edge);
@@ -3218,9 +3277,12 @@ body {
   transition: border-color 0.16s;
 }
 
+.mbt-editor__field input::placeholder,
 .mbt-list-creator__input::placeholder { color: var(--mbt-text-faint); }
+.mbt-editor__field input:focus,
 .mbt-list-creator__input:focus { border-color: var(--mbt-accent); }
 
+.mbt-editor__label,
 .mbt-list-creator__label {
   font-size: 9.5px;
   font-weight: 700;
@@ -3900,9 +3962,9 @@ body {
   padding: 9px 11px 9px 13px;
   border-radius: 11px;
   background:
-    radial-gradient(110% 200% at 0% 0%, rgba(var(--mbt-accent-rgb), 0.10), transparent 60%),
-    linear-gradient(180deg, #161d18, #0d120f);
-  border: 1px solid rgba(var(--mbt-accent-rgb), 0.22);
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
+  border: 1px solid var(--mbt-edge-world);
   box-shadow:
     0 14px 30px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -4007,27 +4069,6 @@ body {
 }
 
 /* v7 keycap. */
-.mbt-openjoin__key {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 21px;
-  padding: 0 7px;
-  margin-left: 2px;
-  font-family: inherit;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--mbt-text-mid);
-  background: linear-gradient(180deg, #2a3137, #181d22);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 5px;
-  box-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-}
-
 /* ── What's That Emote? floating bubble ──────────────────────
  * Tracks a nearby emoting player in world space. Position is the screen
  * projection computed in Lua and passed via CSS custom properties --mbt-x,
@@ -4054,8 +4095,10 @@ body {
   gap: 8px;
   padding: 8px 10px;
   border-radius: 10px;
-  background: linear-gradient(180deg, #1b231d, #10150f);
-  border: 1px solid var(--mbt-edge-hi);
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
+  border: 1px solid var(--mbt-edge-world);
   box-shadow:
     0 14px 30px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -4137,26 +4180,6 @@ body {
 }
 
 /* v7 keycap. */
-.mbt-whatsthat__key {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 21px;
-  padding: 0 7px;
-  margin-left: 2px;
-  font-family: inherit;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: var(--mbt-text-mid);
-  background: linear-gradient(180deg, #2a3137, #181d22);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 5px;
-  box-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-}
 
 .mbt-whatsthat__try {
   color: var(--mbt-text-faint);
@@ -4351,8 +4374,10 @@ body {
   gap: 12px;
   padding: 14px 16px;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(20,24,30,0.92), rgba(12,14,18,0.92));
-  border: 1px solid var(--mbt-edge-hi);
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
+  border: 1px solid var(--mbt-edge-world);
   box-shadow: 0 18px 44px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.05);
   pointer-events: auto;
   animation: mbt-photo-bar-in 380ms cubic-bezier(0.16, 1, 0.3, 1);
@@ -4385,9 +4410,173 @@ body {
   background: rgba(255, 255, 255, 0.07);
 }
 .mbt-photo__filter--active {
-  color: #07120b;
+  color: var(--mbt-on-accent);
   background: var(--mbt-accent);
   border-color: var(--mbt-accent);
+}
+
+/* Tabs of the control bar's top row. Filters, light and sky are three groups
+   with equal standing; stacking them as rows would push the bar up over the
+   shot it exists to frame, so they take turns instead. */
+.mbt-photo__tabs {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 2px;
+}
+
+.mbt-photo__tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  background: transparent;
+  border: none;
+  color: var(--mbt-text-lo);
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+
+.mbt-photo__tab:hover { color: var(--mbt-text-mid); }
+.mbt-photo__tab--on { color: var(--mbt-text-hi); }
+
+.mbt-photo__tab--on::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -4px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--mbt-accent);
+  box-shadow: 0 0 8px rgba(var(--mbt-accent-rgb), 0.5);
+}
+
+/* Says a tab is doing something without opening it: the light is on, or the
+   sky is no longer the server's. */
+.mbt-photo__tabdot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--mbt-accent);
+  box-shadow: 0 0 6px rgba(var(--mbt-accent-rgb), 0.6);
+}
+
+.mbt-photo__panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  max-width: 620px;
+}
+
+.mbt-photo__seg {
+  display: inline-flex;
+  border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.mbt-photo__segbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  background: transparent;
+  border: none;
+  color: var(--mbt-text-mid);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 140ms ease, background 140ms ease;
+}
+
+.mbt-photo__segbtn + .mbt-photo__segbtn { border-left: 1px solid rgba(255, 255, 255, 0.07); }
+.mbt-photo__segbtn:hover:not(:disabled) { color: var(--mbt-text-hi); background: rgba(255, 255, 255, 0.05); }
+.mbt-photo__segbtn--on { color: var(--mbt-on-accent); background: var(--mbt-accent); }
+.mbt-photo__segbtn--on:hover { background: var(--mbt-accent); }
+.mbt-photo__segbtn:disabled { opacity: 0.35; cursor: default; }
+
+.mbt-photo__slider {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-photo__slider input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 116px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  cursor: pointer;
+}
+
+.mbt-photo__slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--mbt-accent);
+  border: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.mbt-photo__slider input[type="range"]:disabled { opacity: 0.35; cursor: default; }
+.mbt-photo__slider input[type="range"]:disabled::-webkit-slider-thumb { background: var(--mbt-text-faint); }
+
+/* Where the light actually is. Read-only: the gesture is the input, and a
+   second way to set the same number would be two controls arguing over one
+   value. */
+.mbt-photo__readouts {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mbt-photo__readouts b {
+  font-family: var(--mbt-font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--mbt-text-hi);
+}
+
+.mbt-photo__readouts small {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mbt-text-faint);
+  margin-right: 6px;
+}
+
+/* While the drag is holding the light rather than the camera, the hint that
+   says so is the only thing on the bar that changed -- so it says it loudly
+   enough to be believed. */
+.mbt-photo__hint--mode { color: var(--mbt-accent); }
+.mbt-photo__hint--mode svg { color: var(--mbt-accent); }
+
+.mbt-photo__readout {
+  font-family: var(--mbt-font-mono);
+  font-size: 11px;
+  color: var(--mbt-text-hi);
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
 }
 
 .mbt-photo__tools {
@@ -4413,10 +4602,18 @@ body {
   transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
 }
 .mbt-photo__tool:hover { color: var(--mbt-text-hi); }
+
+/* On, without competing with the choice above it. The filled accent in this bar
+   belongs to ONE thing -- which look is selected -- and two toggles wearing the
+   same fill made three primary elements on a bar that has one primary
+   question. Accent on the label and the icon says "on" perfectly well.
+
+   The border colour was also hardcoded MBT green, so an owner who themed the
+   accent kept two green buttons in the middle of their own palette. */
 .mbt-photo__tool--on {
   color: var(--mbt-accent);
-  border-color: rgba(0, 230, 118, 0.4);
-  background: rgba(0, 230, 118, 0.08);
+  border-color: rgba(var(--mbt-accent-rgb), 0.35);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .mbt-photo__send {
@@ -4429,7 +4626,7 @@ body {
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  color: #07120b;
+  color: var(--mbt-on-accent);
   background: var(--mbt-accent);
   border: 1px solid var(--mbt-accent);
   cursor: pointer;
@@ -4710,72 +4907,6 @@ body {
   flex-wrap: wrap;
 }
 
-.mbt-placement__hint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.mbt-placement__keys-group {
-  display: inline-flex;
-  gap: 3px;
-}
-
-/* v7 physical keycap — matches .mbt-quickbind__key / _mockup-extras .key */
-.mbt-placement__kbd {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 7px;
-  font-family: inherit;
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  line-height: 1;
-  color: var(--mbt-text-mid);
-  background: linear-gradient(180deg, #2a3137, #181d22);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 5px;
-  box-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(255, 255, 255, 0.10);
-}
-
-.mbt-placement__label {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--mbt-text-lo);
-}
-
-/* Confirm hint — accent-tinted keycap + label */
-.mbt-placement__hint--confirm .mbt-placement__kbd {
-  color: var(--mbt-accent);
-  background: linear-gradient(180deg, #15211a, #0f1813);
-  border-color: rgba(var(--mbt-accent-rgb), 0.42);
-  box-shadow:
-    0 2px 0 rgba(0, 0, 0, 0.6),
-    inset 0 1px 0 rgba(var(--mbt-accent-rgb), 0.12);
-}
-
-.mbt-placement__hint--confirm .mbt-placement__label {
-  color: var(--mbt-accent);
-}
-
-/* Cancel hint — danger-red-tinted keycap + label */
-.mbt-placement__hint--cancel .mbt-placement__kbd {
-  color: var(--mbt-danger);
-  background: linear-gradient(180deg, #2c1f1d, #1a1413);
-  border-color: rgba(229, 96, 78, 0.42);
-}
-
-.mbt-placement__hint--cancel .mbt-placement__label {
-  color: var(--mbt-danger);
-}
-
 /* ═══════════════════════════════════════════════════════════════════════════
    PREMIUM POLISH — additive layer
    ═══════════════════════════════════════════════════════════════════════════
@@ -4993,7 +5124,980 @@ body {
  * resting visual state so elements still appear/disappear, just without
  * the slide/scale/pulse drama.
  */
+/* ==========================================================================
+   ADMIN PANEL - its own header button and popover
+   Update, scene editor and owner diagnostics. Rendered only when the server
+   sent an admin payload, and it only sends one to an ACE holder.
+
+   The update accent is --mbt-warning, never --mbt-accent: green is the
+   resting state everywhere else in this UI, so an update painted green would
+   read as "fine, ignore me".
+   ========================================================================== */
+
+.mbt-adminmenu {
+  position: relative;
+  display: inline-flex;
+}
+
+.mbt-adminmenu__btn--open,
+.mbt-adminmenu__btn:hover {
+  color: var(--mbt-accent);
+}
+
+/* Attention dot: the one admin-only pixel visible without opening anything. */
+.mbt-adminmenu__btn--flag::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mbt-warning);
+  box-shadow: 0 0 0 2px var(--mbt-card), 0 0 6px rgba(251, 140, 0, 0.7);
+  animation: mbt-flagpulse 2.4s var(--mbt-ease-out) infinite;
+}
+
+@keyframes mbt-flagpulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+
+
+.mbt-admin__group:last-child {
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+
+/* Resting state of the version row: a fact, not a call to action. */
+
+
+
+
+
+
+
+/* Authored scene list. */
+
+
+
+
+
+
+
+
+/* Armed half of the two-step delete: the button itself says so, rather than
+   a separate label the eye has to find. */
+
+
+/* ==========================================================================
+   SCENE EDITOR
+
+   The editor is a VIEW of the menu, not a panel of its own: EditorBody
+   renders inside .mbt-menu where the browse view would be, and the picker IS
+   the browse view. Shell, header, cards, scrolling and focus are the menu's,
+   so they cannot drift from it. Only what is genuinely new is defined here.
+
+   No backdrop-filter anywhere: this stylesheet already states the rule for the
+   Trending hero, and CEF is where it bites.
+   ========================================================================== */
+
+
+
+
+/* The guidance line IS .mbt-active-banner -- accent dot, 7% tint, fade-in.
+   Only the type scale differs: the banner carries two words, this carries a
+   sentence, and 10px is where a sentence stops being read. */
+.mbt-editor__lead {
+  margin: 0;
+  padding: 9px 12px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--mbt-text-mid);
+}
+
+/* Sits where the browse view would, inside .mbt-menu's own padding. */
+.mbt-editor__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0 8px;
+  overflow-y: auto;
+}
+
+.mbt-editor__body > * { flex: none; }
+
+/* Every other view of this panel is a list that fills it. This one grows into
+   the same space, which is also what lets an empty state sit in the middle of
+   it rather than under a column of air. */
+.mbt-editor__body > .mbt-editor__list,
+.mbt-editor__body > .mbt-editor__blank {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.mbt-editor__blank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mbt-editor__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Width is the only thing this input does not share with the list creator's:
+   there it sits in a 340px modal, here it spans the panel. */
+.mbt-editor__field input { width: 100%; }
+
+
+.mbt-editor__hint {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-editor__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  align-self: flex-start;
+  padding: 4px 8px 4px 4px;
+  border: none;
+  border-radius: var(--mbt-radius-sm);
+  background: transparent;
+  color: var(--mbt-text-lo);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mbt-editor__back:hover { color: var(--mbt-text-hi); }
+
+/* ── Hub: the browse view for scenes ───────────────────────────────
+   Scene rows ARE .mbt-card — same disc, same label/sub column, same meta and
+   hover-revealed actions. The only thing declared here is which of the three
+   kinds a row is, as a tint on the disc glyph, so the kind reads before the
+   name does. The colours are the catalog's own, not a fourth palette. */
+.mbt-editor__scene--spot  { --mbt-card-cat-rgb: 94, 234, 212; }
+.mbt-editor__scene--seats { --mbt-card-cat-rgb: 245, 190, 74; }
+.mbt-editor__scene--scene { --mbt-card-cat-rgb: 236, 72, 153; }
+
+/* La vista Impostazioni: niente ricerca e niente schede, solo contenuto che
+   scorre. E' il corpo del menu, quindi prende lo spazio che avanza. */
+.mbt-admin__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 16px 16px;
+}
+
+/* Un blocco di Impostazioni: intestazione, controllo, azioni. */
+.mbt-admin__section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 13px 13px;
+  border-radius: var(--mbt-radius-sm);
+  border: 1px solid var(--mbt-edge);
+  background: var(--mbt-surface-2);
+}
+
+.mbt-admin__sechead { display: flex; flex-direction: column; gap: 2px; }
+.mbt-admin__sechead b { font-size: 12.5px; font-weight: 600; color: var(--mbt-text-mid); }
+.mbt-admin__sechead small { font-size: 10.5px; color: var(--mbt-text-lo); }
+
+.mbt-admin__accent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Il rapporto di contrasto dell'accent sul pannello. Sotto 3:1 lo stato --
+   caselle pronte, chip attivi -- smette di staccarsi dal suo sfondo, quindi
+   il numero diventa un avviso invece di una curiosita'. */
+.mbt-admin__ratio {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-left: auto;
+  text-align: right;
+}
+
+.mbt-admin__ratio b {
+  font-family: var(--mbt-font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--mbt-text-mid);
+}
+
+.mbt-admin__ratio b.mbt-admin__ratio--low { color: var(--mbt-warning); }
+.mbt-admin__ratio small { font-size: 9.5px; color: var(--mbt-text-faint); }
+
+.mbt-admin__accentbtns { display: flex; gap: 8px; }
+.mbt-admin__accentbtns .mbt-modal__btn { flex: 1; gap: 6px; }
+
+/* Un aggiornamento disponibile, sulla riga a cui appartiene invece che come
+   secondo distintivo sullo scudo. */
+.mbt-sortpop__dot {
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mbt-warning);
+  box-shadow: 0 0 6px var(--mbt-warning);
+  flex: none;
+}
+
+/* Lo stato dell'installazione, in fondo al pannello. E' riferimento — lo si
+   consulta una volta e poi mai piu' — quindi non sta sopra la cosa che si e'
+   venuti a cambiare. margin-top:auto lo spinge in basso finche' c'e' spazio,
+   e lo lascia scorrere con il resto quando non ce n'e'. */
+.mbt-admin__status {
+  flex: none;
+  margin-top: auto;
+  padding: 12px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* One card, three states, built from .mbt-card. The row, the disc, the label
+   column and the meta slot are the emote card's; the only things declared here
+   are which state tints it and the facts that sit where a drawer would. */
+.mbt-admin__health {
+  cursor: default;
+  font-family: inherit;
+  text-align: left;
+}
+
+.mbt-admin__health--ok      { --mbt-card-cat-rgb: 34, 197, 94; }
+.mbt-admin__health--update  { --mbt-card-cat-rgb: 251, 140, 0; }
+/* Nothing is broken when the check cannot run, so nothing is coloured. */
+.mbt-admin__health--unknown { --mbt-card-cat-rgb: 154, 160, 166; }
+
+/* Only the update state is pressable, and it says so: amber fill, a hover, a
+   focus ring, and a pointer. Amber is informational here, not an error. */
+.mbt-admin__health--update {
+  cursor: pointer;
+  border-color: rgba(251, 140, 0, 0.3);
+  background: rgba(251, 140, 0, 0.09);
+}
+
+.mbt-admin__health--update:hover {
+  border-color: rgba(251, 140, 0, 0.45);
+  background: rgba(251, 140, 0, 0.15);
+}
+
+.mbt-admin__health--update:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(251, 140, 0, 0.35);
+}
+
+.mbt-admin__health--update .mbt-card__label { color: var(--mbt-warning); }
+.mbt-admin__healthgo { color: var(--mbt-warning); }
+
+/* Facts sit where a card's drawer sits: below the row, inside the same border.
+   As one flat mono line they wrapped mid-phrase and read as a broken sentence;
+   as equal cells each one ellipsises on its own. */
+.mbt-admin__facts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mbt-admin__fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 7px 12px 9px;
+}
+
+.mbt-admin__fact + .mbt-admin__fact {
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.mbt-admin__fact b {
+  font-family: var(--mbt-font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mbt-text-mid);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mbt-admin__fact small {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mbt-text-faint);
+}
+
+/* Shares the list creator's head scale; only the layout for the warn chip
+   that can ride along with it is declared here. */
+.mbt-editor__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mbt-editor__warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  color: var(--mbt-warning);
+}
+
+
+.mbt-editor__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Save is the confirm button the modals use and Exit is their cancel: the
+   editor does not get a button language of its own. */
+.mbt-editor__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mbt-editor__foot .mbt-modal__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.mbt-editor__add,
+.mbt-editor__foot .mbt-modal__btn--confirm { flex: 1; }
+.mbt-editor__quit { flex: none; padding: 8px 10px; }
+
+/* ── Actor rows: .mbt-card, plus the index and the role field ─────────────── */
+
+.mbt-editor__actor--on {
+  border-color: rgba(var(--mbt-accent-rgb), 0.55);
+  background: var(--mbt-accent-soft);
+}
+
+/* Matches the amber ring in the world: an actor with no emote cannot be saved,
+   and the panel and the world should say the same thing. */
+.mbt-editor__actor--warn { border-color: rgba(251, 140, 0, 0.4); }
+.mbt-editor__actor--warn .mbt-card__name { color: var(--mbt-warning); font-style: italic; }
+
+/* The actor index rides in the card's disc — the same 40px box the emote
+   glyph sits in, so the two lists line up column for column. */
+.mbt-editor__num {
+  font-family: var(--mbt-font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-editor__actor--on .mbt-editor__num {
+  color: var(--mbt-accent);
+}
+
+.mbt-editor__role {
+  width: 130px;
+  max-width: 100%;
+  padding: 3px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--mbt-text-lo);
+  font-family: inherit;
+  font-size: 11px;
+  outline: none;
+}
+
+.mbt-editor__role:focus { border-color: rgba(var(--mbt-accent-rgb), 0.5); color: var(--mbt-text); }
+
+.mbt-editor__body button:disabled { opacity: 0.4; cursor: default; }
+.mbt-editor__body .mbt-modal__btn--confirm:disabled { box-shadow: none; }
+
+/* ── In-place emote picker ───────────────────────────────────────────────── */
+
+
+
+
+/* ==========================================================================
+   KEYCAPS — one definition, used by every prompt
+
+   There were six of these, in two visual families: a raised physical keycap
+   (placement overlay, Open Join, What's That) and a flat mono chip (placing
+   bar, spot prompt, scene panel). Same object, same job — so pressing E in one
+   prompt and E in another looked like two different keyboards.
+
+   The raised keycap won: it is the one that reads as a key rather than as a
+   badge, and the quick-bind slots, the most prominent key surface in the
+   product, already look like this.
+   ========================================================================== */
+
+.mbt-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 21px;
+  padding: 0 7px;
+  font-family: inherit;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  color: var(--mbt-text-mid);
+  background: linear-gradient(180deg, #2a3137, #181d22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  /* The 2px bottom edge is the whole illusion: it is what makes this a key
+     you press instead of a label about a key. */
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+/* Prompts that float over the game world, read at a glance and from further
+   away than a panel the reader is already looking at. */
+.mbt-key--lg {
+  min-width: 25px;
+  height: 25px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+  letter-spacing: 0;
+}
+
+/* The surface's primary action. Solid, not tinted: in a row of five hints the
+   one that does the thing has to win without being read first. */
+/* Backing out. Tinted, never solid — cancel does not get to shout. */
+.mbt-key--off {
+  color: var(--mbt-danger);
+  background: linear-gradient(180deg, #2c1f1d, #1a1413);
+  border-color: rgba(229, 96, 78, 0.42);
+}
+
+.mbt-keyhint {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-keyhint--sm { font-size: 11px; }
+.mbt-keyhint--lg { font-size: 13px; }
+
+.mbt-keyhint--off { color: var(--mbt-danger); }
+
+/* Shown but not armed yet, so pressing it and being refused is not a surprise.
+   Out of range for a scene mark is the case this exists for. */
+.mbt-keyhint--off-range { opacity: 0.45; }
+
+.mbt-keyhint__keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mbt-keyhint__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   PLACING BAR — the world owns input, so nothing here is clickable
+   ========================================================================== */
+
+.mbt-place {
+  position: fixed;
+  left: 50%;
+  bottom: 5vh;
+  transform: translateX(-50%);
+  z-index: 40;
+  pointer-events: none;
+}
+
+.mbt-place__bar {
+  display: flex;
+  align-items: center;
+  /* Sei gruppi di tasti vogliono 624px: sotto i ~1500px di schermo non ci
+     stanno accanto al titolo, e senza wrap finivano sopra. */
+  flex-wrap: wrap;
+  gap: 10px 22px;
+  width: clamp(600px, 50vw, 940px);
+  padding: 12px 20px;
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
+  border: 1px solid var(--mbt-edge-world);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.mbt-place__id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  /* Non 0: a zero la colonna spariva e il suo testo traboccava sui tasti.
+     Con un minimo, a mancare lo spazio sono i tasti, che vanno a capo. */
+  min-width: 220px;
+}
+
+.mbt-place__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 15px;
+  color: var(--mbt-text-hi);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mbt-place__title svg { color: var(--mbt-accent); flex: none; }
+
+.mbt-place__count {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: var(--mbt-font-mono);
+  font-size: 12px;
+  color: var(--mbt-text-lo);
+}
+
+/* What this actor is doing. It used to float over the ped in the game's own
+   font; here it is the brightest thing on the line, because during positioning
+   it is the only fact you cannot read off the screen. */
+.mbt-place__doing {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mbt-font-sans, inherit);
+  font-weight: 600;
+  color: var(--mbt-text-hi);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mbt-place__doing::before {
+  content: "";
+  flex: none;
+  width: 1px;
+  height: 11px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* The keys are the interaction, so they are stated rather than tucked into a
+   9px legend the way the first build did it. */
+.mbt-place__keys {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  flex: none;
+  /* flex:none li dimensiona sul contenuto, quindi da soli non andrebbero mai
+     a capo: sotto i 1280 traboccavano dalla barra. */
+  max-width: 100%;
+}
+
+/* ==========================================================================
+   SPOT PROMPT + SCENE SESSION
+
+   Nothing in here takes pointer events. Every action is a game key, named on
+   screen, so the player keeps control of their character while walking to a
+   mark. Functional text sits at 14px+ — this is read in motion, and
+   --mbt-text-faint is reserved for what can be ignored.
+   ========================================================================== */
+
+.mbt-scene {
+  position: fixed;
+  left: 50%;
+  bottom: 12vh;
+  transform: translateX(-50%);
+  z-index: 35;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.mbt-scene--cinematic { bottom: 16vh; }
+
+/* ── Proximity pill ─────────────────────────────────────────────────────── */
+
+.mbt-scene__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  border-radius: var(--mbt-radius-pill);
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
+  border: 1px solid var(--mbt-edge-world);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+  font-size: 14px;
+  color: var(--mbt-text-hi);
+  animation: mbt-scenein 180ms var(--mbt-ease-out);
+}
+
+.mbt-scene__label { color: var(--mbt-text-hi); }
+
+
+/* Occupied: same pill, no accent, no key. It is a statement, not an offer. */
+.mbt-scene__pill--full {
+  border-color: var(--mbt-border);
+  background: linear-gradient(180deg, #16181c, #0d0f11);
+}
+
+.mbt-scene__pill--full .mbt-scene__label { color: var(--mbt-text-lo); }
+
+/* Says what pressing the key will actually do: start something that needs
+   other humans. The old bare icon left that to be guessed. */
+.mbt-scene__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 10px;
+  margin-left: 2px;
+  border-left: 1px solid var(--mbt-border);
+  font-size: 13px;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-scene__badge svg { color: var(--mbt-accent); }
+
+/* ── Session card ───────────────────────────────────────────────────────── */
+
+/* Same recipe as every other panel that floats over the game world -- the spot
+   prompt directly above, Open Join, What's That: an accent glow in the corner
+   the light would come from, over a green-biased near-black, inside an
+   accent-tinted edge. This card had a flat bluish surface and the neutral
+   border token instead, so it read as colder and flatter than the pill the
+   player had been looking at seconds earlier.
+
+   No backdrop-filter: CEF-safe, per the rule this stylesheet already states for
+   the Trending hero. Opacity does the work instead. */
+.mbt-scene__card {
+  min-width: 340px;
+  max-width: 460px;
+  padding: 14px 16px;
+  border: 1px solid var(--mbt-edge-world);
+  border-radius: var(--mbt-radius);
+  background:
+    radial-gradient(120% 60% at 50% 0%, rgba(var(--mbt-accent-rgb), 0.05), transparent 60%),
+    linear-gradient(180deg, var(--mbt-panel-top) 0%, var(--mbt-panel-mid) 54%, var(--mbt-panel-deep) 100%);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: mbt-scenein 180ms var(--mbt-ease-out);
+}
+
+.mbt-scene__card--warn { border-color: var(--mbt-warning); }
+
+/* The micro-label scale the rest of the product uses -- section heads in the
+   editor, the list creator, the photo tabs are all 9.5px at 1px of tracking.
+   This one was 12px at 0.06em, which made an eyebrow compete with the role
+   underneath it for the same job. */
+.mbt-scene__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-scene__head svg { color: var(--mbt-accent); flex: none; }
+
+/* The scene's own name, opposite the eyebrow. Sized back up because it is a
+   name a person wrote, not a label of ours. */
+.mbt-scene__name {
+  margin-left: auto;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--mbt-text-hi);
+}
+
+
+
+/* The label stays quiet: the name beside it is what is being said. */
+.mbt-scene__rolelabel {
+  flex: none;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--mbt-text-lo);
+}
+
+/* Two plates, for the two things you READ. The keys below stay unboxed: they
+   are what you DO, and a third box would make this a box inside a box inside a
+   box, which is heavier than the column of sentences it replaced. */
+
+/* Who you are. The hero of the whole session -- you are the Bride, you are the
+   Officiant -- and it used to be one line among five. */
+.mbt-scene__plate {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 11px;
+  padding: 9px 12px;
+  border-radius: var(--mbt-radius-sm);
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.24);
+  background: rgba(var(--mbt-accent-rgb), 0.08);
+}
+
+/* White, not accent. The plate underneath is already the accent-tinted one, so
+   the name does not have to carry the colour as well -- and white on that tint
+   is both more legible and more emphatic than green on green. The boldness gets
+   spent once. */
+.mbt-scene__rolename {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--mbt-text-hi);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* How it stands. Neutral on purpose: only one plate on this card gets to be
+   the accent one, or neither of them is. */
+.mbt-scene__board {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: var(--mbt-radius-sm);
+  border: 1px solid var(--mbt-edge);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.mbt-scene__stateline {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.mbt-scene__status {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mbt-text-hi);
+}
+
+/* Refusals are stated, not swallowed. */
+.mbt-scene__alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mbt-warning);
+}
+
+/* One slot per role, read at a glance. The four states are four different
+   shapes, not four shades: someone reading this is glancing between walking
+   and standing still, and colour alone would not survive that. */
+.mbt-scene__slots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  flex: none;
+}
+
+.mbt-scene__slot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1.5px solid var(--mbt-text-faint);
+  background: transparent;
+  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+
+/* Present and ready. */
+.mbt-scene__slot--ready {
+  border-color: var(--mbt-accent);
+  background: var(--mbt-accent);
+  box-shadow: 0 0 7px rgba(var(--mbt-accent-rgb), 0.55);
+}
+
+/* Here, not ready yet. */
+.mbt-scene__slot--here {
+  border-color: var(--mbt-accent);
+  background: rgba(var(--mbt-accent-rgb), 0.18);
+}
+
+/* Asked, no answer yet -- the only one that moves, because it is the only one
+   waiting on somebody. */
+.mbt-scene__slot--asked {
+  border-style: dashed;
+  border-color: var(--mbt-text-lo);
+  animation: mbt-slot-wait 1.8s ease-in-out infinite;
+}
+
+@keyframes mbt-slot-wait {
+  0%, 100% { opacity: 0.45; }
+  50%      { opacity: 1; }
+}
+
+.mbt-scene__progress {
+  margin-top: 5px;
+  font-family: var(--mbt-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-scene__note {
+  margin-top: 7px;
+  font-size: 13px;
+  color: var(--mbt-text-lo);
+}
+
+/* The action row. Unboxed on purpose -- it is what you DO, and the hairline
+   already separates it from the two plates above. */
+.mbt-scene__keys {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--mbt-border);
+}
+
+/* ── Finding your mark ──────────────────────────────────────────────────── */
+
+/* Both of these say "your mark" in words. Ownership carried by colour alone
+   fails for the ~8% of men with a colour vision deficiency, and green/amber is
+   the pair that fails most often. */
+/* Positioned the way the What's That bubble is: the screen projection arrives
+   as two custom properties and is composed into a single translate3d, so
+   tracking a mark never triggers layout. */
+.mbt-scene__pin {
+  position: fixed;
+  z-index: 34;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  transform: translate3d(
+    calc(var(--mbt-x, 0.5) * 100vw - 50%),
+    calc(var(--mbt-y, 0.5) * 100vh - 100% - 10px),
+    0
+  );
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.5);
+  border-radius: var(--mbt-radius-pill);
+  background: rgba(12, 14, 20, 0.85);
+  font-size: 13px;
+  color: var(--mbt-text-hi);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.mbt-scene__pin svg { color: var(--mbt-accent); }
+.mbt-scene__pin b { font-family: var(--mbt-font-mono); color: var(--mbt-accent); }
+
+.mbt-scene__compass {
+  position: fixed;
+  left: 50%;
+  top: 16vh;
+  transform: translateX(-50%);
+  z-index: 34;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid rgba(var(--mbt-accent-rgb), 0.35);
+  border-radius: var(--mbt-radius-pill);
+  background: rgba(12, 14, 20, 0.82);
+  font-size: 14px;
+  color: var(--mbt-text-hi);
+  pointer-events: none;
+}
+
+.mbt-scene__compass svg {
+  color: var(--mbt-accent);
+  transition: transform 90ms linear;
+}
+
+.mbt-scene__compass b { font-family: var(--mbt-font-mono); color: var(--mbt-accent); }
+
+/* ── Countdown ──────────────────────────────────────────────────────────── */
+
+.mbt-scene__count {
+  font-size: 92px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--mbt-accent);
+  text-shadow: 0 0 30px var(--mbt-accent-glow);
+  animation: mbt-scenecount 900ms var(--mbt-ease-out);
+}
+
+/* A bare number does not tell you to stay still, which is the one thing that
+   matters in the last three seconds. */
+.mbt-scene__hold {
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--mbt-text-hi);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes mbt-scenein {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mbt-scenecount {
+  0%   { opacity: 0; transform: scale(1.5); }
+  30%  { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.85; transform: scale(1); }
+}
+
+.mbt-overlay--perf .mbt-scene__slot--asked { animation: none !important; }
+
 @media (prefers-reduced-motion: reduce) {
+  .mbt-scene__slot--asked { animation: none !important; }
+
+
   /* Broad fallback — near-instant motion everywhere. The targeted rules
      below have higher specificity and keep a short opacity fade for the
      few surfaces that must stay legible appearing / disappearing. */
@@ -5028,6 +6132,16 @@ body {
   .mbt-openjoin.mbt-openjoin--leaving { opacity: 0 !important; }
   .mbt-whatsthat--on::after { opacity: 1 !important; }
   .mbt-openjoin::before, .mbt-whatsthat::before { opacity: 0 !important; }
+
+  /* Scene editor / spot prompt / scene session. */
+  .mbt-adminmenu__btn--flag::after { animation: none !important; }
+  .mbt-scene__pill, .mbt-scene__card { animation: none !important; }
+  .mbt-scene__compass svg { transition: none !important; }
+  .mbt-scene__count {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 
   /* View Transitions snapshot animations off. */
   ::view-transition-old(mbt-grid-content),

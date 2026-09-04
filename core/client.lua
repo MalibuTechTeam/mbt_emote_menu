@@ -34,7 +34,15 @@ local lastEmotePlayAt = 0
 --- @param emoteName string sanitized emote name
 --- @param emoteType string category name (Walks, Expressions, Shared, etc.)
 --- @param variation number|nil variation index (default 1)
-function Core.PlayEmoteRaw(emoteName, emoteType, variation)
+---@param silent? boolean true when this pose belongs to a scene or a seat.
+---
+---Such a pose is not something another player can join by copying it: it exists
+---at one position, in one orientation, and the place it belongs to has a fixed
+---number of them. Copying it stands you beside the bench performing a sit in
+---mid-air, and it competes with the offer that is already correct -- walk to a
+---free seat and press the key. Trending still counts the play; only the "join
+---this" offer is withheld.
+function Core.PlayEmoteRaw(emoteName, emoteType, variation, silent)
     local safeName = SanitizeName(emoteName)
     if not safeName or safeName == '' or not rpemotesResource then return end
 
@@ -64,7 +72,7 @@ function Core.PlayEmoteRaw(emoteName, emoteType, variation)
 
     Core.IncrementPlayCount(safeName)
 
-    if OpenJoin and OpenJoin.MaybeAnnounce then
+    if not silent and OpenJoin and OpenJoin.MaybeAnnounce then
         OpenJoin.MaybeAnnounce(safeName, emoteLabelByName[safeName] or safeName, safeType)
     end
     if Trending and Trending.MaybeReport then
@@ -158,14 +166,81 @@ local LOCALE_KEYS = {
     'settings_performance', 'settings_performance_hint', 'settings_closeonplay',
     'settings_language', 'settings_wheel', 'settings_wheel_radial',
     'settings_wheel_linear', 'settings_accent',
+    -- Admin group (ACE gated): update notice + owner diagnostics
+    'admin_title', 'admin_update_available', 'admin_update_open', 'admin_up_to_date',
+    'admin_check_failed', 'admin_diag_rpemotes', 'admin_diag_catalog',
+    'admin_diag_framework', 'admin_diag_placement', 'admin_diag_yes', 'admin_diag_no',
+    -- Scene editor
+    'editor_open', 'editor_title', 'editor_new_spot', 'editor_untitled',
+    'editor_actors', 'editor_actor_n', 'editor_first_actor',
+    'editor_place_here', 'editor_move_here', 'editor_move_actor', 'editor_back',
+    'editor_selected_actor', 'editor_shift',
+    'editor_place_here', 'editor_adjust_pose', 'editor_no_pose', 'editor_fast', 'editor_kind', 'editor_kind_seats', 'editor_kind_scene',
+    'editor_lead', 'editor_new', 'editor_existing',
+    'editor_edit', 'editor_all_scenes', 'editor_scene_title',
+    'editor_name_hint', 'editor_step_first', 'editor_step_finish',
+    'editor_step_name', 'editor_step_ready', 'editor_add_actor',
+    'editor_change_emote', 'editor_placing_actor', 'editor_kind_seats_hint',
+    'editor_kind_scene_hint', 'editor_kind_spot_short', 'editor_kind_seats_short',
+    'editor_kind_scene_short',
+    'editor_confirm_pose', 'editor_preview', 'no_results', 'editor_more',
+    'editor_add_mark', 'editor_remove_mark', 'editor_assign_emote', 'editor_role',
+    'editor_role_placeholder', 'editor_scene_name', 'editor_save', 'editor_saved',
+    'editor_rotate', 'editor_unsaved', 'editor_incomplete', 'editor_discard_q',
+    'editor_exit', 'editor_no_scenes', 'editor_delete_scene', 'editor_delete_q',
+    'editor_save_failed',
+    'scene_ready_cleared',
+    'photo_key_custom', 'photo_light_move', 'photo_light_move_hint',
+    'photo_light_hint', 'photo_light_elev', 'photo_light_dist',
+    'photo_tab_filters', 'photo_tab_light', 'photo_tab_scene',
+    'photo_light_on', 'photo_light_off', 'photo_light_power',
+    'photo_light_warmth', 'photo_key_front', 'photo_key_side',
+    'photo_key_rim', 'photo_hour', 'photo_hour_dawn',
+    'photo_hour_noon', 'photo_hour_dusk', 'photo_hour_night',
+    'photo_server_time', 'photo_sky_server',
+    'editor_height',
+    'editor_first_actor_hint',
+    'editor_name_help', 'editor_actors_help',
+    'editor_delete_title', 'editor_delete_body',
+    'editor_deleted', 'editor_delete_failed',
+    'editor_seat_placeholder',
+    'admin_running', 'admin_latest_release', 'admin_settings',
+    'admin_accent', 'admin_accent_sub', 'admin_apply', 'admin_reset',
+    'scene_end_expired',
+    'admin_contrast',
+    'admin_update_headline', 'admin_update_sub',
+    'editor_search', 'editor_tab_all', 'editor_tab_spots',
+    'editor_tab_seats', 'editor_tab_scenes', 'editor_resultbar',
+    'editor_sort_near', 'editor_sort_near_hint', 'editor_goto',
+    'editor_goto_missing', 'editor_no_match', 'editor_no_match_hint',
+    'editor_none_hint',
+    -- Scene / spot runtime
+    'scene_invite', 'scene_your_role', 'scene_join', 'scene_decline',
+    'scene_your_mark', 'scene_walk', 'scene_on_mark', 'scene_ready',
+    'scene_not_ready', 'scene_ready_hold', 'scene_too_far', 'scene_leave',
+    'scene_cancel', 'scene_counts', 'scene_pending', 'scene_solo',
+    'scene_needs_people', 'scene_hold', 'scene_hold_role', 'scene_reassigned',
+    'scene_end_timeout', 'scene_end_cancelled', 'scene_end_host',
+    'scene_end_without', 'scene_end_role', 'scene_end_you', 'scene_end_declined',
+    'scene_all_taken', 'scene_seats',
 }
 
 local function BuildLocaleStrings()
-    local L = MBT.Locale or {}
+    local L = MBT.Locale
     local out = {}
+
     for _, key in ipairs(LOCALE_KEYS) do
-        out[key] = L[key] or key
+        local value = L and L[key]
+        -- Translate() answers with the key itself when it has no string for
+        -- it, and MBT.Locale does not exist at all until its own thread has
+        -- run. Forwarding either one paints an identifier on screen: the panel
+        -- writes every string as `t.foo || "English sentence"`, and a truthy
+        -- key beats that fallback. Leaving the key out is what lets it fire.
+        if type(value) == 'string' and value ~= key then
+            out[key] = value
+        end
     end
+
     return out
 end
 
@@ -207,6 +282,11 @@ local ACCENT_PRESETS = {
     { hex = 'fb7185', label = 'Rose' },
 }
 
+-- The accent an admin chose for this server, pushed by the server module.
+-- nil until it answers, which is why the factory value has to stand on its
+-- own: the menu can be opened before the round trip lands.
+local serverAccent = nil
+
 local function isAccentPreset(hex)
     for _, p in ipairs(ACCENT_PRESETS) do if p.hex == hex then return true end end
     return false
@@ -233,6 +313,7 @@ local function BuildMenuConfig()
     -- Theme is copied so a player accent never mutates the shared config table.
     local theme = {}
     for k, v in pairs(MBT.Theme or {}) do theme[k] = v end
+    if serverAccent then theme.Accent = serverAccent end
     if allowAccentChange and type(prefs.accent) == 'string' and isAccentPreset(prefs.accent) then
         theme.Accent = prefs.accent
     end
@@ -291,6 +372,32 @@ RegisterNUICallback('savePref', function(data, cb)
     cb({ ok = true, config = BuildMenuConfig(), locale = BuildLocaleStrings() })
 end)
 
+RegisterNetEvent('mbt_emote_menu:theme:sync', function(hex)
+    if type(hex) ~= 'string' or hex:match('^%x%x%x%x%x%x$') ~= hex then return end
+    if serverAccent == hex then return end
+    serverAccent = hex
+    -- Only worth telling the panel while it is on screen; otherwise the
+    -- next open builds the config fresh anyway.
+    if isOpen then
+        SendNUIMessage({ action = 'config', config = BuildMenuConfig() })
+    end
+end)
+
+-- Writing is gated server-side on every call. Nothing here is trusted:
+-- the panel only renders for an admin, and that is a convenience, not the
+-- check.
+RegisterNUICallback('themeSet', function(data, cb)
+    if type(data) == 'table' and type(data.accent) == 'string' then
+        TriggerServerEvent('mbt_emote_menu:theme:set', data.accent)
+    end
+    cb({ ok = true })
+end)
+
+RegisterNUICallback('themeReset', function(_, cb)
+    TriggerServerEvent('mbt_emote_menu:theme:reset')
+    cb({ ok = true })
+end)
+
 function Core.OpenMenu()
     if isOpen then return end
 
@@ -345,6 +452,10 @@ function Core.OpenMenu()
         Trending.Request()
     end
 
+    -- Asked per open, not cached: the server answers only ACE holders, and it
+    -- answers with silence otherwise. No HTTP happens here.
+    TriggerServerEvent('mbt_emote_menu:requestAdminInfo')
+
     Utils.MbtDebugger('Menu opened')
 end
 
@@ -360,6 +471,15 @@ end
 
 function Core.IsMenuOpen()
     return isOpen
+end
+
+---@param name string
+---@return table|nil catalog entry
+function Core.GetEmoteByName(name)
+    if type(name) ~= 'string' then return nil end
+    for i = 1, #emoteCatalog do
+        if emoteCatalog[i].name == name then return emoteCatalog[i] end
+    end
 end
 
 -------------------------------------------------------------------------------
@@ -956,6 +1076,7 @@ local function RequestInitialData()
     Core.LoadRecent()
     RequestEmoteCatalog()
     TriggerServerEvent('mbt_emote_menu:requestEcosystemStatus')
+    TriggerServerEvent('mbt_emote_menu:theme:request')
     if MBT.JobPermissions and MBT.JobPermissions.Enabled then
         TriggerServerEvent('mbt_emote_menu:requestPlayerJob')
     end
@@ -980,4 +1101,63 @@ AddEventHandler('onResourceStop', function(resourceName)
             isOpen = false
         end
     end
+end)
+
+-------------------------------------------------------------------------------
+-- [ ADMIN PAYLOAD — update notice, diagnostics, editor unlock ] --
+--
+-- Arrives only for players the server has already authorised via ACE. The
+-- client never asks "am I an admin?" and never stores the answer: it forwards
+-- an already-authorised payload to the NUI and nothing more.
+-------------------------------------------------------------------------------
+
+-- Local facts about this client's install. Not secret in themselves, but only
+-- ever assembled and sent once the server has authorised the request.
+local function BuildDiagnostics(info)
+    local rpVersion = 'not detected'
+    if rpemotesResource then
+        local _, ver = Utils.CheckResourceVersion(rpemotesResource, RPEMOTES_MIN_VERSION)
+        rpVersion = ver or 'unknown'
+    end
+
+    local status = type(info.status) == 'table' and info.status or {}
+
+    return {
+        rpemotesResource = rpemotesResource or 'not detected',
+        rpemotesExport   = rpemotesExportName,
+        rpemotesVersion  = rpVersion,
+        rpemotesMin      = RPEMOTES_MIN_VERSION,
+        catalogCount     = #emoteCatalog,
+        placement        = placementAvailable,
+        framework        = type(info.framework) == 'string' and info.framework or 'unknown',
+        versionCurrent   = type(status.current) == 'string' and status.current or nil,
+        versionLatest    = type(status.latest) == 'string' and status.latest or nil,
+        versionChecked   = status.checked == true,
+    }
+end
+
+RegisterNetEvent('mbt_emote_menu:receiveAdminInfo', function(info)
+    if type(info) ~= 'table' then return end
+    -- A reply that lands after the menu closed is simply dropped; the next
+    -- open asks again. Same guard the job payload uses.
+    if not isOpen then return end
+
+    local update = nil
+    local u = info.update
+    if type(u) == 'table'
+        and type(u.current) == 'string'
+        and type(u.latest) == 'string'
+        and type(u.url) == 'string'
+        -- Pin the destination: a handler invoked locally by an executor must
+        -- not be able to hand openUrl an arbitrary link.
+        and u.url:find('^https://github%.com/MalibuTechTeam/') then
+        update = { current = u.current, latest = u.latest, url = u.url }
+    end
+
+    SendNUIMessage({
+        action      = 'adminInfo',
+        update      = update,
+        diagnostics = BuildDiagnostics(info),
+        editor      = info.editor == true,
+    })
 end)

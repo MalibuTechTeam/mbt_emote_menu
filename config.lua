@@ -143,7 +143,11 @@ MBT.PhotoMode = {
     OrbitSensitivity = 0.45, -- drag -> rotation speed
     ZoomSensitivity  = 0.30, -- scroll -> zoom speed
     MinDistance      = 0.7,  -- closest the camera can get (m)
-    MaxDistance      = 7.0,  -- farthest (m)
+    -- Far enough to put a group in shot. Seven was chosen when the camera could
+    -- only look at you, which made a longer arm pointless; now that the framing
+    -- can slide (right-drag), the distance is what lets it contain the people
+    -- it slid onto.
+    MaxDistance      = 12.0, -- farthest (m)
     DofDefault       = true, -- start with depth-of-field (background blur) on
 
     -- Look presets, applied as GTA timecycle modifiers. 'timecycle' = nil means
@@ -156,6 +160,47 @@ MBT.PhotoMode = {
         { id = 'warm',    label = 'Warm',      timecycle = 'phone_cam1',  strength = 1.0 },
         { id = 'vibrant', label = 'Vibrant',   timecycle = 'phone_cam2',  strength = 1.0 },
         { id = 'cool',    label = 'Cool',      timecycle = 'phone_cam4',  strength = 1.0 },
+    },
+
+    -- Key light. One photographic light placed relative to the CAMERA, so it
+    -- keeps the same relationship to the shot however far the player orbits.
+    -- Costs one native per frame inside the loop photo mode already runs, and
+    -- nothing at all while photo mode is closed.
+    Lighting = {
+        Enabled          = true, -- false hides the Light tab entirely
+        DefaultOn        = false,
+        DefaultIntensity = 3.0,   -- 0.5 - 8.0
+        DefaultWarmth    = 0.0,   -- -1.0 cool ... 0 daylight ... +1.0 tungsten
+        DefaultKey       = 'front', -- 'front' | 'side' | 'rim'
+        Range            = 5.0,   -- metres the light reaches
+    },
+
+    -- Hour and sky, for the photographer only.
+    --
+    -- Both natives are client-side: the sun moves and the sky changes for the
+    -- person holding the camera and for nobody else, and everything is handed
+    -- back when they close photo mode.
+    --
+    -- KNOWN LIMIT, worth reading before you promise this to anyone: almost
+    -- every server runs a weather sync (vSync, cd_easytime, qb-weathersync...)
+    -- that pushes its own state back every few seconds. We re-assert ours on a
+    -- 1.5 s beat to stay on top of it, which works against the common ones but
+    -- cannot be guaranteed against all of them. Set Enabled = false if your
+    -- weather script fights it or if you would rather players did not.
+    Environment = {
+        Enabled = true, -- false hides the Scene tab entirely
+
+        -- Sky presets. 'id' must be a real GTA weather type; 'label' is what
+        -- the player reads. Order here is order on screen.
+        Weathers = {
+            { id = 'EXTRASUNNY', label = 'Clear'   },
+            { id = 'CLOUDS',     label = 'Cloudy'  },
+            { id = 'OVERCAST',   label = 'Grey'    },
+            { id = 'FOGGY',      label = 'Fog'     },
+            { id = 'RAIN',       label = 'Rain'    },
+            { id = 'THUNDER',    label = 'Storm'   },
+            { id = 'SNOWLIGHT',  label = 'Snow'    },
+        },
     },
 
     -- Send-to-Discord (optional). When Enabled and a WebhookUrl is set, a
@@ -203,16 +248,14 @@ MBT.BannedEmotes = {
 -- [ SECTION 5: THEME ] --
 -------------------------------------------------------------------------------
 
--- Menu colors, sent to the UI at startup. Hex without '#'.
-MBT.Theme = {
-    Accent            = '00e676', -- Brand green — the server's accent for everyone
-    AllowAccentChange = false,    -- Keep the accent admin-controlled. Set true only if you want players to pick their own preset in the settings
-    Background        = '0C0E14', -- Background
-    Card              = '141720', -- Card / panel
-    Text              = 'E8E8EE', -- Primary text
-    SubText           = '6B7280', -- Secondary text
-    Border            = '1A1D26', -- Borders
-}
+-- Colours moved OUT of this file in 1.8.0. They now live in default.lua as the
+-- shipped values, and an admin changes them in game from the shield menu --
+-- server-wide, for everyone, without a restart.
+--
+-- One switch stays here, because it is a policy and not a colour: whether
+-- players may pick their own accent from the curated presets.
+MBT.Theme = MBT.Theme or {}
+MBT.Theme.AllowAccentChange = false
 
 -------------------------------------------------------------------------------
 -- [ SECTION 6: MBT ECOSYSTEM INTEGRATION ] --
@@ -225,7 +268,65 @@ MBT.Ecosystem = {
 }
 
 -------------------------------------------------------------------------------
--- [ SECTION 7: JOB PERMISSIONS ] --
+-- [ SECTION 7: ADMIN ACCESS ] --
+-------------------------------------------------------------------------------
+
+-- Everything in this section is gated behind one FiveM ACE permission.
+--
+-- Brand convention (patterns/admin-command-naming): the command that opens the
+-- admin surface IS the resource name, and the permission derives from it as
+-- 'command.mbt_emote_menu'. That ACE is auto-registered by FiveM and is already
+-- covered by the wildcard most servers run (add_ace group.admin command allow),
+-- so a normal setup needs NO extra server.cfg line.
+--
+-- Players without it never receive this data: the server simply does not answer
+-- them, so there is nothing to hide client-side and nothing to leak.
+MBT.Admin = {
+    Command    = 'mbt_emote_menu', -- /mbt_emote_menu opens the scene editor
+    Permission = nil,              -- nil -> 'command.' .. Command
+
+    -- "Update available" notice, shown only to the players above, inside the
+    -- menu's settings popover. The console line prints regardless.
+    UpdateNotice = {
+        Enabled    = true,
+        Repository = 'MalibuTechTeam/mbt_emote_menu',
+    },
+
+    -- In-game scene editor: place marks in the world, assign an emote and a
+    -- role to each, save. Scenes are stored in MySQL (table
+    -- mbt_emote_menu_scenes, created automatically on first boot), so they
+    -- survive script updates and live in your normal database backups.
+    -- Requires oxmysql; without it the editor stays off and the rest of the
+    -- menu is unaffected.
+    Editor = {
+        Enabled  = true,
+        MaxMarks = 12,   -- per scene
+        MaxScenes = 200, -- per server
+    },
+}
+
+-- Scenes and spots authored with the in-game editor. The definitions live in
+-- the database, not here: an owner places them in the world instead of typing
+-- coordinates. This section only controls how they behave once placed.
+MBT.VenueSpots = {
+    Enabled = true,
+    PollMs  = 750,  -- how often we check whether you walked into one
+    Key     = 'E',  -- shown in the prompt; the control itself is E
+
+    -- Seconds counted down before a multi-actor scene fires. Everyone is
+    -- already standing on their mark by then, so this is bracing time, not a
+    -- race start: too short and the shot begins before anyone has looked up.
+    CountdownFrom = 5,
+
+    -- Place the player exactly on the mark before the emote runs. This is the
+    -- point of authoring a position: an emote that leans on a counter only
+    -- looks right from the spot and angle it was placed at. Turn it off only
+    -- if you would rather the emote played wherever the player is standing.
+    SnapToMark = true,
+}
+
+-------------------------------------------------------------------------------
+-- [ SECTION 8: JOB PERMISSIONS ] --
 -------------------------------------------------------------------------------
 
 -- Restrict emotes to jobs — players without the job see them locked.
@@ -243,7 +344,7 @@ MBT.JobPermissions = {
 }
 
 -------------------------------------------------------------------------------
--- [ SECTION 8: NOTIFICATIONS ] --
+-- [ SECTION 9: NOTIFICATIONS ] --
 -------------------------------------------------------------------------------
 
 -- Notification handler. Uncomment the preset for your framework.
