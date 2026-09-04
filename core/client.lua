@@ -206,6 +206,7 @@ local LOCALE_KEYS = {
     'editor_seat_placeholder',
     'admin_running', 'admin_latest_release', 'admin_settings',
     'admin_accent', 'admin_accent_sub', 'admin_apply', 'admin_reset',
+    'scene_end_expired',
     'admin_contrast',
     'admin_update_headline', 'admin_update_sub',
     'editor_search', 'editor_tab_all', 'editor_tab_spots',

@@ -311,6 +311,7 @@ RegisterLocale('it', {
     ['scene_end_role']                 = 'Quel ruolo era gia occupato',
     ['scene_end_you']                  = 'Hai lasciato la scena',
     ['scene_end_declined']             = 'Invito rifiutato',
+    ['scene_end_expired']             = 'L’invito è scaduto',
     ['editor_confirm_pose']            = 'Conferma la posa',
     ['editor_preview']                 = 'Prova la posa',
     ['no_results']                     = 'Nessun emote trovato',

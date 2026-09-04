@@ -180,12 +180,35 @@ local function releaseSeat(src, silent)
     if not silent then broadcastOccupancy(seat.sceneId) end
 end
 
+local lastClaim = {}
+local CLAIM_THROTTLE_MS = 400
+
 ---Hands out the first free mark, or nothing when they are all taken.
-RegisterNetEvent('mbt_emote_menu:scenes:claim', function(sceneId, markCount, preferred)
+---
+---The client sends an id and the seat it walked up to, and nothing else it
+---says is load-bearing: the scene and its mark count come from storage. Before
+---this, any id was accepted -- so a modified client could hold a seat it was
+---nowhere near, or invent ids to grow `occupied` without bound while every one
+---of them broadcast to every player on the server.
+RegisterNetEvent('mbt_emote_menu:scenes:claim', function(sceneId, preferred)
     local src = source
     if not src or src <= 0 then return end
-    if type(sceneId) ~= 'string' or type(markCount) ~= 'number' then return end
-    if markCount < 1 or markCount > 64 then return end
+    if type(sceneId) ~= 'string' then return end
+
+    local now = GetGameTimer()
+    local last = lastClaim[src]
+    if last and (now - last) < CLAIM_THROTTLE_MS then return end
+    lastClaim[src] = now
+
+    local scene = GetMbtEmoteScene and GetMbtEmoteScene(sceneId)
+    if not scene or type(scene.marks) ~= 'table' then return end
+
+    local markCount = #scene.marks
+    if markCount < 1 then return end
+
+    -- Standing at the scene is what makes this a seat and not a remote
+    -- reservation. withinScene now measures against the STORED first mark.
+    if not withinScene(src, scene) then return end
 
     -- Leaving one seat to take another is normal; holding two is not.
     releaseSeat(src, true)
@@ -257,16 +280,21 @@ RegisterNetEvent('mbt_emote_menu:syncHeading', function(heading)
     Player(src).state:set('mbtEmoteHeading', heading, true)
 end)
 
-RegisterNetEvent('mbt_emote_menu:scenes:start', function(scene, targets)
+RegisterNetEvent('mbt_emote_menu:scenes:start', function(sceneId, targets)
     local src = source
     if not src or src <= 0 then return end
     if sessions[src] or playerSession[src] then return end
 
-    -- The scene definition is echoed back by the client that already received
-    -- it from the editor broadcast, so re-check the shape rather than the
-    -- contents: a forged scene can only ever hurt the forger's own session,
-    -- and every emote still goes through rpemotes' own execution path.
-    if type(scene) ~= 'table' or type(scene.marks) ~= 'table' then return end
+    -- The client sends an id. It used to send the whole scene, with a comment
+    -- claiming a forged one "can only ever hurt the forger's own session" --
+    -- which was false: `give()` below hands session.scene.marks[i] straight to
+    -- the INVITEE, so a mark with a nonnumeric coordinate landed on somebody
+    -- else's client and poisoned their navigation arithmetic. The definition
+    -- now comes from storage, where it has been validated.
+    if type(sceneId) ~= 'string' then return end
+
+    local scene = GetMbtEmoteScene and GetMbtEmoteScene(sceneId)
+    if not scene or type(scene.marks) ~= 'table' then return end
     if #scene.marks < 2 then return end
     if not withinScene(src, scene) then return end
 
@@ -279,6 +307,11 @@ RegisterNetEvent('mbt_emote_menu:scenes:start', function(scene, targets)
         ready    = {},
         members  = { [src] = true },
         offered  = {},
+        -- When each outstanding invitation stops being answerable. The client
+        -- was already told `timeoutMs`; before this nothing enforced it, so an
+        -- unanswered invite sat on screen blocking other prompts and could
+        -- still be accepted long after the 30 seconds it promised.
+        offerExpires = {},
         state    = 'gathering',
         expiresAt = GetGameTimer() + READY_TTL_MS,
     }
@@ -294,6 +327,7 @@ RegisterNetEvent('mbt_emote_menu:scenes:start', function(scene, targets)
                 session.members[target] = true
                 playerSession[target] = src
                 session.offered[target] = nextMark
+                session.offerExpires[target] = GetGameTimer() + INVITE_TTL_MS
 
                 local mark = scene.marks[nextMark]
                 TriggerClientEvent('mbt_emote_menu:scenes:invite', target, {
@@ -375,16 +409,17 @@ RegisterNetEvent('mbt_emote_menu:scenes:accept', function()
     playerSession[src] = nil
 end)
 
-RegisterNetEvent('mbt_emote_menu:scenes:decline', function()
-    local src = source
-    local hostSrc = playerSession[src]
-    local session = hostSrc and sessions[hostSrc]
-    if not session then return end
-
+---Takes a player out of a session: declined, or never answered.
+---
+---One function and not two: an invitation that expires has to leave the
+---session in exactly the state a declined one does, and a second code path
+---would be free to drift away from this one.
+local function dropMember(session, src)
     session.assigned[src] = nil
     session.ready[src] = nil
     session.members[src] = nil
     session.offered[src] = nil
+    if session.offerExpires then session.offerExpires[src] = nil end
     playerSession[src] = nil
 
     -- Ready meant "I will perform this scene with these people". One of them
@@ -400,8 +435,19 @@ RegisterNetEvent('mbt_emote_menu:scenes:decline', function()
         end
     end
 
-    touch(session)
+    -- Deliberately NOT touch(): leaving is not activity in the session, and an
+    -- expiring invitation is the absence of it. The decline path touches
+    -- because somebody pressed a key.
     broadcastProgress(session)
+end
+
+RegisterNetEvent('mbt_emote_menu:scenes:decline', function()
+    local src = source
+    local hostSrc = playerSession[src]
+    local session = hostSrc and sessions[hostSrc]
+    if not session then return end
+    dropMember(session, src)
+    touch(session)
 end)
 
 RegisterNetEvent('mbt_emote_menu:scenes:ready', function(isReady)
@@ -431,6 +477,22 @@ CreateThread(function()
         for hostSrc, session in pairs(sessions) do
             if session.state ~= 'countdown' and session.deadline and now > session.deadline then
                 clearSession(hostSrc, 'timeout')
+
+            elseif session.state ~= 'countdown' and session.offerExpires then
+                -- Collected first, dropped after: dropMember writes into the
+                -- table this loop would be walking.
+                local lapsed
+                for target, at in pairs(session.offerExpires) do
+                    if now > at then
+                        lapsed = lapsed or {}
+                        lapsed[#lapsed + 1] = target
+                    end
+                end
+                for i = 1, (lapsed and #lapsed or 0) do
+                    local target = lapsed[i]
+                    dropMember(session, target)
+                    TriggerClientEvent('mbt_emote_menu:scenes:ended', target, 'invite-expired')
+                end
             end
         end
     end
@@ -445,6 +507,7 @@ end)
 
 AddEventHandler('playerDropped', function()
     local src = source
+    lastClaim[src] = nil
     releaseSeat(src)
 
     if sessions[src] then

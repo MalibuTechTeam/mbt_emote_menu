@@ -311,6 +311,7 @@ RegisterLocale('en', {
     ['scene_end_role']                 = 'That role was already taken',
     ['scene_end_you']                  = 'You left the scene',
     ['scene_end_declined']             = 'Invite declined',
+    ['scene_end_expired']             = 'The invitation expired',
     ['editor_confirm_pose']            = 'Confirm the pose',
     ['editor_preview']                 = 'Preview the pose',
     ['no_results']                     = 'No emotes found',

@@ -121,6 +121,17 @@ function Core.CreatePosePed(data, coords, heading)
             CreateThread(function()
                 local hash = GetHashKey(propName)
                 if not Utils.RequestModel(hash, 3000) then return end
+
+                -- RequestModel is the only yield in this thread, so a preview
+                -- torn down while we waited is visible here and nowhere else.
+                -- Creating the object anyway left it attached to a deleted ped
+                -- -- an orphan for the rest of the session, because nothing
+                -- held a reference to it any more.
+                if handle.destroyed then
+                    SetModelAsNoLongerNeeded(hash)
+                    return
+                end
+
                 local ent = CreateObject(hash, 0.0, 0.0, 0.0, false, false, false)
                 AttachEntityToEntity(ent, ped, GetPedBoneIndex(ped, boneId or 28422),
                     placement and placement[1] or 0.0,
@@ -149,6 +160,9 @@ end
 
 function Core.DestroyPosePed(handle)
     if not handle then return end
+    -- Prop loading is asynchronous, so one of those threads may still be
+    -- waiting on RequestModel right now. This is what tells it not to bother.
+    handle.destroyed = true
     for _, ent in ipairs(handle.props) do
         if DoesEntityExist(ent) then DeleteEntity(ent) end
     end

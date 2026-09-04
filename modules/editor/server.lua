@@ -144,20 +144,48 @@ local function broadcast(target)
     TriggerClientEvent('mbt_emote_menu:scenes:sync', target or -1, scenes)
 end
 
+---The stored definition of a scene, or nil when there is no such scene.
+---
+---Global on purpose, the way `IsMbtEmoteAdmin` is: this file loads before
+---modules/scenes/server.lua, which needs the AUTHORITATIVE scene rather than
+---whatever a client says a scene is. Everything in here has been through the
+---validator on the way in.
+---@param id any
+---@return table|nil
+function GetMbtEmoteScene(id)
+    if type(id) ~= 'string' then return nil end
+    for i = 1, #scenes do
+        if scenes[i].id == id then return scenes[i] end
+    end
+    return nil
+end
+
 local function indexOfId(id)
     for i = 1, #scenes do
         if scenes[i].id == id then return i end
     end
 end
 
+-- The highest number handed out since this resource started.
+--
+-- Without it, two admins saving a NEW scene at the same time both read the same
+-- cached `scenes` -- the first one is still waiting on its database write -- and
+-- both derive the same id. The second write then overwrites the first scene
+-- instead of adding one, silently.
+local issuedHighest = 0
+
 local function nextId()
-    -- Derived from what is already stored, so it stays stable across restarts.
-    local highest = 0
+    -- Derived from what is already stored, so it stays stable across restarts,
+    -- and from what this session has already promised, so a pending write is
+    -- not invisible. Nothing yields between reading and bumping: that is what
+    -- makes the reservation atomic.
+    local highest = issuedHighest
     for i = 1, #scenes do
         local n = tonumber(tostring(scenes[i].id or ''):match('(%d+)$') or '')
         if n and n > highest then highest = n end
     end
-    return ('scene_%d'):format(highest + 1)
+    issuedHighest = highest + 1
+    return ('scene_%d'):format(issuedHighest)
 end
 
 -------------------------------------------------------------------------------

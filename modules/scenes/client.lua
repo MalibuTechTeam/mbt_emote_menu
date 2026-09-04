@@ -102,6 +102,7 @@ local END_REASONS = {
     ['role-taken']          = { 'scene_end_role',      'That role was already taken' },
     ['you-left']            = { 'scene_end_you',       'You left the scene' },
     declined                = { 'scene_end_declined',  'Invite declined' },
+    ['invite-expired']      = { 'scene_end_expired',   'The invitation expired' },
 }
 
 local function notifyEnd(reason)
@@ -438,13 +439,13 @@ local function trigger(scene)
         -- Ask which seat is free. A spot is just a one-seat version of this,
         -- so both go the same way and neither can double-book.
         hidePrompt()
-        TriggerServerEvent('mbt_emote_menu:scenes:claim', scene.id, #scene.marks, preferredMark(scene))
+        TriggerServerEvent('mbt_emote_menu:scenes:claim', scene.id, preferredMark(scene))
         return
     end
 
     -- A scene needs other people. Offer everyone in range; the server decides
     -- who actually fits and validates that each one is really near the marks.
-    TriggerServerEvent('mbt_emote_menu:scenes:start', scene, nearbyServerIds(25.0))
+    TriggerServerEvent('mbt_emote_menu:scenes:start', scene.id, nearbyServerIds(25.0))
     hidePrompt()
 end
 
