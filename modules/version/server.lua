@@ -52,6 +52,13 @@ CreateThread(function()
         return
     end
 
+    -- Published NOW, before the network is involved: the version you run comes
+    -- from the manifest and is already known. Only the COMPARISON needs
+    -- GitHub. Without this the admin panel spent the first seconds after every
+    -- restart showing an em dash and "update check failed", which is a lie
+    -- about two separate things at once.
+    MBT.UpdateStatus = { current = current, checked = false }
+
     -- Never urgent: let the server finish booting first.
     SetTimeout(2000, function()
         PerformHttpRequest(('https://api.github.com/repos/%s/releases/latest'):format(REPO),

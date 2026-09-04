@@ -5303,25 +5303,63 @@ body {
 }
 
 /* Un blocco di Impostazioni: intestazione, controllo, azioni. */
+/* Le due schede di Impostazioni sono SUPERFICI, non bersagli. Prendono il
+   trattamento di .mbt-card -- cosi' la card dell'accent e quella della
+   versione sono la stessa cosa -- meno tutto cio' che le farebbe sembrare
+   premibili: il cursore a mano, il cambio di sfondo sull'hover e la
+   transizione su transform, che e' il movimento che si notava passandoci
+   sopra. */
+.mbt-admin__card {
+  cursor: default;
+  padding: 12px 13px 13px;
+  gap: 10px;
+  user-select: auto;
+  -webkit-user-drag: auto;
+  /* Le stesse transizioni della card, meno transform: il bordo si accende,
+     la scheda non si alza. */
+  transition:
+    background 0.18s var(--mbt-ease-out),
+    border-color 0.18s,
+    box-shadow 0.18s;
+}
+
+/* Il bordo e il bagliore restano -- dicono "il puntatore e qui". Il
+   translateY no: su una superficie che non si preme, il sollevamento
+   promette una pressione che non succede. */
+.mbt-card.mbt-admin__card:hover { transform: none; }
+
 .mbt-admin__section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px 13px 13px;
-  border-radius: var(--mbt-radius-sm);
-  border: 1px solid var(--mbt-edge);
-  background: var(--mbt-surface-2);
 }
 
-.mbt-admin__sechead { display: flex; flex-direction: column; gap: 2px; }
-.mbt-admin__sechead b { font-size: 12.5px; font-weight: 600; color: var(--mbt-text-mid); }
-.mbt-admin__sechead small { font-size: 10.5px; color: var(--mbt-text-lo); }
-
-.mbt-admin__accent {
+/* Etichetta a sinistra, controllo a destra: la forma di .mbt-setting in
+   mbt_malisling. Un pannello MBT si riconosce da questa riga. */
+.mbt-admin__sechead {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 14px;
 }
+
+.mbt-admin__secinfo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mbt-admin__secinfo b { font-size: 13px; font-weight: 600; color: var(--mbt-text-hi); }
+.mbt-admin__secinfo small { font-size: 11.5px; line-height: 1.35; color: var(--mbt-text-lo); }
+
+/* Il resto della sezione, sotto un filo. Il filo dice "questo appartiene a
+   quello sopra" senza costruire una seconda scheda. */
+.mbt-admin__secbody {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 11px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(255, 255, 255, 0.055);
+}
+
+.mbt-admin__secactions { display: flex; gap: 8px; }
+.mbt-admin__secactions .mbt-modal__btn { gap: 6px; }
 
 /* Il rapporto di contrasto dell'accent sul pannello. Sotto 3:1 lo stato --
    caselle pronte, chip attivi -- smette di staccarsi dal suo sfondo, quindi
@@ -5330,8 +5368,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  margin-left: auto;
-  text-align: right;
+  min-width: 0;
 }
 
 .mbt-admin__ratio b {
@@ -5344,8 +5381,43 @@ body {
 .mbt-admin__ratio b.mbt-admin__ratio--low { color: var(--mbt-warning); }
 .mbt-admin__ratio small { font-size: 9.5px; color: var(--mbt-text-faint); }
 
-.mbt-admin__accentbtns { display: flex; gap: 8px; }
-.mbt-admin__accentbtns .mbt-modal__btn { flex: 1; gap: 6px; }
+
+/* I link di marca, in fondo a Impostazioni. Distribuiti sulla larghezza cosi'
+   leggono come una banda voluta invece che come quattro icone smarrite -- e'
+   il trattamento che mbt_malisling da' al suo rail. */
+.mbt-admin__links {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: none;
+  padding: 10px 4px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.mbt-admin__link {
+  /* 26px: sopra i 24 richiesti da WCAG 2.2 per un bersaglio. */
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--mbt-radius-sm);
+  color: var(--mbt-text-faint);
+  background: transparent;
+  text-decoration: none;
+  transition: color 120ms var(--mbt-ease-out), background 120ms var(--mbt-ease-out);
+}
+
+.mbt-admin__link:hover {
+  color: var(--mbt-accent);
+  background: var(--mbt-surface-2);
+}
+
+/* Chi naviga da tastiera non vede l'hover: senza questo resta cieco. */
+.mbt-admin__link:focus-visible {
+  outline: none;
+  color: var(--mbt-accent);
+  box-shadow: 0 0 0 2px var(--mbt-accent-glow);
+}
 
 /* Un aggiornamento disponibile, sulla riga a cui appartiene invece che come
    secondo distintivo sullo scudo. */
@@ -5387,27 +5459,66 @@ body {
 /* Only the update state is pressable, and it says so: amber fill, a hover, a
    focus ring, and a pointer. Amber is informational here, not an error. */
 .mbt-admin__health--update {
-  cursor: pointer;
   border-color: rgba(251, 140, 0, 0.3);
   background: rgba(251, 140, 0, 0.09);
 }
 
-.mbt-admin__health--update:hover {
-  border-color: rgba(251, 140, 0, 0.45);
-  background: rgba(251, 140, 0, 0.15);
-}
 
-.mbt-admin__health--update:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(251, 140, 0, 0.35);
-}
 
-.mbt-admin__health--update .mbt-card__label { color: var(--mbt-warning); }
-.mbt-admin__healthgo { color: var(--mbt-warning); }
 
 /* Facts sit where a card's drawer sits: below the row, inside the same border.
    As one flat mono line they wrapped mid-phrase and read as a broken sentence;
    as equal cells each one ellipsises on its own. */
+/* Testata: disco, versione, stato. La versione e' il titolo perche' e' il
+   motivo per cui si apre questa scheda. */
+.mbt-admin__healthhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 2px 10px;
+}
+
+.mbt-admin__healthver {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--mbt-font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--mbt-text-hi);
+}
+
+.mbt-admin__healthver svg { color: var(--mbt-text-faint); flex: none; }
+.mbt-admin__healthnew { color: var(--mbt-warning); }
+
+/* Lo stato in parola, non solo in colore: il colore da solo non e' un
+   messaggio per chi non lo distingue. */
+.mbt-admin__healthtag {
+  margin-left: auto;
+  flex: none;
+  padding: 3px 9px;
+  border-radius: var(--mbt-radius-pill);
+  border: 1px solid var(--mbt-edge);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--mbt-text-lo);
+}
+
+.mbt-admin__healthtag--ok {
+  color: var(--mbt-success);
+  border-color: rgba(34, 197, 94, 0.32);
+}
+
+.mbt-admin__healthtag--update {
+  color: var(--mbt-warning);
+  border-color: rgba(251, 140, 0, 0.38);
+  background: rgba(251, 140, 0, 0.09);
+}
+
 .mbt-admin__facts {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

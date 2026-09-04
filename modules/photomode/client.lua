@@ -88,6 +88,30 @@ local timecycleSet  = false
 -- Where the framing sits relative to the subject, in world metres.
 local panX, panY, panZ = 0.0, 0.0, 0.0
 
+-- What the camera is actually AT, as opposed to where the panel has asked it
+-- to be. The two are separate on purpose: the NUI bridge dispatches at most
+-- once every 34 ms, so `azimuth` and friends change ~30 times a second while
+-- the game draws 45-144 frames. Reading them straight made every second or
+-- third frame redraw the camera in the same place -- steppy, and read as lag.
+--
+-- Same shape as mbt_character's creatorRotatePed: the message carries the
+-- TARGET, the per-frame loop does the moving.
+local camAz, camElev, camDist, camFov = 0.0, 0.0, 0.0, 0.0
+local camPanX, camPanY, camPanZ = 0.0, 0.0, 0.0
+local lastCamTick = 0
+
+-- Seconds for the follow to close ~63% of the gap.
+--
+-- A first-order follow holds a steady-state offset of velocity * tau, so the
+-- lag GROWS with how fast you drag -- which does not read as lag, it reads as
+-- the mouse biting less when you accelerate. At 0.055 a 200 deg/s drag trails
+-- by 11 degrees, which is what that felt like.
+--
+-- 0.03 halves it and still swallows the bridge is 34 ms step. Not a config
+-- key: it is a feel constant, and the two numbers an owner already tunes --
+-- OrbitSensitivity and ZoomSensitivity -- are the ones with a reason to move.
+local CAM_TAU = 0.03
+
 -- Lighting
 local lightOn     = lightCfg.DefaultOn == true
 local lightPower  = tonumber(lightCfg.DefaultIntensity) or 3.0  -- 0.5 .. 8
@@ -130,13 +154,16 @@ end
 ---never the missing piece.
 local function targetCoords()
     local s = subjectCoords()
-    return vector3(s.x + panX, s.y + panY, s.z + panZ)
+    -- Il pan reso, non quello richiesto: arriva a 30 Hz come l orbita e senza
+    -- inseguimento scattava allo stesso modo.
+    return vector3(s.x + camPanX, s.y + camPanY, s.z + camPanZ)
 end
 
 ---Slides the framing, in the camera's own axes rather than the world's, so
 ---dragging right moves the shot right whichever way you happen to be facing.
 local function panFrame(dx, dy)
-    local az = math.rad(azimuth)
+    -- Also the rendered angle: you drag relative to the view you can see.
+    local az = math.rad(camAz)
 
     -- The camera sits at target + (sin, cos) * horiz, so it looks along
     -- (-sin, -cos); its right is that turned a quarter turn.
@@ -225,7 +252,10 @@ local function drawKeyLight()
     if not lightOn then return end
 
     local t = subjectCoords()
-    local az = math.rad(azimuth + lightAz)
+    -- camAz and not azimuth: the light hangs off what is ON SCREEN. Against
+    -- the target it would lead the frame through every orbit, which is the one
+    -- thing this light exists not to do.
+    local az = math.rad(camAz + lightAz)
     local elr = math.rad(lightElev)
     local horiz = lightDist * math.cos(elr)
 
@@ -263,18 +293,53 @@ local function clearEnvironment()
     envHour, envWeather = nil, nil
 end
 
+---Moves the follow values one frame closer to the targets.
+---
+---Exponential and not a fixed step, so the motion is the same at 45 fps and at
+---144: `1 - exp(-dt/tau)` closes the same FRACTION of the gap per second
+---however often it is called. A plain lerp would make a fast machine feel
+---snappier than a slow one, which is the sort of thing that reads as "depends
+---on your PC" rather than "designed".
+---@param snap boolean? true to land on the targets immediately (entering)
+local function followCamera(snap)
+    local now = GetGameTimer()
+
+    if snap or lastCamTick == 0 then
+        camAz, camElev, camDist, camFov = azimuth, elevation, distance, fov
+        camPanX, camPanY, camPanZ = panX, panY, panZ
+        lastCamTick = now
+        return
+    end
+
+    local dt = (now - lastCamTick) / 1000.0
+    lastCamTick = now
+    -- A frame that took longer than a fifth of a second is a hitch, not a
+    -- frame: following across it would fling the camera.
+    if dt <= 0.0 then return end
+    if dt > 0.2 then dt = 0.2 end
+
+    local k = 1.0 - math.exp(-dt / CAM_TAU)
+    camAz   = camAz   + (azimuth   - camAz)   * k
+    camElev = camElev + (elevation - camElev) * k
+    camDist = camDist + (distance  - camDist) * k
+    camFov  = camFov  + (fov       - camFov)  * k
+    camPanX = camPanX + (panX - camPanX) * k
+    camPanY = camPanY + (panY - camPanY) * k
+    camPanZ = camPanZ + (panZ - camPanZ) * k
+end
+
 local function applyCamera()
     if not cam or not DoesCamExist(cam) then return end
     local t = targetCoords()
-    local azr = math.rad(azimuth)
-    local elr = math.rad(elevation)
-    local horiz = distance * math.cos(elr)
+    local azr = math.rad(camAz)
+    local elr = math.rad(camElev)
+    local horiz = camDist * math.cos(elr)
     local camX = t.x + horiz * math.sin(azr)
     local camY = t.y + horiz * math.cos(azr)
-    local camZ = t.z + distance * math.sin(elr)
+    local camZ = t.z + camDist * math.sin(elr)
     SetCamCoord(cam, camX, camY, camZ)
     PointCamAtCoord(cam, t.x, t.y, t.z)
-    SetCamFov(cam, fov)
+    SetCamFov(cam, camFov)
 end
 
 ---Depth of field. Called every frame, and it has to be.
@@ -340,8 +405,11 @@ local function enter()
     fov       = 45.0
     dofOn     = cfg.DofDefault ~= false
 
-    local t = targetCoords()
     cam = CreateCam('DEFAULT_SCRIPTED_CAMERA', true)
+    -- Snap: the first frame must BE the shot, not drift into it from wherever
+    -- the last session left the follow values.
+    lastCamTick = 0
+    followCamera(true)
     applyCamera()
     SetCamActiveWithInterp(cam, GetRenderingCam(), 600, 1, 1)
     SetCamActive(cam, true)
@@ -351,6 +419,7 @@ local function enter()
 
     CreateThread(function()
         while active do
+            followCamera()
             applyCamera()
             applyDof()
             drawKeyLight()
