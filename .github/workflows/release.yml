@@ -64,6 +64,29 @@ jobs:
           cp ./{README.md,config.lua,default.lua,fxmanifest.lua,LICENSE.md} ./temp/mbt_emote_menu
           cp -r ./{modules,core,locales} ./temp/mbt_emote_menu
           cp -r ./web/dist ./temp/mbt_emote_menu/web/dist
+          # --- gate MBT.Debug -------------------------------------------------
+          # Il default del PACCHETTO e' fail-closed, comunque sia il config.lua
+          # di sviluppo. Tenere MBT.Debug = true mentre si lavora e' corretto e
+          # voluto: serve per i test. Quello che non deve poter accadere e' che
+          # finisca in una release -- e questo passaggio lo rende impossibile
+          # invece di chiedere a qualcuno di ricordarsene prima del tag.
+          #
+          # Se il marcatore non c'e', il build FALLISCE: meglio non rilasciare
+          # che rilasciare un default sconosciuto. Stesso contratto di
+          # mbt_hud/scripts/build-release.mjs, che e' il modello del catalogo.
+          #
+          # Difetto che chiude: MBT.Debug e' gia' uscito TRE volte, e la
+          # seconda perche' un `git add -A` lo aveva rimesso a true nel repo.
+          CFG="./temp/mbt_emote_menu/config.lua"
+          if grep -qE '^[[:space:]]*MBT\.Debug[[:space:]]*=[[:space:]]*true' "$CFG"; then
+            sed -i -E 's/^([[:space:]]*MBT\.Debug[[:space:]]*=[[:space:]]*)true/\1false/' "$CFG"
+            echo "gate: MBT.Debug era true, riscritto a false nel pacchetto"
+          elif ! grep -qE '^[[:space:]]*MBT\.Debug[[:space:]]*=[[:space:]]*false' "$CFG"; then
+            echo "config.lua: default di release MBT.Debug non trovato" >&2
+            exit 1
+          fi
+          grep -E '^[[:space:]]*MBT\.Debug' "$CFG"
+          # --------------------------------------------------------------------
           cd ./temp && zip -r ../mbt_emote_menu.zip ./mbt_emote_menu
 
       - name: Create Release
