@@ -19,7 +19,7 @@ local cfg = (MBT.Admin and MBT.Admin.UpdateNotice) or {}
 
 if cfg.Enabled == false then return end
 
-local REPO = cfg.Repository or 'MalibuTechTeam/mbt_emote_menu'
+local REPO = (MBT.UpdateNotice and MBT.UpdateNotice.Repository) or 'MalibuTechTeam/mbt_emote_menu'
 
 ---Parses a version into its three numeric components.
 ---@param s string|nil

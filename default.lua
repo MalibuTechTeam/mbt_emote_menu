@@ -10,6 +10,21 @@
 
 MBT = MBT or {}
 
+-- Il repository da cui si legge l'ultima versione. NON e' configurabile: lo
+-- script e' nostro e deve puntare alla nostra repository, e core/client.lua
+-- accetta solo URL sotto github.com/MalibuTechTeam/ comunque.
+--
+-- ATTENZIONE, e non accorpare: questo NON puo' stare in MBT.Admin.UpdateNotice
+-- insieme a Enabled. fxmanifest carica default.lua PRIMA di config.lua, e
+-- config.lua:284 fa `MBT.Admin = { ... }` -- un'assegnazione intera, che
+-- cancellerebbe qualunque cosa avessimo messo qui dentro MBT.Admin.
+-- Accorparli compila, parte, e cade in silenzio sul fallback di
+-- modules/version/server.lua. Nessun errore, e il difetto si vede solo il
+-- giorno che il repository cambia nome.
+MBT.UpdateNotice = {
+    Repository = 'MalibuTechTeam/mbt_emote_menu',
+}
+
 -- Menu colours, sent to the UI at startup. Hex without '#'.
 --
 -- Accent is the one that matters, and it is the one the admin panel edits:

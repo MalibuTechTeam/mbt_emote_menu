@@ -289,7 +289,6 @@ MBT.Admin = {
     -- menu's settings popover. The console line prints regardless.
     UpdateNotice = {
         Enabled    = true,
-        Repository = 'MalibuTechTeam/mbt_emote_menu',
     },
 
     -- In-game scene editor: place marks in the world, assign an emote and a

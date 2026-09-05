@@ -400,7 +400,6 @@ MBT.Admin = {
 
     UpdateNotice = {
         Enabled    = true,
-        Repository = 'MalibuTechTeam/mbt_emote_menu',
     },
 
     Editor = {
